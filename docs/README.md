@@ -43,6 +43,8 @@ pnpm dev
 | 文档 | 内容 |
 | --- | --- |
 | [产品说明](PRODUCT.md) | 角色、功能和运行边界 |
+| [多订阅 PRD](PRD-SUBSCRIPTIONS.md) | 下一版多订阅、完整客户端配置与 Kumo 一致性需求（设计阶段） |
+| [设计规范](DESIGN.md) | Figma 入口、Table/Dialog 标准与订阅流程 |
 | [架构](ARCHITECTURE.md) | 模块职责、运行生命周期和一致性 |
 | [数据与协议](DATA-AND-PROTOCOL.md) | 存储模型、HTTP 与 Connect 契约 |
 | [开发指南](DEVELOPMENT.md) | 环境、生成、测试与代码维护 |

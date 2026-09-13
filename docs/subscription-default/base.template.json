@@ -1,0 +1,431 @@
+{
+  "$schema": "https://github.com/jiang-zhexin/typebox/releases/latest/download/schema.json",
+  "dns": {
+    "servers": [
+      {
+        "tag": "cloudflare",
+        "type": "https",
+        "server": "1.1.1.1",
+        "detour": "auto",
+        "tls": {
+          "server_name": "cloudflare-dns.com"
+        }
+      },
+      {
+        "tag": "google",
+        "type": "https",
+        "server": "8.8.8.8",
+        "detour": "auto",
+        "tls": {
+          "server_name": "dns.google"
+        }
+      },
+      {
+        "tag": "q",
+        "type": "udp",
+        "server": "114.114.114.114"
+      }
+    ],
+    "rules": [
+      {
+        "rule_set": "geosite-category-ads-all",
+        "action": "reject"
+      },
+      {
+        "clash_mode": "Direct",
+        "server": "q"
+      },
+      {
+        "clash_mode": "Global",
+        "action": "evaluate",
+        "server": "cloudflare",
+        "tag": "global-cloudflare"
+      },
+      {
+        "clash_mode": "Global",
+        "action": "evaluate",
+        "server": "google",
+        "tag": "global-google"
+      },
+      {
+        "clash_mode": "Global",
+        "match_response": "global-cloudflare",
+        "response_rcode": "NOERROR",
+        "action": "respond",
+        "race": true
+      },
+      {
+        "clash_mode": "Global",
+        "match_response": "global-google",
+        "response_rcode": "NOERROR",
+        "action": "respond",
+        "race": true
+      },
+      {
+        "clash_mode": "Global",
+        "match_response": "global-cloudflare",
+        "action": "respond"
+      },
+      {
+        "clash_mode": "Global",
+        "match_response": "global-google",
+        "action": "respond"
+      },
+      {
+        "rule_set": [
+          "geosite-games-cn",
+          "geosite-games-non-cn"
+        ],
+        "action": "route-options",
+        "disable_optimistic_cache": true
+      },
+      {
+        "rule_set": [
+          "geosite-games-cn",
+          "geosite-game-download-cn"
+        ],
+        "action": "route",
+        "server": "q"
+      },
+      {
+        "rule_set": "geosite-geolocation-cn",
+        "server": "q"
+      },
+      {
+        "action": "evaluate",
+        "server": "cloudflare",
+        "tag": "rule-cloudflare"
+      },
+      {
+        "action": "evaluate",
+        "server": "google",
+        "tag": "rule-google"
+      },
+      {
+        "type": "logical",
+        "mode": "and",
+        "rules": [
+          {
+            "rule_set": [
+              "geosite-geolocation-!cn",
+              "geosite-games-non-cn"
+            ],
+            "invert": true
+          },
+          {
+            "match_response": "rule-cloudflare",
+            "response_rcode": "NOERROR",
+            "rule_set": "geoip-cn"
+          }
+        ],
+        "action": "route",
+        "server": "q",
+        "race": true
+      },
+      {
+        "match_response": "rule-cloudflare",
+        "response_rcode": "NOERROR",
+        "action": "respond",
+        "race": true
+      },
+      {
+        "type": "logical",
+        "mode": "and",
+        "rules": [
+          {
+            "rule_set": [
+              "geosite-geolocation-!cn",
+              "geosite-games-non-cn"
+            ],
+            "invert": true
+          },
+          {
+            "match_response": "rule-google",
+            "response_rcode": "NOERROR",
+            "rule_set": "geoip-cn"
+          }
+        ],
+        "action": "route",
+        "server": "q",
+        "race": true
+      },
+      {
+        "match_response": "rule-google",
+        "response_rcode": "NOERROR",
+        "action": "respond",
+        "race": true
+      },
+      {
+        "match_response": "rule-cloudflare",
+        "action": "respond"
+      },
+      {
+        "match_response": "rule-google",
+        "action": "respond"
+      }
+    ],
+    "final": "cloudflare",
+    "strategy": "prefer_ipv4",
+    "timeout": "8s",
+    "optimistic": {
+      "enabled": true,
+      "timeout": "24h"
+    }
+  },
+  "inbounds": [
+    {
+      "tag": "tun-in",
+      "auto_route": true,
+      "interface_name": "singbox",
+      "address": [
+        "172.19.0.1/30"
+      ],
+      "strict_route": false,
+      "type": "tun",
+      "stack": "mixed"
+    }
+  ],
+  "outbounds": [
+    {
+      "default": "auto",
+      "outbounds": [],
+      "tag": "select",
+      "type": "selector"
+    },
+    {
+      "default": "auto-ai",
+      "outbounds": [],
+      "tag": "select-ai",
+      "type": "selector"
+    },
+    {
+      "default": "auto-game",
+      "outbounds": [],
+      "tag": "select-game",
+      "type": "selector"
+    },
+    {
+      "interval": "3m",
+      "outbounds": [],
+      "tag": "auto-ai",
+      "tolerance": 50,
+      "type": "urltest",
+      "url": "https://cp.cloudflare.com/"
+    },
+    {
+      "interval": "3m",
+      "outbounds": [],
+      "tag": "auto",
+      "tolerance": 50,
+      "type": "urltest",
+      "url": "https://cp.cloudflare.com/"
+    },
+    {
+      "tag": "direct",
+      "type": "direct"
+    },
+    {
+      "url": "https://cp.cloudflare.com/",
+      "type": "urltest",
+      "outbounds": [],
+      "tolerance": 50,
+      "interval": "3m",
+      "tag": "auto-game"
+    }
+  ],
+  "route": {
+    "auto_detect_interface": true,
+    "rule_set": [
+      {
+        "type": "remote",
+        "tag": "geosite-geolocation-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-geolocation-!cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-category-ads-all",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-category-media",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-media@cn.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-ai",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ai-chat-!cn.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-steam-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-steam@cn.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-games-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-games-cn.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-games-non-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-games-!cn.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-game-download-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-game-platforms-download@cn.srs",
+        "http_client": {
+          "detour": "auto"
+        }
+      }
+    ],
+    "rules": [
+      {
+        "action": "sniff",
+        "sniffer": [
+          "http",
+          "tls",
+          "dns",
+          "quic",
+          "dtls"
+        ]
+      },
+      {
+        "action": "route-options",
+        "udp_disable_domain_unmapping": true
+      },
+      {
+        "action": "hijack-dns",
+        "protocol": "dns",
+        "port": [
+          53
+        ]
+      },
+      {
+        "action": "reject",
+        "rule_set": "geosite-category-ads-all"
+      },
+      {
+        "clash_mode": "Direct",
+        "outbound": "direct"
+      },
+      {
+        "clash_mode": "Global",
+        "outbound": "select"
+      },
+      {
+        "rule_set": [
+          "geosite-games-cn",
+          "geosite-game-download-cn"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "rule_set": "geosite-games-non-cn",
+        "outbound": "select-game"
+      },
+      {
+        "action": "route",
+        "rule_set": [
+          "geosite-ai"
+        ],
+        "outbound": "select-ai"
+      },
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      },
+      {
+        "rule_set": [
+          "geoip-cn",
+          "geosite-geolocation-cn",
+          "geosite-category-media"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "type": "logical",
+        "mode": "or",
+        "rules": [
+          {
+            "rule_set": [
+              "geosite-steam-cn"
+            ]
+          },
+          {
+            "domain_suffix": [
+              "steamserver.net"
+            ]
+          }
+        ],
+        "outbound": "direct"
+      }
+    ],
+    "final": "select",
+    "default_domain_resolver": "q"
+  },
+  "experimental": {
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090",
+      "external_ui": "./ui",
+      "external_ui_download_detour": "auto",
+      "external_ui_download_url": "https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip"
+    },
+    "cache_file": {
+      "enabled": true,
+      "store_dns": true
+    }
+  },
+  "log": {
+    "level": "info",
+    "timestamp": true
+  }
+}
