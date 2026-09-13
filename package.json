@@ -1,0 +1,23 @@
+{
+  "name": "bifurcation",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.4.1",
+  "engines": {
+    "node": ">=24.14.0 <25"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @bifurcation/web dev",
+    "build": "pnpm --filter @bifurcation/web build",
+    "start": "pnpm --filter @bifurcation/web start",
+    "lint": "pnpm --filter @bifurcation/web lint",
+    "typecheck": "pnpm --filter @bifurcation/web typecheck",
+    "test": "pnpm --filter @bifurcation/web test",
+    "generate:rpc": "node scripts/generate-rpc.mjs",
+    "test:e2e": "pnpm --filter @bifurcation/web test:e2e"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "1.73.0",
+    "@bufbuild/protoc-gen-es": "2.15.0"
+  }
+}

@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 12.4.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: 1.27.x
+          cache-dependency-path: services/daemon/go.sum
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm exec buf lint
+      - run: node scripts/generate-rpc.mjs
+      - run: git diff --exit-code -- packages/rpc/src/gen services/daemon/gen
+      - run: pnpm --filter @bifurcation/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @bifurcation/web test:e2e
+
+  daemon:
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: services/daemon
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: 1.27.x
+          cache-dependency-path: services/daemon/go.sum
+      - run: go mod download
+      - run: go vet -tags=with_quic ./...
+      - run: go test -tags=with_quic ./...
+      - run: go build -tags=with_quic ./cmd/bifurcation-daemon
+        env:
+          CGO_ENABLED: "0"
+      - run: go generate ./internal/state
+      - run: git diff --exit-code -- internal/state/ent
+
+  docker:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: 1.27.x
+          cache-dependency-path: services/daemon/go.sum
+      - run: docker build -t bifurcation:ci .
+      - run: node deploy/tests/panel.test.mjs bifurcation:ci
+      - name: Verify backup and restore
+        run: |
+          docker run --rm --network none --entrypoint node \
+            -e BIFURCATION_DISPOSABLE_TEST_CONTAINER=1 \
+            -v "$PWD/deploy/tests:/tests:ro" \
+            bifurcation:ci /tests/backup-restore.test.mjs
+      - name: Verify installer failure and preservation paths
+        run: |
+          docker create --name artifact-source bifurcation:ci
+          docker cp artifact-source:/app/artifacts/daemon-linux-amd64 ./daemon-test
+          docker rm artifact-source
+          docker run --rm --network none \
+            -e BIFURCATION_DISPOSABLE_TEST_CONTAINER=1 \
+            -v "$PWD/deploy:/source:ro" \
+            -v "$PWD/daemon-test:/fixtures/daemon:ro" \
+            ubuntu:22.04 sh /source/tests/install.test.sh
+      - name: Build real service fixtures
+        working-directory: services/daemon
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p /tmp/bif-fixtures
+          go build -tags=with_quic -ldflags='-X main.version=0.0.0-dev' -o /tmp/bif-fixtures/old ./cmd/bifurcation-daemon
+          go build -tags=with_quic -ldflags='-X main.version=0.1.0' -o /tmp/bif-fixtures/new ./cmd/bifurcation-daemon
+          go build -o /tmp/bif-fixtures/bad ./internal/updater/testdata/bad_start
+          go test -tags=with_quic -c -o /tmp/bif-fixtures/maintenance.test ./internal/updater
+          go test -tags=with_quic -c -o /tmp/bif-fixtures/core.test ./internal/adapters/singbox
+      - name: Verify core and updater with real systemd
+        run: |
+          docker build -t bif-systemd-test deploy/tests/systemd
+          docker run -d --name bif-systemd-ci --privileged --cgroupns=private --tmpfs /run --tmpfs /run/lock -v /tmp/bif-fixtures:/fixtures:ro bif-systemd-test
+          docker exec bif-systemd-ci /fixtures/core.test -test.v
+          docker exec -e BIFURCATION_DISPOSABLE_SYSTEMD_TEST=1 -e BIFURCATION_TEST_OLD=/fixtures/old -e BIFURCATION_TEST_NEW=/fixtures/new -e BIFURCATION_TEST_BAD=/fixtures/bad bif-systemd-ci /fixtures/maintenance.test -test.v
+      - name: Clean disposable service container
+        if: always()
+        run: docker rm -f bif-systemd-ci 2>/dev/null || true
