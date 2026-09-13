@@ -1,0 +1,13 @@
+version: v2
+plugins:
+  - local: [node, node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es]
+    out: packages/rpc/src/gen
+    opt: target=ts
+  - local: [go, -C, services/daemon, tool, protoc-gen-go]
+    out: services/daemon/gen
+    opt: paths=source_relative
+  - local: [go, -C, services/daemon, tool, protoc-gen-connect-go]
+    out: services/daemon/gen
+    opt: paths=source_relative
+inputs:
+  - directory: proto

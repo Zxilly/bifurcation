@@ -1,0 +1,244 @@
+syntax = "proto3";
+
+package bifurcation.v1;
+
+option go_package = "github.com/Zxilly/bifurcation/services/daemon/gen/bifurcation/v1;bifurcationv1";
+
+// All calls authenticate with a machine Bearer token. Identity in message bodies
+// only fences installation/connection generations; it never selects a machine.
+service MachineService {
+  rpc WatchTasks(WatchTasksRequest) returns (stream WatchTasksResponse);
+  rpc AcceptTask(AcceptTaskRequest) returns (AcceptTaskResponse);
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc ReportStatus(ReportStatusRequest) returns (ReportStatusResponse);
+  rpc ReportUsage(ReportUsageRequest) returns (ReportUsageResponse);
+  rpc ReportTask(ReportTaskRequest) returns (ReportTaskResponse);
+}
+
+message Installation {
+  string installation_id = 1;
+  // Zero only before the first successful WatchTasks handshake.
+  int64 binding_epoch = 2;
+}
+
+message WatchTasksRequest {
+  Installation installation = 1;
+  string daemon_version = 2;
+  uint32 protocol_version = 3;
+  repeated TaskKind supported_tasks = 4;
+  string os = 5;
+  string arch = 6;
+}
+
+message WatchTasksResponse {
+  oneof event {
+    SessionOpened session = 1;
+    TaskAvailable task = 2;
+    Heartbeat heartbeat = 3;
+  }
+}
+
+message SessionOpened {
+  string machine_id = 1;
+  int64 binding_epoch = 2;
+  int64 session_epoch = 3;
+  uint32 heartbeat_seconds = 4;
+  uint32 status_interval_seconds = 5;
+}
+
+message TaskAvailable {
+  string task_id = 1;
+  string payload_sha256 = 2;
+  TaskKind kind = 3;
+}
+
+message Heartbeat {
+  int64 server_time_unix_ms = 1;
+}
+
+enum TaskKind {
+  TASK_KIND_UNSPECIFIED = 0;
+  TASK_KIND_INSPECT = 1;
+  reserved 2;
+  TASK_KIND_APPLY_CONFIG = 3;
+  reserved 4;
+  TASK_KIND_UPGRADE_DAEMON = 5;
+  TASK_KIND_UNINSTALL = 6;
+}
+
+message AcceptTaskRequest {
+  Installation installation = 1;
+  int64 session_epoch = 2;
+  string task_id = 3;
+  string payload_sha256 = 4;
+}
+
+message AcceptTaskResponse {
+  string task_id = 1;
+  int64 binding_epoch = 2;
+  TaskKind kind = 3;
+  // Exact persisted protobuf bytes of TaskSpec. Verify hash before decoding;
+  // never reserialize in another language to compare the digest.
+  bytes payload = 4;
+  string payload_sha256 = 5;
+}
+
+message TaskSpec {
+  oneof operation {
+    InspectTask inspect = 1;
+
+    ApplyConfigTask apply_config = 3;
+
+    UpgradeDaemonTask upgrade_daemon = 5;
+    UninstallTask uninstall = 6;
+  }
+}
+
+message InspectTask {
+  bool include_logs = 1;
+  uint32 max_log_lines = 2;
+  uint32 max_bytes = 3;
+}
+
+message Artifact {
+  string id = 1;
+  string version = 2;
+  string url = 3;
+  string sha256 = 4;
+  int64 size_bytes = 5;
+  string os = 6;
+  string arch = 7;
+}
+
+message ApplyConfigTask {
+  string revision_id = 1;
+  int64 policy_revision = 2;
+}
+
+message UpgradeDaemonTask {
+  Artifact artifact = 1;
+}
+
+message UninstallTask {}
+
+message GetConfigRequest {
+  Installation installation = 1;
+  string revision_id = 2;
+  bool authorization_only = 3;
+}
+
+message GetConfigResponse {
+  string revision_id = 1;
+  bytes config_json = 2;
+  string config_sha256 = 3;
+  int64 policy_revision = 4;
+  bytes latest_authorization_json = 5;
+  int64 latest_policy_revision = 6;
+  repeated Artifact files = 7;
+}
+
+enum CoreHealth {
+  CORE_HEALTH_UNSPECIFIED = 0;
+  CORE_HEALTH_NOT_CONFIGURED = 1;
+  CORE_HEALTH_STOPPED = 2;
+  CORE_HEALTH_HEALTHY = 3;
+  CORE_HEALTH_UNHEALTHY = 4;
+}
+
+message MachineStatus {
+  int64 observed_at_unix_ms = 1;
+  string daemon_version = 2;
+  string core_version = 3;
+  string core_runtime_id = 4;
+  CoreHealth core_health = 5;
+  string applied_revision_id = 6;
+  int64 applied_policy_revision = 7;
+  // Optional fields distinguish unknown from a measured zero.
+  optional double cpu_usage_percent = 8;
+  optional int64 memory_used_bytes = 9;
+  optional int64 memory_total_bytes = 10;
+  optional int64 disk_free_bytes = 11;
+  optional int64 connections = 12;
+  optional int64 network_rx_bytes = 13;
+  optional int64 network_tx_bytes = 14;
+  bool usage_incomplete = 15;
+  string issue = 16;
+  string network_interface = 17;
+  string applied_config_sha256 = 18;
+}
+
+message ReportStatusRequest {
+  Installation installation = 1;
+  int64 session_epoch = 2;
+  int64 sequence = 3;
+  MachineStatus status = 4;
+}
+
+message ReportStatusResponse {
+  int64 committed_sequence = 1;
+}
+
+message UsageDelta {
+  string user_id = 1;
+  int64 start_unix_ms = 2;
+  int64 end_unix_ms = 3;
+  int64 upload_bytes = 4;
+  int64 download_bytes = 5;
+  bool estimated = 6;
+  bool incomplete = 7;
+}
+
+message UsageBatch {
+  repeated UsageDelta deltas = 1;
+  string core_runtime_id = 2;
+}
+
+message ReportUsageRequest {
+  Installation installation = 1;
+  string stream_id = 2;
+  int64 sequence = 3;
+  // Exact immutable UsageBatch protobuf bytes, not canonicalized JSON.
+  bytes payload = 4;
+  string payload_sha256 = 5;
+}
+
+message ReportUsageResponse {
+  int64 committed_sequence = 1;
+  int64 expected_sequence = 2;
+}
+
+enum TaskState {
+  TASK_STATE_UNSPECIFIED = 0;
+  TASK_STATE_RUNNING = 1;
+  TASK_STATE_SUCCEEDED = 2;
+  TASK_STATE_FAILED = 3;
+}
+
+enum RollbackState {
+  ROLLBACK_STATE_UNSPECIFIED = 0;
+  ROLLBACK_STATE_NOT_NEEDED = 1;
+  ROLLBACK_STATE_SUCCEEDED = 2;
+  ROLLBACK_STATE_FAILED = 3;
+}
+
+message ReportTaskRequest {
+  Installation installation = 1;
+  string task_id = 2;
+  string payload_sha256 = 3;
+  int64 sequence = 4;
+  TaskState state = 5;
+  string phase = 6;
+  optional uint32 progress_percent = 7;
+  string error_code = 8;
+  string message = 9;
+  RollbackState rollback = 10;
+  MachineStatus actual_status = 11;
+  // Bounded diagnostic output. Only authenticated administrators may read it.
+  bytes diagnostic_json = 12;
+}
+
+message ReportTaskResponse {
+  int64 committed_sequence = 1;
+  bool terminal = 2;
+}
+
