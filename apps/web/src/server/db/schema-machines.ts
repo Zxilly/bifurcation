@@ -1,0 +1,48 @@
+import { blob, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+
+export const machines = sqliteTable("machines", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address").notNull(),
+  region: text("region").notNull().default(""),
+  tokenHash: text("token_hash").notNull().unique(),
+  tokenCiphertext: text("token_ciphertext").notNull(),
+  tokenGeneration: integer("token_generation").notNull().default(1),
+  installationId: text("installation_id"),
+  bindingEpoch: integer("binding_epoch").notNull().default(0),
+  sessionEpoch: integer("session_epoch").notNull().default(0),
+  statusSequence: integer("status_sequence").notNull().default(0),
+  statusJson: text("status_json"),
+  supportedTasks: text("supported_tasks").notNull().default("[]"),
+  daemonVersion: text("daemon_version"),
+  os: text("os"),
+  arch: text("arch"),
+  lastSeenAt: integer("last_seen_at"),
+  version: integer("version").notNull().default(1),
+  createdAt: integer("created_at").notNull(),
+  removedAt: integer("removed_at"),
+});
+
+export const tasks = sqliteTable("tasks", {
+  id: text("id").primaryKey(),
+  machineId: text("machine_id").notNull().references(() => machines.id),
+  bindingEpoch: integer("binding_epoch").notNull(),
+  kind: integer("kind").notNull(),
+  payload: blob("payload", { mode: "buffer" }).notNull(),
+  payloadHash: text("payload_hash").notNull(),
+  requestKey: text("request_key").notNull(),
+  state: text("state", { enum: ["queued", "accepted", "running", "succeeded", "failed", "canceled", "superseded"] }).notNull().default("queued"),
+  progressSequence: integer("progress_sequence").notNull().default(0),
+  reportHash: text("report_hash"),
+  phase: text("phase"),
+  progressPercent: integer("progress_percent"),
+  message: text("message"),
+  errorCode: text("error_code"),
+  diagnosticJson: text("diagnostic_json"),
+  rollback: integer("rollback"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+}, (table) => [
+  uniqueIndex("task_request_key").on(table.machineId, table.requestKey),
+  index("task_delivery").on(table.machineId, table.state, table.createdAt),
+]);
