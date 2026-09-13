@@ -21,7 +21,7 @@ beforeEach(() => {
   process.env.BIFURCATION_APP_KEY = "ab".repeat(32);
 });
 afterEach(() => { globals.bifurcationDatabase?.sqlite.close(); delete globals.bifurcationDatabase; rmSync(directory, { recursive: true, force: true }); });
-const request = (token: string) => new Request("http://localhost:3000/api/v1/me", { headers: { cookie: `bifurcation_session=${token}` } });
+const request = (token: string) => new Headers({ cookie: `bifurcation_session=${token}` });
 async function activateAdmin() {
   const userId = newId();
   getDatabase().db.insert(users).values({ id: userId, username: "admin", role: "admin", status: "pending", createdAt: Date.now() }).run();
@@ -74,7 +74,7 @@ describe("persistent identity boundary", () => {
     const result = await onboardingComplete("activation", { token, flowId: options.flowId, response: authenticator().register(options.options.challenge), password: "another secure password" });
     const secondPrincipal = authenticate(request(result.token));
     const key = createApiKey(secondPrincipal, { name: "automation" });
-    const bearer = new Request("http://localhost:3000", { headers: { authorization: `Bearer ${key.token}` } });
+    const bearer = new Headers({ authorization: `Bearer ${key.token}` });
     updateUser(admin.principal, result.user.id, { expectedVersion: result.user.version, role: "user" });
     expect(authenticate(bearer).user.role).toBe("user");
     expect(() => createUser(authenticate(bearer), { username: "illegal" })).toThrow("管理员");
@@ -99,12 +99,12 @@ describe("persistent identity boundary", () => {
     const recovered = await onboardingComplete("recovery", { token, flowId: options.flowId, response: authenticator().register(options.options.challenge), password: "new password for recovery" });
     expect(authenticate(request(recovered.token)).user.id).toBe(admin.user.id);
     expect(() => authenticate(request(admin.token))).toThrow("登录已失效");
-    expect(authenticate(new Request("http://localhost:3000", { headers: { authorization: `Bearer ${key.token}` } })).user.id).toBe(admin.user.id);
+    expect(authenticate(new Headers({ authorization: `Bearer ${key.token}` })).user.id).toBe(admin.user.id);
     await expect(passwordLogin({ username: "admin", password: admin.completion.password })).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
     const loginOptions = await authenticationOptions({ purpose: "login" });
     await expect(authenticationVerify({ flowId: loginOptions.flowId, response: admin.device.authenticate(loginOptions.options.challenge) })).rejects.toMatchObject({ code: "INVALID_FLOW" });
     revokeApiKey(authenticate(request(recovered.token)), key.apiKey.id);
-    expect(() => authenticate(new Request("http://localhost:3000", { headers: { authorization: `Bearer ${key.token}` } }))).toThrow("API Key 无效");
+    expect(() => authenticate(new Headers({ authorization: `Bearer ${key.token}` }))).toThrow("API Key 无效");
   });
   it("checks authorization after a delayed request body has finished", async () => {
     const admin = await activateAdmin();

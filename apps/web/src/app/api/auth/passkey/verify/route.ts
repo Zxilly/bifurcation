@@ -6,7 +6,7 @@ export const POST = (request: Request) =>
   withPublicApi(request, async () => {
     let principal;
     try {
-      principal = authenticate(request);
+      principal = authenticate(request.headers);
     } catch (error) {
       if (!(error instanceof AppError && error.status === 401)) throw error;
     }

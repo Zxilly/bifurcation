@@ -18,9 +18,9 @@ export type Principal = { user: UserDto; authentication: "session" | "apiKey"; s
 
 export function userDto(row: typeof users.$inferSelect): UserDto { return { ...row }; }
 
-export function authenticate(request: Request): Principal {
+export function authenticate(headers: Headers): Principal {
   const { db } = getDatabase();
-  const authorization = request.headers.get("authorization");
+  const authorization = headers.get("authorization");
   if (authorization !== null) {
     const match = /^Bearer ([A-Za-z0-9_-]{10,200})$/.exec(authorization);
     if (!match) throw new AppError("UNAUTHENTICATED", "API Key 无效", 401);
@@ -30,7 +30,7 @@ export function authenticate(request: Request): Principal {
     db.update(apiKeys).set({ lastUsedAt: Date.now() }).where(eq(apiKeys.id, key.id)).run();
     return { user: userDto(user), authentication: "apiKey", recentAuthentication: false };
   }
-  const token = request.headers.get("cookie")?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${SESSION_COOKIE}=`))?.slice(SESSION_COOKIE.length + 1);
+  const token = headers.get("cookie")?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${SESSION_COOKIE}=`))?.slice(SESSION_COOKIE.length + 1);
   if (!token) throw new AppError("UNAUTHENTICATED", "请先登录", 401);
   const sessionHash = tokenHash(token);
   const session = db.select().from(sessions).where(eq(sessions.tokenHash, sessionHash)).get();

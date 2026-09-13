@@ -34,13 +34,13 @@ export async function withApi(request: Request, handler: (principal: Principal) 
   try {
     checkOrigin(request);
     if ((options.maxBodyBytes ?? 0) > 64 * 1024) {
-      const initial = authenticate(request);
+      const initial = authenticate(request.headers);
       if (options.admin) requireAdmin(initial);
       if (options.recent) requireRecentSession(initial);
     }
     // Do not grant a role before waiting on an attacker-controlled request body.
     if (request.body && request.headers.get("content-type")?.startsWith("application/json")) await readJson(request, options.maxBodyBytes);
-    const principal = authenticate(request);
+    const principal = authenticate(request.headers);
     if (options.admin) requireAdmin(principal);
     if (options.recent) requireRecentSession(principal);
     const result = await handler(principal);

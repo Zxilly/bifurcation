@@ -10,7 +10,7 @@ export async function getCurrentUser(): Promise<MeDto | null> {
   // Resolve request state before environment/database access so prerendering can bail out.
   const requestHeaders = await headers();
   try {
-    const principal = authenticate(new Request(getEnvironment().publicUrl, { headers: requestHeaders }));
+    const principal = authenticate(requestHeaders);
     return { user: principal.user, authentication: principal.authentication, recentAuthentication: principal.recentAuthentication };
   } catch (error) {
     if (error instanceof AppError && error.status === 401) return null;

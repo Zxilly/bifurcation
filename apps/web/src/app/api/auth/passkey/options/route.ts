@@ -11,6 +11,6 @@ export const POST = (request: Request) =>
       input.purpose === "reauth";
     return authenticationOptions(
       input,
-      reauth ? authenticate(request) : undefined,
+      reauth ? authenticate(request.headers) : undefined,
     );
   });

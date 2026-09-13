@@ -2,7 +2,7 @@ import type { ConnectRouter } from "@connectrpc/connect";
 
 // Adapt Fetch streams to Connect's universal handlers; Connect owns framing,
 // protobuf serialization and protocol errors.
-export async function handleConnectRequest(router: ConnectRouter, request: Request): Promise<Response> {
+export async function handleConnectRequest(router: Pick<ConnectRouter, "handlers">, request: Request): Promise<Response> {
   const pathname = new URL(request.url).pathname;
   const handler = router.handlers.find((candidate) => `/rpc${candidate.requestPath}` === pathname);
   if (!handler) return new Response(null, { status: 404 });
