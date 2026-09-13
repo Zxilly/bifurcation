@@ -1,0 +1,24 @@
+services:
+  panel:
+    build: .
+    image: bifurcation:local
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${BIFURCATION_PORT:-3000}:3000"
+    environment:
+      BIFURCATION_PUBLIC_URL: ${BIFURCATION_PUBLIC_URL:?Set the public HTTPS origin}
+      BIFURCATION_APP_KEY: ${BIFURCATION_APP_KEY:?Set a persistent 64-character hex key}
+      BIFURCATION_DATABASE_PATH: /data/bifurcation.sqlite
+    volumes:
+      - panel-data:/data
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+volumes:
+  panel-data:
