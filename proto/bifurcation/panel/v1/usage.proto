@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package bifurcation.panel.v1;
+
+// Metering queries. Byte counters are exact integer sums; peak rates and
+// change percentages are display-only floats. Timestamps are epoch
+// milliseconds aligned to grain bucket boundaries.
+service UsageService {
+  // Administrator query; filters apply as given.
+  rpc QueryUsage(QueryUsageRequest) returns (QueryUsageResponse);
+}
+
+enum Grain {
+  GRAIN_UNSPECIFIED = 0;
+  GRAIN_MINUTE = 1;
+  GRAIN_DAY = 2;
+  GRAIN_MONTH = 3;
+}
+
+message UsagePoint {
+  int64 bucket_start = 1;
+  int64 upload_bytes = 2;
+  int64 download_bytes = 3;
+  bool estimated = 4;
+  bool incomplete = 5;
+}
+
+message UsageGroup {
+  string user_id = 1;
+  string username = 2;
+  string machine_id = 3;
+  string machine_name = 4;
+  int64 upload_bytes = 5;
+  int64 download_bytes = 6;
+  bool estimated = 7;
+  bool incomplete = 8;
+}
+
+message CurrentMonthUsage {
+  // "YYYY-MM" in Asia/Shanghai.
+  string period = 1;
+  int64 used_bytes = 2;
+  optional int64 limit_bytes = 3;
+  bool blocked = 4;
+  // One of "80", "95", "100"; absent when below the first threshold.
+  optional string warning = 5;
+}
+
+message PreviousPeriodUsage {
+  int64 previous_start = 1;
+  int64 previous_end = 2;
+  int64 upload_bytes = 3;
+  int64 download_bytes = 4;
+  bool has_data = 5;
+  bool incomplete = 6;
+  bool current_period_in_progress = 7;
+  // Total-byte change, rounded to two decimals; absent for unfinished or
+  // unreliable comparisons.
+  optional double change_percent = 8;
+}
+
+message Usage {
+  int64 start = 1;
+  int64 end = 2;
+  Grain grain = 3;
+  int64 upload_bytes = 4;
+  int64 download_bytes = 5;
+  bool estimated = 6;
+  bool incomplete = 7;
+  repeated UsagePoint points = 8;
+  repeated UsageGroup groups = 9;
+  // Present only when the query scopes to one user.
+  optional CurrentMonthUsage current_month = 10;
+  // Largest received minute total divided by 60; absent for missing,
+  // expired or incomplete minute data.
+  optional double peak_minute_average_bytes_per_second = 11;
+  PreviousPeriodUsage previous_period = 12;
+}
+
+message QueryUsageRequest {
+  // Defaults to the current Shanghai month when absent.
+  optional int64 start = 1;
+  optional int64 end = 2;
+  // GRAIN_DAY when unspecified.
+  Grain grain = 3;
+  optional string user_id = 4;
+  optional string machine_id = 5;
+}
+
+message QueryUsageResponse {
+  Usage usage = 1;
+}

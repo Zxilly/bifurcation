@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package bifurcation.panel.v1;
+
+import "bifurcation/panel/v1/types.proto";
+import "google/protobuf/struct.proto";
+
+// Public onboarding and login. These calls are anonymous: they reject the
+// Authorization header, so an API Key can never drive a browser ceremony.
+// Successful credential verification establishes the session through a
+// Set-Cookie response header; the token never appears in a message body.
+service AuthService {
+  rpc PasswordLogin(PasswordLoginRequest) returns (PasswordLoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc PasskeyOptions(PasskeyOptionsRequest) returns (PasskeyOptionsResponse);
+  rpc PasskeyVerify(PasskeyVerifyRequest) returns (PasskeyVerifyResponse);
+  rpc ActivationOptions(ActivationOptionsRequest) returns (ActivationOptionsResponse);
+  rpc ActivationComplete(ActivationCompleteRequest) returns (ActivationCompleteResponse);
+  rpc RecoveryOptions(RecoveryOptionsRequest) returns (RecoveryOptionsResponse);
+  rpc RecoveryComplete(RecoveryCompleteRequest) returns (RecoveryCompleteResponse);
+  // Marks the current session recently authenticated. Requires a session or
+  // API Key principal, unlike the anonymous calls above.
+  rpc ReauthPassword(ReauthPasswordRequest) returns (ReauthPasswordResponse);
+}
+
+enum PasskeyPurpose {
+  PASSKEY_PURPOSE_UNSPECIFIED = 0;
+  PASSKEY_PURPOSE_LOGIN = 1;
+  PASSKEY_PURPOSE_REAUTH = 2;
+}
+
+message PasswordLoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message PasswordLoginResponse {
+  User user = 1;
+}
+
+message LogoutRequest {}
+
+message LogoutResponse {}
+
+message PasskeyOptionsRequest {
+  // PASSKEY_PURPOSE_LOGIN when unspecified. REAUTH requires an existing
+  // session.
+  PasskeyPurpose purpose = 1;
+}
+
+// options is the opaque PublicKeyCredentialRequestOptionsJSON document for
+// @simplewebauthn/browser.
+message PasskeyOptionsResponse {
+  string flow_id = 1;
+  google.protobuf.Struct options = 2;
+}
+
+// response is the opaque AuthenticationResponseJSON envelope produced by the
+// browser.
+message PasskeyVerifyRequest {
+  string flow_id = 1;
+  google.protobuf.Struct response = 2;
+  string name = 3;
+}
+
+message PasskeyVerifyResponse {
+  User user = 1;
+}
+
+message ActivationOptionsRequest {
+  string token = 1;
+}
+
+// options is the opaque PublicKeyCredentialCreationOptionsJSON document.
+message ActivationOptionsResponse {
+  string flow_id = 1;
+  string username = 2;
+  google.protobuf.Struct options = 3;
+}
+
+message ActivationCompleteRequest {
+  string token = 1;
+  string flow_id = 2;
+  google.protobuf.Struct response = 3;
+  string name = 4;
+  string password = 5;
+}
+
+message ActivationCompleteResponse {
+  User user = 1;
+}
+
+message RecoveryOptionsRequest {
+  string token = 1;
+}
+
+message RecoveryOptionsResponse {
+  string flow_id = 1;
+  string username = 2;
+  google.protobuf.Struct options = 3;
+}
+
+message RecoveryCompleteRequest {
+  string token = 1;
+  string flow_id = 2;
+  google.protobuf.Struct response = 3;
+  string name = 4;
+  string password = 5;
+}
+
+message RecoveryCompleteResponse {
+  User user = 1;
+}
+
+message ReauthPasswordRequest {
+  string password = 1;
+}
+
+message ReauthPasswordResponse {}

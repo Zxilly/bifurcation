@@ -1,0 +1,261 @@
+syntax = "proto3";
+
+package bifurcation.panel.v1;
+
+import "bifurcation/v1/machine.proto";
+import "google/protobuf/struct.proto";
+
+// Administrator machine management. All calls require an admin principal.
+// TaskKind and CoreHealth are shared with the daemon protocol on purpose:
+// they describe the same node concepts end to end.
+service AdminMachineService {
+  rpc ListMachines(ListMachinesRequest) returns (ListMachinesResponse);
+  rpc CreateMachine(CreateMachineRequest) returns (CreateMachineResponse);
+  rpc GetMachine(GetMachineRequest) returns (GetMachineResponse);
+  rpc UpdateMachine(UpdateMachineRequest) returns (UpdateMachineResponse);
+  rpc DeleteMachine(DeleteMachineRequest) returns (DeleteMachineResponse);
+  rpc ResetMachineToken(ResetMachineTokenRequest) returns (ResetMachineTokenResponse);
+  rpc RebindMachine(RebindMachineRequest) returns (RebindMachineResponse);
+  rpc UninstallMachine(UninstallMachineRequest) returns (UninstallMachineResponse);
+  rpc ListMachineTasks(ListMachineTasksRequest) returns (ListMachineTasksResponse);
+  rpc EnqueueInspectTask(EnqueueInspectTaskRequest) returns (EnqueueInspectTaskResponse);
+  rpc GetMachineUpgrades(GetMachineUpgradesRequest) returns (GetMachineUpgradesResponse);
+  rpc EnqueueUpgrade(EnqueueUpgradeRequest) returns (EnqueueUpgradeResponse);
+}
+
+enum MachineConnection {
+  MACHINE_CONNECTION_UNSPECIFIED = 0;
+  MACHINE_CONNECTION_WAITING = 1;
+  MACHINE_CONNECTION_ONLINE = 2;
+  MACHINE_CONNECTION_OFFLINE = 3;
+}
+
+// Full lifecycle of a panel-side task record, distinct from the daemon
+// report states in bifurcation.v1.TaskState.
+enum TaskState {
+  TASK_STATE_UNSPECIFIED = 0;
+  TASK_STATE_QUEUED = 1;
+  TASK_STATE_ACCEPTED = 2;
+  TASK_STATE_RUNNING = 3;
+  TASK_STATE_SUCCEEDED = 4;
+  TASK_STATE_FAILED = 5;
+  TASK_STATE_CANCELED = 6;
+  TASK_STATE_SUPERSEDED = 7;
+}
+
+enum RollbackState {
+  ROLLBACK_STATE_UNSPECIFIED = 0;
+  ROLLBACK_STATE_NOT_NEEDED = 1;
+  ROLLBACK_STATE_SUCCEEDED = 2;
+  ROLLBACK_STATE_FAILED = 3;
+}
+
+message MachineResources {
+  optional double cpu_usage_percent = 1;
+  optional int64 memory_used_bytes = 2;
+  optional int64 memory_total_bytes = 3;
+  optional int64 disk_free_bytes = 4;
+  optional int64 connections = 5;
+  optional int64 network_rx_bytes = 6;
+  optional int64 network_tx_bytes = 7;
+  optional string network_interface = 8;
+}
+
+message Task {
+  string id = 1;
+  string machine_id = 2;
+  bifurcation.v1.TaskKind kind = 3;
+  TaskState state = 4;
+  optional string phase = 5;
+  optional int32 progress_percent = 6;
+  optional string message = 7;
+  optional string error_code = 8;
+  RollbackState rollback = 9;
+  // Bounded diagnostic output; only administrators may read it.
+  optional google.protobuf.Struct diagnostic = 10;
+  int64 created_at = 11;
+  int64 updated_at = 12;
+}
+
+message Machine {
+  string id = 1;
+  string name = 2;
+  string address = 3;
+  string region = 4;
+  MachineConnection connection = 5;
+  bool stream_connected = 6;
+  bool uninstalled = 7;
+  optional int64 last_seen_at = 8;
+  optional string daemon_version = 9;
+  optional string core_version = 10;
+  bifurcation.v1.CoreHealth core_health = 11;
+  optional string installation_id = 12;
+  int64 created_at = 13;
+  int32 version = 14;
+  int32 active_task_count = 15;
+  optional string os = 16;
+  optional string arch = 17;
+  repeated bifurcation.v1.TaskKind capabilities = 18;
+  optional string applied_revision_id = 19;
+  int64 applied_policy_revision = 20;
+  optional string applied_config_sha256 = 21;
+  MachineResources resources = 22;
+}
+
+// MachineDetail carries the permanent token and install command; both stay
+// visible to administrators by design.
+message MachineDetail {
+  string id = 1;
+  string name = 2;
+  string address = 3;
+  string region = 4;
+  MachineConnection connection = 5;
+  bool stream_connected = 6;
+  bool uninstalled = 7;
+  optional int64 last_seen_at = 8;
+  optional string daemon_version = 9;
+  optional string core_version = 10;
+  bifurcation.v1.CoreHealth core_health = 11;
+  optional string installation_id = 12;
+  int64 created_at = 13;
+  int32 version = 14;
+  int32 active_task_count = 15;
+  optional string os = 16;
+  optional string arch = 17;
+  repeated bifurcation.v1.TaskKind capabilities = 18;
+  optional string applied_revision_id = 19;
+  int64 applied_policy_revision = 20;
+  optional string applied_config_sha256 = 21;
+  MachineResources resources = 22;
+  string token = 23;
+  string install_command = 24;
+  repeated Task tasks = 25;
+  optional string issue = 26;
+}
+
+message UpgradeCandidate {
+  optional string current_version = 1;
+  optional string available_version = 2;
+  optional string sha256 = 3;
+  optional int64 size_bytes = 4;
+  bool executable = 5;
+  optional string disabled_reason = 6;
+  bool same_version = 7;
+}
+
+message MachineUpgrades {
+  string machine_id = 1;
+  optional string bundled_core_version = 2;
+  optional string available_bundled_core_version = 3;
+  UpgradeCandidate daemon = 4;
+  optional Task active_task = 5;
+}
+
+message ListMachinesRequest {}
+
+message ListMachinesResponse {
+  repeated Machine machines = 1;
+}
+
+message CreateMachineRequest {
+  string name = 1;
+  string address = 2;
+  string region = 3;
+}
+
+message CreateMachineResponse {
+  MachineDetail machine = 1;
+}
+
+message GetMachineRequest {
+  string machine_id = 1;
+}
+
+message GetMachineResponse {
+  MachineDetail machine = 1;
+}
+
+message UpdateMachineRequest {
+  string machine_id = 1;
+  int32 expected_version = 2;
+  optional string name = 3;
+  optional string address = 4;
+  optional string region = 5;
+}
+
+message UpdateMachineResponse {
+  MachineDetail machine = 1;
+}
+
+message DeleteMachineRequest {
+  string machine_id = 1;
+}
+
+message DeleteMachineResponse {
+  bool removed = 1;
+  bool local_uninstall_confirmed = 2;
+}
+
+message ResetMachineTokenRequest {
+  string machine_id = 1;
+}
+
+message ResetMachineTokenResponse {
+  MachineDetail machine = 1;
+}
+
+message RebindMachineRequest {
+  string machine_id = 1;
+  int32 expected_version = 2;
+}
+
+message RebindMachineResponse {
+  MachineDetail machine = 1;
+}
+
+message UninstallMachineRequest {
+  string machine_id = 1;
+  string request_key = 2;
+}
+
+message UninstallMachineResponse {
+  Task task = 1;
+}
+
+message ListMachineTasksRequest {
+  string machine_id = 1;
+}
+
+message ListMachineTasksResponse {
+  repeated Task tasks = 1;
+}
+
+message EnqueueInspectTaskRequest {
+  string machine_id = 1;
+  string request_key = 2;
+  bool include_logs = 3;
+  int32 max_log_lines = 4;
+  int32 max_bytes = 5;
+}
+
+message EnqueueInspectTaskResponse {
+  Task task = 1;
+}
+
+message GetMachineUpgradesRequest {
+  string machine_id = 1;
+}
+
+message GetMachineUpgradesResponse {
+  MachineUpgrades upgrades = 1;
+}
+
+message EnqueueUpgradeRequest {
+  string machine_id = 1;
+  string expected_sha256 = 2;
+  string request_key = 3;
+}
+
+message EnqueueUpgradeResponse {
+  Task task = 1;
+}

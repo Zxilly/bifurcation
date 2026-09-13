@@ -1,0 +1,173 @@
+syntax = "proto3";
+
+package bifurcation.panel.v1;
+
+import "bifurcation/panel/v1/types.proto";
+import "bifurcation/panel/v1/usage.proto";
+import "google/protobuf/struct.proto";
+
+// Self-service account surface. All calls require a session or API Key
+// principal; password changes and passkey management additionally require a
+// recently authenticated session.
+service MeService {
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+  rpc GetMyUsage(GetMyUsageRequest) returns (GetMyUsageResponse);
+  rpc GetSubscription(GetSubscriptionRequest) returns (GetSubscriptionResponse);
+  rpc ResetSubscriptionToken(ResetSubscriptionTokenRequest) returns (ResetSubscriptionTokenResponse);
+  rpc ResetProxyCredentials(ResetProxyCredentialsRequest) returns (ResetProxyCredentialsResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc ListApiKeys(ListApiKeysRequest) returns (ListApiKeysResponse);
+  rpc CreateApiKey(CreateApiKeyRequest) returns (CreateApiKeyResponse);
+  rpc RevokeApiKey(RevokeApiKeyRequest) returns (RevokeApiKeyResponse);
+  rpc ListPasskeys(ListPasskeysRequest) returns (ListPasskeysResponse);
+  rpc NewPasskeyOptions(NewPasskeyOptionsRequest) returns (NewPasskeyOptionsResponse);
+  rpc NewPasskeyVerify(NewPasskeyVerifyRequest) returns (NewPasskeyVerifyResponse);
+  rpc DeletePasskey(DeletePasskeyRequest) returns (DeletePasskeyResponse);
+}
+
+enum Authentication {
+  AUTHENTICATION_UNSPECIFIED = 0;
+  AUTHENTICATION_SESSION = 1;
+  AUTHENTICATION_API_KEY = 2;
+}
+
+enum Protocol {
+  PROTOCOL_UNSPECIFIED = 0;
+  PROTOCOL_TROJAN = 1;
+  PROTOCOL_HYSTERIA2 = 2;
+}
+
+enum ConfigurationState {
+  CONFIGURATION_STATE_UNSPECIFIED = 0;
+  CONFIGURATION_STATE_PENDING = 1;
+  CONFIGURATION_STATE_APPLIED = 2;
+}
+
+enum BlockReason {
+  BLOCK_REASON_UNSPECIFIED = 0;
+  BLOCK_REASON_DISABLED = 1;
+  BLOCK_REASON_QUOTA = 2;
+}
+
+message SubscriptionNode {
+  string machine_id = 1;
+  string name = 2;
+  string address = 3;
+  repeated Protocol protocols = 4;
+  ConfigurationState configuration_state = 5;
+  bool available = 6;
+}
+
+message Subscription {
+  // Full subscription URL with the decrypted token inline.
+  string url = 1;
+  int32 generation = 2;
+  int32 credential_generation = 3;
+  string config_format_version = 4;
+  bool blocked = 5;
+  optional BlockReason block_reason = 6;
+  repeated SubscriptionNode nodes = 7;
+  // Rendered sing-box client configuration.
+  string config_json = 8;
+}
+
+message GetMeRequest {}
+
+message GetMeResponse {
+  User user = 1;
+  Authentication authentication = 2;
+  bool recent_authentication = 3;
+}
+
+message GetMyUsageRequest {
+  // Defaults to the current Shanghai month when absent.
+  optional int64 start = 1;
+  optional int64 end = 2;
+  // GRAIN_DAY when unspecified.
+  Grain grain = 3;
+  optional string machine_id = 4;
+}
+
+message GetMyUsageResponse {
+  Usage usage = 1;
+}
+
+message GetSubscriptionRequest {}
+
+message GetSubscriptionResponse {
+  Subscription subscription = 1;
+}
+
+message ResetSubscriptionTokenRequest {}
+
+message ResetSubscriptionTokenResponse {
+  Subscription subscription = 1;
+}
+
+message ResetProxyCredentialsRequest {}
+
+message ResetProxyCredentialsResponse {
+  Subscription subscription = 1;
+}
+
+// Invalidates every session of the caller; the response clears the cookie.
+message ChangePasswordRequest {
+  string password = 1;
+}
+
+message ChangePasswordResponse {}
+
+message ListApiKeysRequest {}
+
+message ListApiKeysResponse {
+  repeated ApiKey api_keys = 1;
+}
+
+message CreateApiKeyRequest {
+  string name = 1;
+}
+
+// The full token is transient; show it once.
+message CreateApiKeyResponse {
+  ApiKey api_key = 1;
+  string token = 2;
+}
+
+message RevokeApiKeyRequest {
+  string id = 1;
+}
+
+message RevokeApiKeyResponse {}
+
+message ListPasskeysRequest {}
+
+message ListPasskeysResponse {
+  repeated Passkey passkeys = 1;
+}
+
+message NewPasskeyOptionsRequest {}
+
+// options is the opaque PublicKeyCredentialCreationOptionsJSON document for
+// @simplewebauthn/browser.
+message NewPasskeyOptionsResponse {
+  string flow_id = 1;
+  google.protobuf.Struct options = 2;
+}
+
+// response is the opaque RegistrationResponseJSON envelope produced by the
+// browser.
+message NewPasskeyVerifyRequest {
+  string flow_id = 1;
+  google.protobuf.Struct response = 2;
+  string name = 3;
+}
+
+message NewPasskeyVerifyResponse {
+  Passkey passkey = 1;
+}
+
+message DeletePasskeyRequest {
+  string id = 1;
+}
+
+message DeletePasskeyResponse {}

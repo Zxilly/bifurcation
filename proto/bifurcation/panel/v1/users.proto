@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package bifurcation.panel.v1;
+
+import "bifurcation/panel/v1/types.proto";
+
+// Administrator account management. All calls require an admin principal.
+service AdminUserService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc CreateUserFlow(CreateUserFlowRequest) returns (CreateUserFlowResponse);
+}
+
+enum FlowPurpose {
+  FLOW_PURPOSE_UNSPECIFIED = 0;
+  FLOW_PURPOSE_ACTIVATION = 1;
+  FLOW_PURPOSE_RECOVERY = 2;
+}
+
+message ListUsersRequest {}
+
+message ListUsersResponse {
+  repeated User users = 1;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  Role role = 2;
+  // Decimal integer string; absent means unlimited.
+  optional string monthly_limit_bytes = 3;
+}
+
+// The activation URL is a transient first-credential flow; show it once.
+message CreateUserResponse {
+  User user = 1;
+  string activation_url = 2;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  int32 expected_version = 2;
+  optional Role role = 3;
+  optional UserStatus status = 4;
+  // Decimal integer string; when present the quota changes to this value.
+  optional string monthly_limit_bytes = 5;
+  // When true the quota is removed; takes precedence over monthly_limit_bytes.
+  bool clear_monthly_limit = 6;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+}
+
+message CreateUserFlowRequest {
+  string id = 1;
+  FlowPurpose purpose = 2;
+}
+
+// The flow URL is transient; show it once.
+message CreateUserFlowResponse {
+  string url = 1;
+  int64 expires_at = 2;
+}

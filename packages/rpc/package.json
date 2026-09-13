@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/gen/bifurcation/v1/machine_pb.ts"
+    ".": "./src/gen/bifurcation/v1/machine_pb.ts",
+    "./panel/*": "./src/gen/bifurcation/panel/v1/*_pb.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.15.0"

@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package bifurcation.panel.v1;
+
+// Shared identity types for the panel API. All timestamps are epoch
+// milliseconds. Large counters travel as int64; clients must not lose
+// precision beyond 2^53.
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_ADMIN = 1;
+  ROLE_USER = 2;
+}
+
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  USER_STATUS_PENDING = 1;
+  USER_STATUS_ACTIVE = 2;
+  USER_STATUS_DISABLED = 3;
+}
+
+message User {
+  string id = 1;
+  string username = 2;
+  Role role = 3;
+  UserStatus status = 4;
+  // Decimal integer string; absent means unlimited.
+  optional string monthly_limit_bytes = 5;
+  int32 version = 6;
+  int64 created_at = 7;
+}
+
+message ApiKey {
+  string id = 1;
+  string name = 2;
+  string prefix = 3;
+  int64 created_at = 4;
+  optional int64 last_used_at = 5;
+  optional int64 revoked_at = 6;
+}
+
+message Passkey {
+  string id = 1;
+  string name = 2;
+  int64 created_at = 3;
+  bool backed_up = 4;
+}
+
+message FieldErrors {
+  repeated string messages = 1;
+}
+
+// Attached to every application-level ConnectError as an error detail.
+// `code` is the stable machine-readable identifier (e.g. REAUTH_REQUIRED).
+message ErrorDetail {
+  string code = 1;
+  string request_id = 2;
+  map<string, FieldErrors> fields = 3;
+}

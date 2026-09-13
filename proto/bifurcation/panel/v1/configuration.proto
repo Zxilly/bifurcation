@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package bifurcation.panel.v1;
+
+import "bifurcation/panel/v1/machines.proto";
+import "google/protobuf/struct.proto";
+
+// Administrator node configuration. Preview renders the final sing-box
+// document against the current authorization layer; publish enqueues the
+// apply task. All calls require an admin principal.
+service AdminConfigurationService {
+  rpc GetMachineConfiguration(GetMachineConfigurationRequest) returns (GetMachineConfigurationResponse);
+  rpc PreviewConfiguration(PreviewConfigurationRequest) returns (PreviewConfigurationResponse);
+  rpc PublishConfiguration(PublishConfigurationRequest) returns (PublishConfigurationResponse);
+}
+
+enum Reconciliation {
+  RECONCILIATION_UNSPECIFIED = 0;
+  RECONCILIATION_NOT_CONFIGURED = 1;
+  RECONCILIATION_PENDING = 2;
+  RECONCILIATION_APPLIED = 3;
+  RECONCILIATION_FAILED = 4;
+}
+
+message PemTls {
+  string certificate_pem = 1;
+  string private_key_pem = 2;
+}
+
+message PathTls {
+  string certificate_path = 1;
+  string private_key_path = 2;
+}
+
+message AcmeTls {
+  string email = 1;
+}
+
+message TlsSettings {
+  string server_name = 1;
+  oneof mode {
+    PemTls pem = 2;
+    PathTls path = 3;
+    AcmeTls acme = 4;
+  }
+}
+
+// Administrator-controlled base options; managed listeners and authorization
+// are protected. base_json is validated server-side.
+message MachineConfigurationInput {
+  // IP literal to listen on; defaults to "::" when absent.
+  optional string listen = 1;
+  int32 trojan_port = 2;
+  int32 hysteria2_port = 3;
+  TlsSettings tls = 4;
+  google.protobuf.Struct base_json = 5;
+}
+
+message MachineConfiguration {
+  optional MachineConfigurationInput settings = 1;
+  int32 version = 2;
+  optional string desired_revision_id = 3;
+  optional int64 desired_policy_revision = 4;
+  optional string applied_revision_id = 5;
+  optional int64 applied_policy_revision = 6;
+  Reconciliation reconciliation = 7;
+  optional Task latest_task = 8;
+  optional string bundled_core_version = 9;
+}
+
+message ConfigurationPreview {
+  string preview_id = 1;
+  int32 expected_version = 2;
+  int64 policy_revision = 3;
+  string digest = 4;
+  string final_json = 5;
+  int64 expires_at = 6;
+}
+
+message GetMachineConfigurationRequest {
+  string machine_id = 1;
+}
+
+message GetMachineConfigurationResponse {
+  MachineConfiguration configuration = 1;
+}
+
+message PreviewConfigurationRequest {
+  string machine_id = 1;
+  int32 expected_version = 2;
+  MachineConfigurationInput settings = 3;
+}
+
+message PreviewConfigurationResponse {
+  ConfigurationPreview preview = 1;
+}
+
+message PublishConfigurationRequest {
+  string machine_id = 1;
+  string preview_id = 2;
+  int32 expected_version = 3;
+  string request_key = 4;
+}
+
+message PublishConfigurationResponse {
+  string revision_id = 1;
+  int32 version = 2;
+  Task task = 3;
+}
