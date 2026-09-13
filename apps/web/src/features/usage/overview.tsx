@@ -1,10 +1,11 @@
 "use client";
 
 import { Button } from "@cloudflare/kumo/components/button";
-import type { UsageDto } from "@/contracts/usage";
-import type { MachineDto } from "@/contracts/machines";
-import type { UserDto } from "@/contracts/identity";
+import { Grain, type Usage } from "@bifurcation/rpc/panel/usage";
+import { MachineConnection } from "@bifurcation/rpc/panel/machines";
+import { UserStatus } from "@bifurcation/rpc/panel/types";
 import { FormError } from "@/components/modal";
+import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 import { formatGiB, share } from "./format";
 import { PeriodPicker, periodRange, useUsagePeriod } from "./period";
@@ -24,7 +25,21 @@ const minuteLabel = new Intl.DateTimeFormat("zh-CN", {
   timeZone: "Asia/Shanghai",
 });
 
-function UsageMetadata({ usage }: { usage: UsageDto }) {
+type Range = ReturnType<typeof periodRange>;
+
+function usageRequest(range: Range) {
+  return {
+    start: BigInt(range.start),
+    end: BigInt(range.end),
+    grain: range.grain === "minute" ? Grain.MINUTE : Grain.DAY,
+  };
+}
+
+function usageKey(range: Range, suffix = "") {
+  return `usage:${range.start}:${range.end}:${range.grain}:${suffix}`;
+}
+
+function UsageMetadata({ usage }: { usage: Usage }) {
   const previous = usage.previousPeriod;
   if (!previous) return null;
   return (
@@ -34,20 +49,18 @@ function UsageMetadata({ usage }: { usage: UsageDto }) {
         start: previous.previousStart,
         end: previous.previousEnd,
         bytes: previous.hasData
-          ? (
-              BigInt(previous.uploadBytes) + BigInt(previous.downloadBytes)
-            ).toString()
+          ? previous.uploadBytes + previous.downloadBytes
           : null,
         incomplete: previous.incomplete,
       }}
-      changePercent={previous.changePercent}
+      changePercent={previous.changePercent ?? null}
       currentIncomplete={usage.incomplete}
       currentInProgress={previous.currentPeriodInProgress}
     />
   );
 }
 
-function UsageTrend({ usage }: { usage: UsageDto }) {
+function UsageTrend({ usage }: { usage: Usage }) {
   return (
     <>
       <UsageMetadata usage={usage} />
@@ -63,10 +76,10 @@ function UsageTrend({ usage }: { usage: UsageDto }) {
         </p>
       )}
       <Trend
-        kind={usage.grain === "minute" ? "line" : "bar"}
+        kind={usage.grain === Grain.MINUTE ? "line" : "bar"}
         points={usage.points.map((point) => ({
-          label: (usage.grain === "minute" ? minuteLabel : dayLabel).format(
-            point.bucketStart,
+          label: (usage.grain === Grain.MINUTE ? minuteLabel : dayLabel).format(
+            Number(point.bucketStart),
           ),
           uploadBytes: point.uploadBytes,
           downloadBytes: point.downloadBytes,
@@ -78,27 +91,29 @@ function UsageTrend({ usage }: { usage: UsageDto }) {
 
 export function PersonalOverview() {
   const period = useUsagePeriod();
-  const resource = useResource<UsageDto>(`/api/v1/me/usage?${period.query}`, {
-    refreshInterval: 30_000,
-  });
+  const resource = useResource(
+    usageKey(period.range),
+    () => panel.me.getMyUsage(usageRequest(period.range)).then((r) => r.usage!),
+    { refreshInterval: 30_000 },
+  );
   const today = periodRange("today", period.month, period.now);
-  const todayUsage = useResource<UsageDto>(
-    `/api/v1/me/usage?start=${today.start}&end=${today.end}&grain=day`,
+  const todayUsage = useResource(
+    usageKey(today, "today"),
+    () => panel.me.getMyUsage(usageRequest(today)).then((r) => r.usage!),
     { refreshInterval: 30_000 },
   );
   const usage = resource.data;
   const quota = usage?.currentMonth;
   const totalToday = todayUsage.data?.points.length
-    ? BigInt(todayUsage.data.uploadBytes) +
-      BigInt(todayUsage.data.downloadBytes)
+    ? todayUsage.data.uploadBytes + todayUsage.data.downloadBytes
     : null;
   const remaining =
-    quota?.limitBytes !== null && quota?.limitBytes !== undefined
-      ? BigInt(quota.limitBytes) - BigInt(quota.usedBytes)
+    quota?.limitBytes !== undefined && quota !== undefined
+      ? quota.limitBytes - quota.usedBytes
       : null;
   const hasCurrentUsage =
     !!quota &&
-    (BigInt(quota.usedBytes) > 0n ||
+    (quota.usedBytes > 0n ||
       !!todayUsage.data?.points.length ||
       (period.period === "month" &&
         quota.period === period.month &&
@@ -126,9 +141,9 @@ export function PersonalOverview() {
           </strong>
           {quota && (
             <span className="subtle">
-              {quota.limitBytes === null
+              {quota.limitBytes === undefined
                 ? "不限量"
-                : quota.limitBytes === "0"
+                : quota.limitBytes === 0n
                   ? "额度为 0，暂无可用流量"
                   : hasCurrentUsage
                     ? `额度 ${formatGiB(quota.limitBytes)} · 已使用 ${share(quota.usedBytes, quota.limitBytes)}%`
@@ -167,10 +182,7 @@ export function PersonalOverview() {
           <h2>{period.period === "today" ? "今天用了多少" : "每天用了多少"}</h2>
           {!!usage?.points.length && (
             <span className="subtle text-xs">
-              共{" "}
-              {formatGiB(
-                BigInt(usage.uploadBytes) + BigInt(usage.downloadBytes),
-              )}
+              共 {formatGiB(usage.uploadBytes + usage.downloadBytes)}
             </span>
           )}
         </div>
@@ -196,14 +208,16 @@ export function PersonalOverview() {
 
 export function AdminUsageOverview() {
   const period = useUsagePeriod();
-  const resource = useResource<UsageDto>(`/api/v1/admin/usage?${period.query}`, {
-    refreshInterval: 30_000,
-  });
-  const machines = useResource<{ machines: MachineDto[] }>(
-    "/api/v1/admin/machines",
+  const resource = useResource(
+    usageKey(period.range, "admin"),
+    () =>
+      panel.usage.queryUsage(usageRequest(period.range)).then((r) => r.usage!),
     { refreshInterval: 30_000 },
   );
-  const users = useResource<{ users: UserDto[] }>("/api/v1/admin/users", {
+  const machines = useResource("admin-machines", () => panel.machines.listMachines({}), {
+    refreshInterval: 30_000,
+  });
+  const users = useResource("admin-users", () => panel.users.listUsers({}), {
     refreshInterval: 30_000,
   });
   const usage = resource.data;
@@ -220,7 +234,7 @@ export function AdminUsageOverview() {
           <h2>在线机器</h2>
           <strong className="metric-value">
             {machines.data
-              ? `${machines.data.machines.filter((machine) => machine.connection === "online" && !machine.uninstalled).length} / ${machines.data.machines.length}`
+              ? `${machines.data.machines.filter((machine) => machine.connection === MachineConnection.ONLINE && !machine.uninstalled).length} / ${machines.data.machines.length}`
               : "—"}
           </strong>
         </section>
@@ -228,9 +242,7 @@ export function AdminUsageOverview() {
           <h2>所选期间流量</h2>
           <strong className="metric-value">
             {usage?.points.length
-              ? formatGiB(
-                  BigInt(usage.uploadBytes) + BigInt(usage.downloadBytes),
-                )
+              ? formatGiB(usage.uploadBytes + usage.downloadBytes)
               : "—"}
           </strong>
           {!!usage?.points.length && (
@@ -244,7 +256,7 @@ export function AdminUsageOverview() {
           <h2>启用用户</h2>
           <strong className="metric-value">
             {users.data
-              ? `${users.data.users.filter((user) => user.status === "active").length} / ${users.data.users.length}`
+              ? `${users.data.users.filter((user) => user.status === UserStatus.ACTIVE).length} / ${users.data.users.length}`
               : "—"}
           </strong>
         </section>
@@ -281,9 +293,12 @@ export function AdminUsageOverview() {
 
 export function UserNodeUsage() {
   const period = useUsagePeriod();
-  const resource = useResource<UsageDto>(`/api/v1/admin/usage?${period.query}`, {
-    refreshInterval: 30_000,
-  });
+  const resource = useResource(
+    usageKey(period.range, "admin"),
+    () =>
+      panel.usage.queryUsage(usageRequest(period.range)).then((r) => r.usage!),
+    { refreshInterval: 30_000 },
+  );
   return (
     <section className="panel">
       <div className="panel-header flex-wrap">
@@ -316,8 +331,12 @@ export function UserNodeUsage() {
 
 export function MachineUsage({ machineId }: { machineId: string }) {
   const period = useUsagePeriod();
-  const resource = useResource<UsageDto>(
-    `/api/v1/admin/usage?${period.query}&machineId=${encodeURIComponent(machineId)}`,
+  const resource = useResource(
+    usageKey(period.range, `machine:${machineId}`),
+    () =>
+      panel.usage
+        .queryUsage({ ...usageRequest(period.range), machineId })
+        .then((r) => r.usage!),
     { refreshInterval: 30_000 },
   );
   return (

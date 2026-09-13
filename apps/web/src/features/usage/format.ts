@@ -11,14 +11,14 @@ export function formatGiB(bytes: string | number | bigint): string {
     : `${number.format(value)} GiB`;
 }
 
-export function formatRate(bytesPerSecond: string | number): string {
+export function formatRate(bytesPerSecond: string | number | bigint): string {
   const value = Number(bytesPerSecond);
   if (value >= 1_048_576) return `${number.format(value / 1_048_576)} MiB/s`;
   if (value >= 1_024) return `${number.format(value / 1_024)} KiB/s`;
   return `${number.format(value)} B/s`;
 }
 
-export function formatBytes(bytes: string | number): string {
+export function formatBytes(bytes: string | number | bigint): string {
   const value = Number(bytes);
   if (value >= 1_073_741_824) return formatGiB(bytes);
   if (value >= 1_048_576) return `${number.format(value / 1_048_576)} MiB`;

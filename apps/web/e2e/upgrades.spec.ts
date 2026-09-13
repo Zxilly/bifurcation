@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { test, expect, activate } from "./fixtures";
 import { connectMachine } from "./machine-fixture";
+import { rpc } from "./rpc";
 
 test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and uninstall", async ({
   page,
@@ -9,18 +10,14 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await activate(page, app);
-  const headers = { Origin: app.origin };
-  const created = await page.request.post(
-    `${app.origin}/api/v1/admin/machines`,
-    {
-      headers,
-      data: { name: "Upgrade fixture", address: "192.0.2.30", region: "测试" },
-    },
+  const created = await rpc<{ machine: { id: string; token: string } }>(
+    page.request,
+    app.origin,
+    "bifurcation.panel.v1.AdminMachineService/CreateMachine",
+    { name: "Upgrade fixture", address: "192.0.2.30", region: "东京" },
   );
-  expect(created.status()).toBe(200);
-  const { machine } = (await created.json()) as {
-    machine: { id: string; token: string };
-  };
+  expect(created.status).toBe(200);
+  const { machine } = created.body;
   let peer = await connectMachine(app.origin, machine.token, {
     daemonVersion: "0.1.0",
     supportedTasks: [1, 3, 5, 6],
@@ -37,38 +34,42 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
       sequence: "1",
       status,
     });
-    const configurationEndpoint = `${app.origin}/api/v1/admin/machines/${machine.id}/config`;
-    const preview = await page.request.post(
-      `${configurationEndpoint}/preview`,
+    const preview = await rpc<{ preview: { previewId: string } }>(
+      page.request,
+      app.origin,
+      "bifurcation.panel.v1.AdminConfigurationService/PreviewConfiguration",
       {
-        headers,
-        data: {
-          expectedVersion: 0,
-          settings: {
-            trojanPort: 443,
-            hysteria2Port: 8443,
-            tls: {
-              mode: "path",
-              serverName: "node.test",
+        machineId: machine.id,
+        expectedVersion: 0,
+        settings: {
+          trojanPort: 443,
+          hysteria2Port: 8443,
+          tls: {
+            serverName: "node.test",
+            path: {
               certificatePath: "/etc/fixture/fullchain.pem",
               privateKeyPath: "/etc/fixture/privkey.pem",
             },
-            baseJson: {},
           },
+          baseJson: {},
         },
       },
     );
-    expect(preview.status()).toBe(200);
-    const { previewId } = (await preview.json()) as { previewId: string };
-    const published = await page.request.post(
-      `${configurationEndpoint}/publish`,
+    expect(preview.status).toBe(200);
+    const { previewId } = preview.body.preview;
+    const published = await rpc<{ revisionId: string }>(
+      page.request,
+      app.origin,
+      "bifurcation.panel.v1.AdminConfigurationService/PublishConfiguration",
       {
-        headers,
-        data: { previewId, expectedVersion: 0, requestKey: randomUUID() },
+        machineId: machine.id,
+        previewId,
+        expectedVersion: 0,
+        requestKey: randomUUID(),
       },
     );
-    expect(published.status()).toBe(200);
-    const { revisionId } = (await published.json()) as { revisionId: string };
+    expect(published.status).toBe(200);
+    const { revisionId } = published.body;
     const configurationTask = await peer.nextTask();
     await peer.call("AcceptTask", {
       sessionEpoch: peer.session.sessionEpoch,
@@ -347,9 +348,13 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
     await expect(
       page.getByRole("button", { name: "重新接入", exact: true }),
     ).toBeEnabled();
-    const subscriptionAfterUninstall = (await (
-      await page.request.get(`${app.origin}/api/v1/me/subscription`)
-    ).json()) as { nodes: { machineId: string }[] };
+    const subscriptionAfterUninstall = (
+      await rpc<{ subscription: { nodes: { machineId: string }[] } }>(
+        page.request,
+        app.origin,
+        "bifurcation.panel.v1.MeService/GetSubscription",
+      )
+    ).body.subscription;
     expect(
       subscriptionAfterUninstall.nodes.some(
         (node) => node.machineId === machine.id,
@@ -363,10 +368,10 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
     await expect(page).toHaveURL(`${app.origin}/admin/machines`);
     expect(
       (
-        await page.request.get(
-          `${app.origin}/api/v1/admin/machines/${machine.id}`,
-        )
-      ).status(),
+        await rpc(page.request, app.origin, "bifurcation.panel.v1.AdminMachineService/GetMachine", {
+          machineId: machine.id,
+        })
+      ).status,
     ).toBe(404);
     expect(errors).toEqual([]);
   } finally {

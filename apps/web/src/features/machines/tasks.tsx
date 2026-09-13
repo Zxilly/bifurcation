@@ -1,21 +1,26 @@
 import { Badge } from "@cloudflare/kumo/components/badge";
+import { TaskKind } from "@bifurcation/rpc";
+import {
+  RollbackState,
+  TaskState,
+  type Task,
+} from "@bifurcation/rpc/panel/machines";
 import { DiagnosticResult } from "./diagnostic";
-import type { MachineTaskKind, TaskDto } from "@/contracts/machines";
 
-const taskName: Record<MachineTaskKind, string> = {
-  inspect: "运行信息与日志",
-  apply_config: "应用配置",
-  upgrade_daemon: "升级 daemon",
-  uninstall: "卸载",
+const taskName: Record<number, string> = {
+  [TaskKind.INSPECT]: "运行信息与日志",
+  [TaskKind.APPLY_CONFIG]: "应用配置",
+  [TaskKind.UPGRADE_DAEMON]: "升级 daemon",
+  [TaskKind.UNINSTALL]: "卸载",
 };
-const taskState = {
-  queued: "等待执行",
-  accepted: "已接受",
-  running: "执行中",
-  succeeded: "已完成",
-  failed: "失败",
-  canceled: "已取消",
-  superseded: "已替代",
+const taskState: Record<number, string> = {
+  [TaskState.QUEUED]: "等待执行",
+  [TaskState.ACCEPTED]: "已接受",
+  [TaskState.RUNNING]: "执行中",
+  [TaskState.SUCCEEDED]: "已完成",
+  [TaskState.FAILED]: "失败",
+  [TaskState.CANCELED]: "已取消",
+  [TaskState.SUPERSEDED]: "已替代",
 };
 const phaseName: Record<string, string> = {
   running: "执行中",
@@ -47,15 +52,16 @@ const timestamp = new Intl.DateTimeFormat("zh-CN", {
   timeZone: "Asia/Shanghai",
 });
 
-function isActiveTask(task: TaskDto) {
-  return ["queued", "accepted", "running"].includes(task.state);
+const ACTIVE_STATES = new Set<TaskState>([TaskState.QUEUED, TaskState.ACCEPTED, TaskState.RUNNING]);
+function isActiveTask(task: Task) {
+  return ACTIVE_STATES.has(task.state);
 }
 
 export function ActiveTasks({
   tasks,
   streamConnected,
 }: {
-  tasks: TaskDto[];
+  tasks: Task[];
   streamConnected: boolean;
 }) {
   const active = tasks.filter(isActiveTask);
@@ -74,11 +80,11 @@ export function ActiveTasks({
                   {phaseName[task.phase] ?? task.phase}
                 </span>
               )}
-              {task.progressPercent !== null && (
+              {task.progressPercent != null && (
                 <span>{task.progressPercent}%</span>
               )}
             </div>
-            {task.progressPercent !== null && (
+            {task.progressPercent != null && (
               <progress
                 className="task-progress"
                 value={task.progressPercent}
@@ -87,15 +93,15 @@ export function ActiveTasks({
               />
             )}
             {task.message && <p>{task.message}</p>}
-            {task.kind === "upgrade_daemon" &&
-              task.state === "running" &&
+            {task.kind === TaskKind.UPGRADE_DAEMON &&
+              task.state === TaskState.RUNNING &&
               !streamConnected && (
                 <p role="status" className="notice">
                   等待机器重连和执行结果，尚未确认升级是否完成。
                 </p>
               )}
-            {task.kind === "upgrade_daemon" &&
-              task.state === "running" &&
+            {task.kind === TaskKind.UPGRADE_DAEMON &&
+              task.state === TaskState.RUNNING &&
               streamConnected &&
               task.phase &&
               [
@@ -116,7 +122,7 @@ export function ActiveTasks({
   );
 }
 
-export function TaskHistory({ tasks }: { tasks: TaskDto[] }) {
+export function TaskHistory({ tasks }: { tasks: Task[] }) {
   const history = tasks.filter((task) => !isActiveTask(task));
   if (!history.length) return <p className="empty-state">暂无已完成操作</p>;
   return (
@@ -137,13 +143,13 @@ export function TaskHistory({ tasks }: { tasks: TaskDto[] }) {
               <td>
                 <Badge
                   variant={
-                    task.state === "failed" ? "destructive" : "secondary"
+                    task.state === TaskState.FAILED ? "destructive" : "secondary"
                   }
                 >
                   {taskState[task.state]}
                 </Badge>
               </td>
-              <td>{timestamp.format(task.updatedAt)}</td>
+              <td>{timestamp.format(Number(task.updatedAt))}</td>
               <td>
                 <details>
                   <summary className="cursor-pointer py-1">查看详情</summary>
@@ -155,21 +161,21 @@ export function TaskHistory({ tasks }: { tasks: TaskDto[] }) {
                     {task.phase && (
                       <p>最终阶段：{phaseName[task.phase] ?? task.phase}</p>
                     )}
-                    {task.rollback === "succeeded" && (
+                    {task.rollback === RollbackState.SUCCEEDED && (
                       <p>机器已报告回滚成功。</p>
                     )}
-                    {task.rollback === "failed" && (
+                    {task.rollback === RollbackState.FAILED && (
                       <p className="form-error">
                         机器已报告回滚失败，需要检查节点。
                       </p>
                     )}
                     <p className="subtle text-xs">
-                      创建于 {timestamp.format(task.createdAt)}
+                      创建于 {timestamp.format(Number(task.createdAt))}
                     </p>
                     <p className="subtle text-xs break-all">
                       任务 ID：{task.id}
                     </p>
-                    {task.diagnostic !== null && (
+                    {task.diagnostic != null && (
                       <DiagnosticResult value={task.diagnostic} />
                     )}
                   </div>

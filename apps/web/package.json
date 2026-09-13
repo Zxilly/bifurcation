@@ -21,6 +21,7 @@
     "@bufbuild/protobuf": "2.15.0",
     "@cloudflare/kumo": "2.13.2",
     "@connectrpc/connect": "2.2.0",
+    "@connectrpc/connect-web": "2.2.0",
     "@node-rs/argon2": "2.2.1",
     "@phosphor-icons/react": "2.1.10",
     "@simplewebauthn/browser": "14.0.0",

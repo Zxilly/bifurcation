@@ -3,22 +3,22 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Badge } from "@cloudflare/kumo";
 import { startRegistration } from "@simplewebauthn/browser";
-import type { ApiKeyDto, PasskeyDto } from "@/contracts/identity";
+import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
+import type { JsonObject } from "@bufbuild/protobuf";
 import { Modal, FormError } from "@/components/modal";
 import { SecretResult } from "@/components/secret-result";
 import { Reauthenticate } from "./reauth";
-import { api, ApiError, date, errorMessage } from "@/features/shared/api";
+import { ApiError, date, errorMessage } from "@/features/shared/api";
 import { useResource } from "@/features/shared/use-resource";
+import { panel } from "@/features/shared/rpc";
 
 type Action =
   | { kind: "passkey" | "password" | "key" }
   | { kind: "remove-passkey" | "revoke-key"; id: string; name: string };
 export function Account() {
   const router = useRouter();
-  const keys = useResource<{ apiKeys: ApiKeyDto[] }>("/api/v1/me/api-keys");
-  const passkeys = useResource<{ passkeys: PasskeyDto[] }>(
-    "/api/v1/me/passkeys",
-  );
+  const keys = useResource("me:api-keys", () => panel.me.listApiKeys({}));
+  const passkeys = useResource("me:passkeys", () => panel.me.listPasskeys({}));
   const [action, setAction] = useState<Action | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,49 +46,37 @@ export function Account() {
     try {
       switch (action.kind) {
         case "passkey": {
-          const flow = await api<{
-            flowId: string;
-            options: Parameters<typeof startRegistration>[0]["optionsJSON"];
-          }>("/api/v1/me/passkeys/options", { method: "POST", body: {} });
+          const flow = await panel.me.newPasskeyOptions({});
           const response = await startRegistration({
-            optionsJSON: flow.options,
+            optionsJSON: flow.options as unknown as PublicKeyCredentialCreationOptionsJSON,
           });
-          await api("/api/v1/me/passkeys/verify", {
-            method: "POST",
-            body: { flowId: flow.flowId, response, name: values.get("name") },
+          await panel.me.newPasskeyVerify({
+            flowId: flow.flowId,
+            response: response as unknown as JsonObject,
+            name: String(values.get("name")),
           });
           await passkeys.refresh();
           setNotice("Passkey 已添加。");
           break;
         }
         case "password":
-          await api("/api/v1/me/password", {
-            method: "POST",
-            body: { password: values.get("password") },
-          });
+          await panel.me.changePassword({ password: String(values.get("password")) });
           router.replace("/login");
           router.refresh();
           break;
         case "key": {
-          const result = await api<{ apiKey: ApiKeyDto; token: string }>(
-            "/api/v1/me/api-keys",
-            { method: "POST", body: { name: values.get("name") } },
-          );
+          const result = await panel.me.createApiKey({ name: String(values.get("name")) });
           setSecret(result.token);
           await keys.refresh();
           break;
         }
         case "remove-passkey":
-          await api(`/api/v1/me/passkeys/${encodeURIComponent(action.id)}`, {
-            method: "DELETE",
-          });
+          await panel.me.deletePasskey({ id: action.id });
           await passkeys.refresh();
           setNotice("Passkey 已移除。");
           break;
         case "revoke-key":
-          await api(`/api/v1/me/api-keys/${encodeURIComponent(action.id)}`, {
-            method: "DELETE",
-          });
+          await panel.me.revokeApiKey({ id: action.id });
           await keys.refresh();
           setNotice("API Key 已撤销。");
           break;

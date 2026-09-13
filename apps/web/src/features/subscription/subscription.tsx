@@ -3,16 +3,23 @@
 import { useState } from "react";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
-import type { SubscriptionDto } from "@/contracts/subscription";
+import {
+  BlockReason,
+  ConfigurationState,
+  Protocol,
+} from "@bifurcation/rpc/panel/me";
 import { Modal, FormError } from "@/components/modal";
 import { CopyValue } from "@/components/secret-result";
 import { JsonDocument } from "@/components/json-document";
 import { Reauthenticate } from "@/features/identity/reauth";
-import { api, ApiError, errorMessage } from "@/features/shared/api";
+import { ApiError, errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 
 export function Subscription() {
-  const resource = useResource<SubscriptionDto>("/api/v1/me/subscription");
+  const resource = useResource("me:subscription", () =>
+    panel.me.getSubscription({}).then((r) => r.subscription!),
+  );
   const [action, setAction] = useState<
     "config" | "subscription" | "credentials" | null
   >(null);
@@ -31,13 +38,11 @@ export function Subscription() {
     setBusy(true);
     setError("");
     try {
-      const result = await api<SubscriptionDto>(
+      const result =
         action === "subscription"
-          ? "/api/v1/me/subscription/reset"
-          : "/api/v1/me/proxy-credentials/reset",
-        { method: "POST", body: {} },
-      );
-      resource.update(result);
+          ? await panel.me.resetSubscriptionToken({})
+          : await panel.me.resetProxyCredentials({});
+      resource.update(result.subscription!);
       setNotice(
         action === "subscription"
           ? "订阅链接已重置，请更新客户端的订阅地址。"
@@ -68,7 +73,7 @@ export function Subscription() {
         <>
           {subscription.blocked && (
             <p role="alert" className="notice mb-6">
-              {subscription.blockReason === "quota"
+              {subscription.blockReason === BlockReason.QUOTA
                 ? "已达到本月额度，代理接入暂停。"
                 : "账号已禁用，代理接入暂停。"}{" "}
               当前配置不包含可用代理节点。
@@ -114,14 +119,14 @@ export function Subscription() {
                       <td>
                         {node.protocols
                           .map((protocol) =>
-                            protocol === "trojan" ? "Trojan" : "Hysteria2",
+                            protocol === Protocol.TROJAN ? "Trojan" : "Hysteria2",
                           )
                           .join(" + ")}
                       </td>
                       <td>{node.address}</td>
                       <td>
                         <Badge variant="secondary">
-                          {node.configurationState === "applied"
+                          {node.configurationState === ConfigurationState.APPLIED
                             ? "已应用"
                             : "等待应用"}
                         </Badge>
@@ -150,7 +155,7 @@ export function Subscription() {
               </span>
             </div>
             {subscription.nodes.some(
-              (node) => node.configurationState === "pending",
+              (node) => node.configurationState === ConfigurationState.PENDING,
             ) && (
               <p className="notice mb-4">
                 部分节点正在等待应用配置，旧配置可能仍在运行。

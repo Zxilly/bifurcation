@@ -3,22 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Badge } from "@cloudflare/kumo/components/badge";
-import type { MachineDetailDto } from "@/contracts/machines";
 import type {
-  MachineUpgradesDto,
-  UpgradeCandidateDto,
-  UpgradeResultDto,
-} from "@/contracts/upgrades";
+  MachineDetail,
+  UpgradeCandidate,
+} from "@bifurcation/rpc/panel/machines";
 import { Modal, FormError } from "@/components/modal";
 import { Reauthenticate } from "@/features/identity/reauth";
-import { api, ApiError, errorMessage } from "@/features/shared/api";
+import { ApiError, errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 import { formatBytes } from "@/features/usage/format";
 
 type Confirmation = {
-  candidate: UpgradeCandidateDto;
-  bundledCoreVersion: string | null;
-  availableBundledCoreVersion: string | null;
+  candidate: UpgradeCandidate;
+  bundledCoreVersion: string | undefined;
+  availableBundledCoreVersion: string | undefined;
   requestKey: string;
   stale: boolean;
 };
@@ -27,11 +26,12 @@ export function MachineUpgrades({
   machine,
   onQueued,
 }: {
-  machine: MachineDetailDto;
+  machine: MachineDetail;
   onQueued: () => Promise<void>;
 }) {
-  const endpoint = `/api/v1/admin/machines/${encodeURIComponent(machine.id)}/upgrades`;
-  const resource = useResource<MachineUpgradesDto>(endpoint);
+  const resource = useResource(`machine-upgrades:${machine.id}`, () =>
+    panel.machines.getMachineUpgrades({ machineId: machine.id }).then((r) => r.upgrades!),
+  );
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [checking, setChecking] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -53,9 +53,11 @@ export function MachineUpgrades({
     setError("");
     setNotice("");
     try {
-      const latest = await api<MachineUpgradesDto>(endpoint);
+      const latest = (
+        await panel.machines.getMachineUpgrades({ machineId: machine.id })
+      ).upgrades!;
       resource.update(latest);
-      const candidate = latest.daemon;
+      const candidate = latest.daemon!;
       if (
         !candidate.executable ||
         !candidate.sha256 ||
@@ -84,12 +86,10 @@ export function MachineUpgrades({
     setBusy(true);
     setError("");
     try {
-      await api<UpgradeResultDto>(endpoint, {
-        method: "POST",
-        body: {
-          expectedSha256: confirmation.candidate.sha256,
-          requestKey: confirmation.requestKey,
-        },
+      await panel.machines.enqueueUpgrade({
+        machineId: machine.id,
+        expectedSha256: confirmation.candidate.sha256,
+        requestKey: confirmation.requestKey,
       });
       setNotice("升级 daemon 任务已排队。");
       setConfirmation(null);
@@ -136,7 +136,7 @@ export function MachineUpgrades({
             </p>
             <p>
               <span className="subtle">内嵌 sing-box </span>
-              {resource.data?.bundledCoreVersion ?? "未上报"}
+              {resource.data?.bundledCoreVersion || "未上报"}
             </p>
             {candidate.availableVersion && (
               <>
@@ -151,7 +151,7 @@ export function MachineUpgrades({
                 </p>
                 <p>
                   <span className="subtle">携带 sing-box </span>
-                  {resource.data?.availableBundledCoreVersion ?? "未提供版本"}
+                  {resource.data?.availableBundledCoreVersion || "未提供版本"}
                 </p>
               </>
             )}
@@ -182,8 +182,8 @@ export function MachineUpgrades({
               {target.availableVersion}
             </p>
             <p className="subtle">
-              内嵌 sing-box {confirmation.bundledCoreVersion ?? "未知"} →{" "}
-              {confirmation.availableBundledCoreVersion ?? "未提供版本"}
+              内嵌 sing-box {confirmation.bundledCoreVersion || "未知"} →{" "}
+              {confirmation.availableBundledCoreVersion || "未提供版本"}
             </p>
             <div className="notice">
               <p className="font-medium">代理连接会中断</p>

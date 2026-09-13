@@ -2,8 +2,12 @@
 import { useState } from "react";
 import { Button, Input } from "@cloudflare/kumo";
 import { startAuthentication } from "@simplewebauthn/browser";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
+import type { JsonObject } from "@bufbuild/protobuf";
+import { PasskeyPurpose } from "@bifurcation/rpc/panel/auth";
 import { Modal, FormError } from "@/components/modal";
-import { api, errorMessage } from "@/features/shared/api";
+import { errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 export function Reauthenticate({
   onComplete,
   onClose,
@@ -17,17 +21,14 @@ export function Reauthenticate({
     setBusy(true);
     setError("");
     try {
-      const flow = await api<{
-        flowId: string;
-        options: Parameters<typeof startAuthentication>[0]["optionsJSON"];
-      }>("/api/auth/passkey/options", {
-        method: "POST",
-        body: { purpose: "reauth" },
+      const flow = await panel.auth.passkeyOptions({ purpose: PasskeyPurpose.REAUTH });
+      const response = await startAuthentication({
+        optionsJSON: flow.options as unknown as PublicKeyCredentialRequestOptionsJSON,
       });
-      const response = await startAuthentication({ optionsJSON: flow.options });
-      await api("/api/auth/passkey/verify", {
-        method: "POST",
-        body: { flowId: flow.flowId, response },
+      await panel.auth.passkeyVerify({
+        flowId: flow.flowId,
+        response: response as unknown as JsonObject,
+        name: "",
       });
       onComplete();
     } catch (e) {
@@ -42,10 +43,7 @@ export function Reauthenticate({
     setError("");
     const values = new FormData(event.currentTarget);
     try {
-      await api("/api/auth/reauth/password", {
-        method: "POST",
-        body: { password: values.get("password") },
-      });
+      await panel.auth.reauthPassword({ password: String(values.get("password")) });
       onComplete();
     } catch (e) {
       setError(errorMessage(e));

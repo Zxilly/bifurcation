@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Button, Input } from "@cloudflare/kumo";
-import type { MachineDetailDto } from "@/contracts/machines";
+import { TaskState, type MachineDetail } from "@bifurcation/rpc/panel/machines";
 import { Modal, FormError } from "@/components/modal";
-import { api, ApiError, errorMessage } from "@/features/shared/api";
+import { ApiError, errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 
 export function MachineInformationAction({
   machine,
@@ -12,42 +13,41 @@ export function MachineInformationAction({
   onChanged,
   triggerLabel,
 }: {
-  machine: MachineDetailDto;
+  machine: MachineDetail;
   mode: "edit" | "rebind";
-  onChanged: (machine: MachineDetailDto, message: string) => void;
+  onChanged: (machine: MachineDetail, message: string) => void;
   triggerLabel?: string;
 }) {
-  const [snapshot, setSnapshot] = useState<MachineDetailDto | null>(null);
+  const [snapshot, setSnapshot] = useState<MachineDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const replacementBlocked =
     mode === "rebind" &&
-    machine.tasks.some((task) => ["accepted", "running"].includes(task.state));
+    machine.tasks.some(
+      (task) => task.state === TaskState.ACCEPTED || task.state === TaskState.RUNNING,
+    );
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!snapshot) return;
     const values = new FormData(event.currentTarget);
     setBusy(true);
     setError("");
-    const endpoint = `/api/v1/admin/machines/${encodeURIComponent(machine.id)}`;
     try {
-      const result = await api<{ machine: MachineDetailDto }>(
-        mode === "edit" ? endpoint : `${endpoint}/rebind`,
-        {
-          method: mode === "edit" ? "PATCH" : "POST",
-          body:
-            mode === "edit"
-              ? {
-                  expectedVersion: snapshot.version,
-                  name: values.get("name"),
-                  address: values.get("address"),
-                  region: values.get("region"),
-                }
-              : { expectedVersion: snapshot.version },
-        },
-      );
+      const result =
+        mode === "edit"
+          ? await panel.machines.updateMachine({
+              machineId: machine.id,
+              expectedVersion: snapshot.version,
+              name: String(values.get("name")),
+              address: String(values.get("address")),
+              region: String(values.get("region") ?? ""),
+            })
+          : await panel.machines.rebindMachine({
+              machineId: machine.id,
+              expectedVersion: snapshot.version,
+            });
       onChanged(
-        result.machine,
+        result.machine!,
         mode === "edit"
           ? "机器信息已保存。"
           : "安装身份已重置，请使用新安装命令接入；已保存配置将自动安装。",
@@ -56,8 +56,8 @@ export function MachineInformationAction({
     } catch (e) {
       if (e instanceof ApiError && e.code === "VERSION_CONFLICT") {
         try {
-          const latest = await api<{ machine: MachineDetailDto }>(endpoint);
-          onChanged(latest.machine, "");
+          const latest = await panel.machines.getMachine({ machineId: machine.id });
+          onChanged(latest.machine!, "");
         } catch {
           /* The original conflict remains actionable. */
         }

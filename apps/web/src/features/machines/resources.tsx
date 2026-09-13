@@ -1,12 +1,17 @@
-import type { MachineDto } from "@/contracts/machines";
+import { create } from "@bufbuild/protobuf";
+import { CoreHealth } from "@bifurcation/rpc";
+import {
+  MachineResourcesSchema,
+  type MachineDetail,
+} from "@bifurcation/rpc/panel/machines";
 import { formatBytes } from "@/features/usage/format";
 
-const health = {
-  unknown: "尚未上报",
-  not_configured: "未配置",
-  stopped: "已停止",
-  healthy: "运行中",
-  unhealthy: "运行异常",
+const health: Record<number, string> = {
+  [CoreHealth.UNSPECIFIED]: "尚未上报",
+  [CoreHealth.NOT_CONFIGURED]: "未配置",
+  [CoreHealth.STOPPED]: "已停止",
+  [CoreHealth.HEALTHY]: "运行中",
+  [CoreHealth.UNHEALTHY]: "运行异常",
 };
 const time = new Intl.DateTimeFormat("zh-CN", {
   dateStyle: "short",
@@ -14,8 +19,8 @@ const time = new Intl.DateTimeFormat("zh-CN", {
   timeZone: "Asia/Shanghai",
 });
 
-export function MachineResources({ machine }: { machine: MachineDto }) {
-  const resource = machine.resources;
+export function MachineResources({ machine }: { machine: MachineDetail }) {
+  const resource = machine.resources ?? create(MachineResourcesSchema, {});
   const networkInterface = resource.networkInterface
     ? `（${resource.networkInterface}）`
     : "";
@@ -25,35 +30,35 @@ export function MachineResources({ machine }: { machine: MachineDto }) {
       "操作系统",
       [machine.os, machine.arch].filter(Boolean).join(" / ") || "尚未上报",
     ],
-    ["内嵌核心状态", health[machine.coreHealth]],
+    ["内嵌核心状态", health[machine.coreHealth] ?? "尚未上报"],
     [
       "CPU 使用率",
-      resource.cpuUsagePercent === null
+      resource.cpuUsagePercent == null
         ? "尚未上报"
         : `${resource.cpuUsagePercent.toLocaleString("zh-CN", { maximumFractionDigits: 1 })}%`,
     ],
     [
       "内存",
-      resource.memoryUsedBytes === null
+      resource.memoryUsedBytes == null
         ? "尚未上报"
-        : `${formatBytes(resource.memoryUsedBytes)}${resource.memoryTotalBytes === null ? "" : ` / ${formatBytes(resource.memoryTotalBytes)}`}`,
+        : `${formatBytes(resource.memoryUsedBytes)}${resource.memoryTotalBytes == null ? "" : ` / ${formatBytes(resource.memoryTotalBytes)}`}`,
     ],
     [
       "磁盘剩余",
-      resource.diskFreeBytes === null
+      resource.diskFreeBytes == null
         ? "尚未上报"
         : formatBytes(resource.diskFreeBytes),
     ],
     ["代理连接数", resource.connections ?? "尚未上报"],
     [
       `网卡累计接收${networkInterface}`,
-      resource.networkRxBytes === null
+      resource.networkRxBytes == null
         ? "尚未上报"
         : formatBytes(resource.networkRxBytes),
     ],
     [
       `网卡累计发送${networkInterface}`,
-      resource.networkTxBytes === null
+      resource.networkTxBytes == null
         ? "尚未上报"
         : formatBytes(resource.networkTxBytes),
     ],
@@ -63,9 +68,9 @@ export function MachineResources({ machine }: { machine: MachineDto }) {
       <div className="panel-header flex-wrap">
         <h2>运行信息</h2>
         <span className="subtle text-xs">
-          {machine.lastSeenAt === null
+          {machine.lastSeenAt == null
             ? "尚未连接"
-            : `最近上报 ${time.format(machine.lastSeenAt)}`}
+            : `最近上报 ${time.format(Number(machine.lastSeenAt))}`}
         </span>
       </div>
       <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">

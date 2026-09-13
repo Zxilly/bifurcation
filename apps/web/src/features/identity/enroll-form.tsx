@@ -3,8 +3,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@cloudflare/kumo";
 import { startRegistration } from "@simplewebauthn/browser";
+import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
+import type { JsonObject } from "@bufbuild/protobuf";
 import { FormError } from "@/components/modal";
-import { api, errorMessage } from "@/features/shared/api";
+import { errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 
 export function EnrollForm({
   token,
@@ -25,24 +28,22 @@ export function EnrollForm({
       return;
     }
     setBusy(true);
-    const endpoint = `/api/auth/${recovery ? "recovery" : "activation"}`;
     try {
-      const flow = await api<{
-        flowId: string;
-        username: string;
-        options: Parameters<typeof startRegistration>[0]["optionsJSON"];
-      }>(`${endpoint}/options`, { method: "POST", body: { token } });
-      const response = await startRegistration({ optionsJSON: flow.options });
-      await api(`${endpoint}/complete`, {
-        method: "POST",
-        body: {
-          token,
-          flowId: flow.flowId,
-          response,
-          password: values.get("password"),
-          name: values.get("name"),
-        },
+      const flow = recovery
+        ? await panel.auth.recoveryOptions({ token })
+        : await panel.auth.activationOptions({ token });
+      const response = await startRegistration({
+        optionsJSON: flow.options as unknown as PublicKeyCredentialCreationOptionsJSON,
       });
+      const completion = {
+        token,
+        flowId: flow.flowId,
+        response: response as unknown as JsonObject,
+        password: String(values.get("password")),
+        name: String(values.get("name")),
+      };
+      if (recovery) await panel.auth.recoveryComplete(completion);
+      else await panel.auth.activationComplete(completion);
       router.replace("/account");
       router.refresh();
     } catch (e) {

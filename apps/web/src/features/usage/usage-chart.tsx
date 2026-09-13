@@ -29,8 +29,8 @@ echarts.use([
 
 export type UsageChartPoint = {
   label: string;
-  uploadBytes: string | null;
-  downloadBytes: string | null;
+  uploadBytes: bigint | null;
+  downloadBytes: bigint | null;
 };
 
 export default function UsageChart({

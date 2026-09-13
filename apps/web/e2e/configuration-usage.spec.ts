@@ -3,6 +3,13 @@ import { create, toBinary } from "@bufbuild/protobuf";
 import { UsageBatchSchema } from "@bifurcation/rpc";
 import { test, expect, activate } from "./fixtures";
 import { connectMachine } from "./machine-fixture";
+import { rpc } from "./rpc";
+
+type SubscriptionBody = { subscription: { url: string; credentialGeneration: number } };
+
+function getSubscription(request: Parameters<typeof rpc>[0], origin: string) {
+  return rpc<SubscriptionBody>(request, origin, "bifurcation.panel.v1.MeService/GetSubscription");
+}
 
 test("configuration preview and publish, independent subscription resets, and real usage query charts", async ({
   page,
@@ -11,20 +18,21 @@ test("configuration preview and publish, independent subscription resets, and re
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await activate(page, app);
-  const me = (await (
-    await page.request.get(`${app.origin}/api/v1/me`)
-  ).json()) as { user: { id: string } };
-  const created = await page.request.post(
-    `${app.origin}/api/v1/admin/machines`,
-    {
-      headers: { Origin: app.origin },
-      data: { name: "Traffic fixture", address: "192.0.2.20", region: "测试" },
-    },
+  const me = (
+    await rpc<{ user: { id: string } }>(
+      page.request,
+      app.origin,
+      "bifurcation.panel.v1.MeService/GetMe",
+    )
+  ).body;
+  const created = await rpc<{ machine: { id: string; token: string } }>(
+    page.request,
+    app.origin,
+    "bifurcation.panel.v1.AdminMachineService/CreateMachine",
+    { name: "Traffic fixture", address: "192.0.2.20", region: "东京" },
   );
-  expect(created.status()).toBe(200);
-  const { machine } = (await created.json()) as {
-    machine: { id: string; token: string };
-  };
+  expect(created.status).toBe(200);
+  const { machine } = created.body;
   const peer = await connectMachine(app.origin, machine.token);
   try {
     await peer.call("ReportStatus", {
@@ -216,9 +224,7 @@ test("configuration preview and publish, independent subscription resets, and re
     await expect(
       page.getByRole("cell", { name: "Traffic fixture", exact: true }),
     ).toBeVisible();
-    const subscriptionBefore = (await (
-      await page.request.get(`${app.origin}/api/v1/me/subscription`)
-    ).json()) as { url: string; credentialGeneration: number };
+    const subscriptionBefore = (await getSubscription(page.request, app.origin)).body.subscription;
     await page
       .getByRole("button", { name: "重置订阅链接", exact: true })
       .click();
@@ -231,9 +237,7 @@ test("configuration preview and publish, independent subscription resets, and re
         exact: true,
       }),
     ).toBeVisible();
-    const subscriptionAfter = (await (
-      await page.request.get(`${app.origin}/api/v1/me/subscription`)
-    ).json()) as { url: string; credentialGeneration: number };
+    const subscriptionAfter = (await getSubscription(page.request, app.origin)).body.subscription;
     expect(subscriptionAfter.url === subscriptionBefore.url).toBe(false);
     expect(subscriptionAfter.credentialGeneration).toBe(
       subscriptionBefore.credentialGeneration,
@@ -251,9 +255,7 @@ test("configuration preview and publish, independent subscription resets, and re
         exact: true,
       }),
     ).toBeVisible();
-    const credentialsAfter = (await (
-      await page.request.get(`${app.origin}/api/v1/me/subscription`)
-    ).json()) as { url: string; credentialGeneration: number };
+    const credentialsAfter = (await getSubscription(page.request, app.origin)).body.subscription;
     expect(credentialsAfter.url === subscriptionAfter.url).toBe(true);
     expect(credentialsAfter.credentialGeneration).toBeGreaterThan(
       subscriptionAfter.credentialGeneration,
@@ -283,9 +285,7 @@ test("configuration preview and publish, independent subscription resets, and re
     };
     await peer.call("ReportUsage", usageRequest);
     await peer.call("ReportUsage", usageRequest);
-    const usage = (await (
-      await page.request.get(`${app.origin}/api/v1/me/usage`)
-    ).json()) as { uploadBytes: string; downloadBytes: string };
+    const usage = (await rpc<{ usage: { uploadBytes: string; downloadBytes: string } }>(page.request, app.origin, "bifurcation.panel.v1.MeService/GetMyUsage")).body.usage;
     expect(usage).toMatchObject({
       uploadBytes: "1073741824",
       downloadBytes: "2147483648",

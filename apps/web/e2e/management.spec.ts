@@ -1,5 +1,6 @@
 import { test, expect, activate } from "./fixtures";
 import { connectMachine } from "./machine-fixture";
+import { rpc } from "./rpc";
 
 test("one-time API keys, user and machine creation, and mobile navigation", async ({
   page,
@@ -29,11 +30,15 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
   ).toHaveCount(0);
   // Boolean assertion avoids including the full credential in assertion output.
   expect((await page.locator("body").innerText()).includes(token)).toBe(false);
-  const apiMe = await page.request.get(`${app.origin}/api/v1/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  expect(apiMe.status()).toBe(200);
-  expect((await apiMe.json()).user.username).toBe(app.username);
+  const apiMe = await rpc<{ user: { username: string } }>(
+    page.request,
+    app.origin,
+    "bifurcation.panel.v1.MeService/GetMe",
+    {},
+    { Authorization: `Bearer ${token}` },
+  );
+  expect(apiMe.status).toBe(200);
+  expect(apiMe.body.user.username).toBe(app.username);
 
   await page.getByRole("link", { name: "用户", exact: true }).click();
   await page.getByRole("button", { name: "创建用户", exact: true }).click();
@@ -116,22 +121,26 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
       .locator("code")
       .innerText();
     expect(newToken === machineToken).toBe(false);
-    const detail = (await (
-      await page.request.get(
-        machineUrl.replace("/admin/machines/", "/api/v1/admin/machines/"),
+    const machineId = machineUrl.split("/admin/machines/")[1];
+    const detail = (
+      await rpc<{
+        machine: {
+          installationId?: string;
+          uninstalled: boolean;
+          name: string;
+        };
+      }>(
+        page.request,
+        app.origin,
+        "bifurcation.panel.v1.AdminMachineService/GetMachine",
+        { machineId },
       )
-    ).json()) as {
-      machine: {
-        installationId: string | null;
-        uninstalled: boolean;
-        name: string;
-      };
-    };
+    ).body;
     expect(detail.machine).toMatchObject({
-      installationId: null,
       uninstalled: false,
       name: "Renamed node",
     });
+    expect(detail.machine.installationId ?? null).toBe(null);
   } finally {
     await peer.close();
   }

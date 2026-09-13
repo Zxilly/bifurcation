@@ -4,13 +4,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@cloudflare/kumo";
 import { ListIcon, SignOutIcon } from "@phosphor-icons/react";
-import type { UserDto } from "@/contracts/identity";
-import { api, errorMessage } from "@/features/shared/api";
+import { Role, type User } from "@bifurcation/rpc/panel/types";
+import { errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 export function AppShell({
   user,
   children,
 }: {
-  user: UserDto;
+  user: Pick<User, "username" | "role">;
   children: React.ReactNode;
 }) {
   const path = usePathname();
@@ -36,7 +37,7 @@ export function AppShell({
     setBusy(true);
     setError("");
     try {
-      await api("/api/auth/logout", { method: "POST", body: {} });
+      await panel.auth.logout({});
       router.replace("/login");
       router.refresh();
     } catch (e) {
@@ -86,7 +87,7 @@ export function AppShell({
       )}
       <div className="shell-body">
         <nav className="sidebar" data-open={open} aria-label="主导航">
-          {user.role === "admin" && (
+          {user.role === Role.ADMIN && (
             <div className="nav-group">
               <p className="nav-label">管理</p>
               {link("/admin", "管理概览")}

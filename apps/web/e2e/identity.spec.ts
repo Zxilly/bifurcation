@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { test, expect, activate, passwordLogin, logout } from "./fixtures";
+import { rpc } from "./rpc";
 
 test("Passkey activation, login, recovery and password change use real authentication", async ({
   page,
@@ -8,12 +9,14 @@ test("Passkey activation, login, recovery and password change use real authentic
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const authenticator = await activate(page, app);
-  const createdKey = await page.request.post(
-    `${app.origin}/api/v1/me/api-keys`,
-    { headers: { Origin: app.origin }, data: { name: "Recovery continuity" } },
+  const createdKey = await rpc<{ token: string }>(
+    page.request,
+    app.origin,
+    "bifurcation.panel.v1.MeService/CreateApiKey",
+    { name: "Recovery continuity" },
   );
-  expect(createdKey.status()).toBe(200);
-  const { token: recoveryKey } = (await createdKey.json()) as { token: string };
+  expect(createdKey.status).toBe(200);
+  const { token: recoveryKey } = createdKey.body;
   await logout(page, app);
   await page
     .getByRole("button", { name: "使用 Passkey 登录", exact: true })
@@ -76,11 +79,15 @@ test("Passkey activation, login, recovery and password change use real authentic
     ).toHaveCount(0);
     await otherPage.goto(`${app.origin}/account`);
     await expect(otherPage).toHaveURL(`${app.origin}/login`);
-    const keyAfterRecovery = await page.request.get(`${app.origin}/api/v1/me`, {
-      headers: { Authorization: `Bearer ${recoveryKey}` },
-    });
-    expect(keyAfterRecovery.status()).toBe(200);
-    expect((await keyAfterRecovery.json()).authentication).toBe("apiKey");
+    const keyAfterRecovery = await rpc<{ authentication: string }>(
+      page.request,
+      app.origin,
+      "bifurcation.panel.v1.MeService/GetMe",
+      {},
+      { Authorization: `Bearer ${recoveryKey}` },
+    );
+    expect(keyAfterRecovery.status).toBe(200);
+    expect(keyAfterRecovery.body.authentication).toBe("AUTHENTICATION_API_KEY");
 
     const changedPassword = randomBytes(24).toString("base64url");
     await page

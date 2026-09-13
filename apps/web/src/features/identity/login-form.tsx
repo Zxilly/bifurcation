@@ -3,8 +3,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@cloudflare/kumo";
 import { startAuthentication } from "@simplewebauthn/browser";
-import type { UserDto } from "@/contracts/identity";
-import { api, errorMessage } from "@/features/shared/api";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
+import type { JsonObject } from "@bufbuild/protobuf";
+import { PasskeyPurpose } from "@bifurcation/rpc/panel/auth";
+import { Role, type User } from "@bifurcation/rpc/panel/types";
+import { errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 import { FormError } from "@/components/modal";
 
 export function LoginForm() {
@@ -12,27 +16,24 @@ export function LoginForm() {
   const [passwordMode, setPasswordMode] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  function complete(user: UserDto) {
-    router.replace(user.role === "admin" ? "/admin" : "/overview");
+  function complete(user: User) {
+    router.replace(user.role === Role.ADMIN ? "/admin" : "/overview");
     router.refresh();
   }
   async function passkey() {
     setError("");
     setBusy(true);
     try {
-      const flow = await api<{
-        flowId: string;
-        options: Parameters<typeof startAuthentication>[0]["optionsJSON"];
-      }>("/api/auth/passkey/options", {
-        method: "POST",
-        body: { purpose: "login" },
+      const flow = await panel.auth.passkeyOptions({ purpose: PasskeyPurpose.LOGIN });
+      const response = await startAuthentication({
+        optionsJSON: flow.options as unknown as PublicKeyCredentialRequestOptionsJSON,
       });
-      const response = await startAuthentication({ optionsJSON: flow.options });
-      const result = await api<{ user: UserDto }>("/api/auth/passkey/verify", {
-        method: "POST",
-        body: { flowId: flow.flowId, response },
+      const result = await panel.auth.passkeyVerify({
+        flowId: flow.flowId,
+        response: response as unknown as JsonObject,
+        name: "",
       });
-      complete(result.user);
+      complete(result.user!);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -45,14 +46,11 @@ export function LoginForm() {
     setBusy(true);
     const data = new FormData(event.currentTarget);
     try {
-      const result = await api<{ user: UserDto }>("/api/auth/password", {
-        method: "POST",
-        body: {
-          username: data.get("username"),
-          password: data.get("password"),
-        },
+      const result = await panel.auth.passwordLogin({
+        username: String(data.get("username")),
+        password: String(data.get("password")),
       });
-      complete(result.user);
+      complete(result.user!);
     } catch (e) {
       setError(errorMessage(e));
     } finally {

@@ -4,35 +4,43 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Input, InputArea } from "@cloudflare/kumo/components/input";
-import type { MachineDetailDto } from "@/contracts/machines";
-import type {
-  ConfigurationPreviewDto,
-  ConfigurationPublishDto,
-  MachineConfigurationDto,
-  MachineConfigurationInput,
-} from "@/contracts/configuration";
+import type { JsonObject } from "@bufbuild/protobuf";
+import { create } from "@bufbuild/protobuf";
+import { TaskKind } from "@bifurcation/rpc";
+import type { MachineDetail } from "@bifurcation/rpc/panel/machines";
+import {
+  MachineConfigurationInputSchema,
+  Reconciliation,
+  type ConfigurationPreview,
+  type MachineConfiguration,
+} from "@bifurcation/rpc/panel/configuration";
 import { Modal, FormError } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
 import { Reauthenticate } from "@/features/identity/reauth";
-import { api, ApiError, errorMessage } from "@/features/shared/api";
+import { ApiError, errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 
-const states = {
-  not_configured: "未配置",
-  pending: "等待应用",
-  applied: "已应用",
-  failed: "应用失败",
+const states: Record<number, string> = {
+  [Reconciliation.NOT_CONFIGURED]: "未配置",
+  [Reconciliation.PENDING]: "等待应用",
+  [Reconciliation.APPLIED]: "已应用",
+  [Reconciliation.FAILED]: "应用失败",
 };
 
 export function MachineConfiguration({
   machine,
   onPublished,
 }: {
-  machine: MachineDetailDto;
+  machine: MachineDetail;
   onPublished: () => Promise<void>;
 }) {
-  const resource = useResource<MachineConfigurationDto>(
-    `/api/v1/admin/machines/${encodeURIComponent(machine.id)}/config`,
+  const resource = useResource(
+    `machine-config:${machine.id}`,
+    () =>
+      panel.configuration
+        .getMachineConfiguration({ machineId: machine.id })
+        .then((r) => r.configuration!),
     { refreshInterval: 5_000 },
   );
   const [open, setOpen] = useState(false);
@@ -45,7 +53,7 @@ export function MachineConfiguration({
         {configuration && (
           <Badge
             variant={
-              configuration.reconciliation === "failed"
+              configuration.reconciliation === Reconciliation.FAILED
                 ? "destructive"
                 : "secondary"
             }
@@ -136,12 +144,13 @@ function ConfigurationEditor({
   onClose,
   onPublished,
 }: {
-  machine: MachineDetailDto;
-  initial: MachineConfigurationDto;
+  machine: MachineDetail;
+  initial: MachineConfiguration;
   onClose: () => void;
-  onPublished: (result: ConfigurationPublishDto) => Promise<void>;
+  onPublished: () => Promise<void>;
 }) {
   const existing = initial.settings;
+  const existingMode = existing?.tls?.mode;
   const [listen, setListen] = useState(existing?.listen ?? "::");
   const [trojanPort, setTrojanPort] = useState(
     String(existing?.trojanPort ?? 443),
@@ -150,32 +159,32 @@ function ConfigurationEditor({
     String(existing?.hysteria2Port ?? 8443),
   );
   const [mode, setMode] = useState<"path" | "pem" | "acme">(
-    existing?.tls.mode ?? "path",
+    existingMode?.case ?? "path",
   );
-  const [serverName, setServerName] = useState(existing?.tls.serverName ?? "");
+  const [serverName, setServerName] = useState(existing?.tls?.serverName ?? "");
   const [acmeEmail, setAcmeEmail] = useState(
-    existing?.tls.mode === "acme" ? existing.tls.email : "",
+    existingMode?.case === "acme" ? existingMode.value.email : "",
   );
   const [certificatePath, setCertificatePath] = useState(
-    existing?.tls.mode === "path"
-      ? existing.tls.certificatePath
+    existingMode?.case === "path"
+      ? existingMode.value.certificatePath
       : "/etc/bifurcation/tls/fullchain.pem",
   );
   const [privateKeyPath, setPrivateKeyPath] = useState(
-    existing?.tls.mode === "path"
-      ? existing.tls.privateKeyPath
+    existingMode?.case === "path"
+      ? existingMode.value.privateKeyPath
       : "/etc/bifurcation/tls/privkey.pem",
   );
   const [certificatePem, setCertificatePem] = useState(
-    existing?.tls.mode === "pem" ? existing.tls.certificatePem : "",
+    existingMode?.case === "pem" ? existingMode.value.certificatePem : "",
   );
   const [privateKeyPem, setPrivateKeyPem] = useState(
-    existing?.tls.mode === "pem" ? existing.tls.privateKeyPem : "",
+    existingMode?.case === "pem" ? existingMode.value.privateKeyPem : "",
   );
   const [baseJson, setBaseJson] = useState(
     JSON.stringify(existing?.baseJson ?? {}, null, 2),
   );
-  const [preview, setPreview] = useState<ConfigurationPreviewDto | null>(null);
+  const [preview, setPreview] = useState<ConfigurationPreview | null>(null);
   const previewHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (preview) previewHeading.current?.focus();
@@ -185,8 +194,7 @@ function ConfigurationEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [reauth, setReauth] = useState(false);
-  const endpoint = `/api/v1/admin/machines/${encodeURIComponent(machine.id)}/config`;
-  const supported = machine.capabilities.includes("apply_config");
+  const supported = machine.capabilities.includes(TaskKind.APPLY_CONFIG);
 
   async function loadPem(
     file: File | undefined,
@@ -208,7 +216,7 @@ function ConfigurationEditor({
       setBusy(false);
     }
   }
-  function settings(): MachineConfigurationInput {
+  function settings() {
     let base: unknown;
     try {
       base = JSON.parse(baseJson);
@@ -222,18 +230,21 @@ function ConfigurationEditor({
       ports.some((port) => !Number.isInteger(port) || port < 1 || port > 65535)
     )
       throw new Error("监听端口必须是 1–65535 的整数。");
-    return {
+    return create(MachineConfigurationInputSchema, {
       listen,
       trojanPort: ports[0],
       hysteria2Port: ports[1],
-      tls:
-        mode === "path"
-          ? { mode, serverName, certificatePath, privateKeyPath }
-          : mode === "acme"
-            ? { mode, serverName, email: acmeEmail }
-            : { mode, serverName, certificatePem, privateKeyPem },
-      baseJson: base as Record<string, unknown>,
-    };
+      tls: {
+        serverName,
+        mode:
+          mode === "path"
+            ? { case: "path", value: { certificatePath, privateKeyPath } }
+            : mode === "acme"
+              ? { case: "acme", value: { email: acmeEmail } }
+              : { case: "pem", value: { certificatePem, privateKeyPem } },
+      },
+      baseJson: base as JsonObject,
+    });
   }
   async function createPreview(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -241,12 +252,13 @@ function ConfigurationEditor({
     setError("");
     setPreview(null);
     try {
-      const result = await api<ConfigurationPreviewDto>(`${endpoint}/preview`, {
-        method: "POST",
-        body: { expectedVersion: version, settings: settings() },
+      const result = await panel.configuration.previewConfiguration({
+        machineId: machine.id,
+        expectedVersion: version,
+        settings: settings(),
       });
       setPublishRequestKey(crypto.randomUUID());
-      setPreview(result);
+      setPreview(result.preview!);
     } catch (e) {
       await handleError(e);
     } finally {
@@ -269,8 +281,10 @@ function ConfigurationEditor({
     ) {
       setPreview(null);
       try {
-        const current = await api<MachineConfigurationDto>(endpoint);
-        setVersion(current.version);
+        const current = await panel.configuration.getMachineConfiguration({
+          machineId: machine.id,
+        });
+        setVersion(current.configuration!.version);
       } catch {
         /* Preserve the user's draft if refreshing also fails. */
       }
@@ -286,15 +300,13 @@ function ConfigurationEditor({
         setPreview(null);
         throw new Error("预览已过期，请重新生成。");
       }
-      const result = await api<ConfigurationPublishDto>(`${endpoint}/publish`, {
-        method: "POST",
-        body: {
-          previewId: preview.previewId,
-          expectedVersion: preview.expectedVersion,
-          requestKey: publishRequestKey,
-        },
+      await panel.configuration.publishConfiguration({
+        machineId: machine.id,
+        previewId: preview.previewId,
+        expectedVersion: preview.expectedVersion,
+        requestKey: publishRequestKey,
       });
-      await onPublished(result);
+      await onPublished();
     } catch (e) {
       await handleError(e);
     } finally {

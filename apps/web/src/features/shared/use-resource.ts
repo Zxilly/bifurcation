@@ -1,15 +1,14 @@
 "use client";
 import useSWR from "swr";
-import { api, errorMessage } from "./api";
+import { errorMessage } from "./api";
 export function useResource<T>(
-  url: string,
+  key: string,
+  fetcher: () => Promise<T>,
   options: { refreshInterval?: number } = {},
 ) {
-  const { data, error, isLoading, mutate } = useSWR<T>(
-    url,
-    (path: string) => api<T>(path),
-    { refreshInterval: options.refreshInterval },
-  );
+  const { data, error, isLoading, mutate } = useSWR<T>(key, fetcher, {
+    refreshInterval: options.refreshInterval,
+  });
   return {
     data: data ?? null,
     error: error ? errorMessage(error) : "",

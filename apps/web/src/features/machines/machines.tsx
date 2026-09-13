@@ -3,11 +3,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Input, Badge } from "@cloudflare/kumo";
-import type { MachineDto, MachineDetailDto } from "@/contracts/machines";
+import { TaskKind } from "@bifurcation/rpc";
+import {
+  MachineConnection,
+  TaskState,
+  type MachineDetail,
+} from "@bifurcation/rpc/panel/machines";
 import { Modal, FormError } from "@/components/modal";
 import { CopyValue } from "@/components/secret-result";
 import { Reauthenticate } from "@/features/identity/reauth";
-import { api, ApiError, date, errorMessage } from "@/features/shared/api";
+import { ApiError, date, errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 import { MachineConfiguration } from "@/features/configuration/machine-configuration";
 import { MachineResources } from "./resources";
@@ -16,11 +22,21 @@ import { MachineUpgrades } from "./upgrades";
 import { ActiveTasks, TaskHistory } from "./tasks";
 import { MachineInformationAction } from "./information";
 
-const connection = { waiting: "待接入", online: "在线", offline: "失联" };
+const ACTIVE_STATES = new Set<TaskState>([
+  TaskState.QUEUED,
+  TaskState.ACCEPTED,
+  TaskState.RUNNING,
+]);
+const connection: Record<number, string> = {
+  [MachineConnection.WAITING]: "待接入",
+  [MachineConnection.ONLINE]: "在线",
+  [MachineConnection.OFFLINE]: "失联",
+};
 export function Machines() {
   const router = useRouter();
-  const resource = useResource<{ machines: MachineDto[] }>(
-    "/api/v1/admin/machines",
+  const resource = useResource(
+    "machines",
+    () => panel.machines.listMachines({}),
     { refreshInterval: 10_000 },
   );
   const [open, setOpen] = useState(false);
@@ -33,19 +49,13 @@ export function Machines() {
     setBusy(true);
     setError("");
     try {
-      const { machine } = await api<{ machine: MachineDetailDto }>(
-        "/api/v1/admin/machines",
-        {
-          method: "POST",
-          body: {
-            name: values.get("name"),
-            address: values.get("address"),
-            region: values.get("region"),
-          },
-        },
-      );
+      const { machine } = await panel.machines.createMachine({
+        name: String(values.get("name")),
+        address: String(values.get("address")),
+        region: String(values.get("region") ?? ""),
+      });
       setOpen(false);
-      router.push(`/admin/machines/${machine.id}`);
+      router.push(`/admin/machines/${machine!.id}`);
     } catch (e) {
       if (e instanceof ApiError && e.code === "REAUTH_REQUIRED")
         setReauth(true);
@@ -103,7 +113,8 @@ export function Machines() {
                   <td>
                     <Badge
                       variant={
-                        machine.connection === "offline" && !machine.uninstalled
+                        machine.connection === MachineConnection.OFFLINE &&
+                        !machine.uninstalled
                           ? "destructive"
                           : "secondary"
                       }
@@ -185,13 +196,14 @@ export function Machines() {
   );
 }
 
-export function MachineDetail({ id }: { id: string }) {
+export function MachineDetailPage({ id }: { id: string }) {
   const router = useRouter();
-  const resource = useResource<{ machine: MachineDetailDto }>(
-    `/api/v1/admin/machines/${encodeURIComponent(id)}`,
+  const resource = useResource(
+    `machine:${id}`,
+    () => panel.machines.getMachine({ machineId: id }).then((r) => r.machine!),
     { refreshInterval: 5_000 },
   );
-  const machine = resource.data?.machine;
+  const machine = resource.data;
   const [action, setAction] = useState<
     "install" | "token" | "remove" | "uninstall" | null
   >(null);
@@ -205,30 +217,26 @@ export function MachineDetail({ id }: { id: string }) {
     setError("");
     setNotice("");
     try {
-      const path = `/api/v1/admin/machines/${encodeURIComponent(id)}`;
       if (kind === "remove") {
-        await api(path, { method: "DELETE" });
+        await panel.machines.deleteMachine({ machineId: id });
         router.replace("/admin/machines");
         return;
       }
       if (kind === "token")
-        await api(`${path}/token`, { method: "POST", body: {} });
+        await panel.machines.resetMachineToken({ machineId: id });
       else if (kind === "uninstall") {
-        await api(`${path}/uninstall`, {
-          method: "POST",
-          body: { requestKey: uninstallRequestKey },
+        await panel.machines.uninstallMachine({
+          machineId: id,
+          requestKey: uninstallRequestKey,
         });
         setNotice("卸载任务已排队，请等待机器回报结果。");
       } else {
-        await api(`${path}/tasks`, {
-          method: "POST",
-          body: {
-            kind: "inspect",
-            requestKey: crypto.randomUUID(),
-            includeLogs: true,
-            maxLogLines: 100,
-            maxBytes: 65_536,
-          },
+        await panel.machines.enqueueInspectTask({
+          machineId: id,
+          requestKey: crypto.randomUUID(),
+          includeLogs: true,
+          maxLogLines: 100,
+          maxBytes: 65_536,
         });
         setNotice("日志任务已排队：最近 100 行，最多 64 KiB。");
       }
@@ -255,18 +263,14 @@ export function MachineDetail({ id }: { id: string }) {
       </div>
     );
   const uninstallActive = machine.tasks.some(
-    (task) =>
-      task.kind === "uninstall" &&
-      ["queued", "accepted", "running"].includes(task.state),
+    (task) => task.kind === TaskKind.UNINSTALL && ACTIVE_STATES.has(task.state),
   );
   const uninstallComplete = machine.uninstalled;
   const mutatingTaskActive = machine.tasks.some(
-    (task) =>
-      task.kind !== "inspect" &&
-      ["queued", "accepted", "running"].includes(task.state),
+    (task) => task.kind !== TaskKind.INSPECT && ACTIVE_STATES.has(task.state),
   );
-  function informationChanged(machine: MachineDetailDto, message: string) {
-    resource.update({ machine });
+  function informationChanged(machine: MachineDetail, message: string) {
+    resource.update(machine);
     setNotice(message);
   }
   return (
@@ -281,7 +285,8 @@ export function MachineDetail({ id }: { id: string }) {
           <h1>{machine.name}</h1>
           <Badge
             variant={
-              machine.connection === "offline" && !uninstallComplete
+              machine.connection === MachineConnection.OFFLINE &&
+              !uninstallComplete
                 ? "destructive"
                 : "secondary"
             }
@@ -350,7 +355,7 @@ export function MachineDetail({ id }: { id: string }) {
           </div>
         </dl>
       </section>
-      {machine.connection === "waiting" && (
+      {machine.connection === MachineConnection.WAITING && (
         <section className="panel stack">
           <h2>首次安装</h2>
           <CopyValue value={machine.installCommand} />
@@ -400,16 +405,16 @@ export function MachineDetail({ id }: { id: string }) {
           <Button
             loading={busy}
             disabled={
-              machine.connection === "waiting" ||
+              machine.connection === MachineConnection.WAITING ||
               uninstallComplete ||
-              !machine.capabilities.includes("inspect")
+              !machine.capabilities.includes(TaskKind.INSPECT)
             }
             title={
-              machine.connection === "waiting"
+              machine.connection === MachineConnection.WAITING
                 ? "机器接入后可获取诊断"
                 : uninstallComplete
                   ? "节点程序已卸载"
-                  : !machine.capabilities.includes("inspect")
+                  : !machine.capabilities.includes(TaskKind.INSPECT)
                     ? "当前 daemon 不支持诊断"
                     : undefined
             }
@@ -435,12 +440,12 @@ export function MachineDetail({ id }: { id: string }) {
           <Button
             variant="secondary-destructive"
             disabled={
-              !machine.capabilities.includes("uninstall") ||
+              !machine.capabilities.includes(TaskKind.UNINSTALL) ||
               mutatingTaskActive ||
               uninstallComplete
             }
             title={
-              !machine.capabilities.includes("uninstall")
+              !machine.capabilities.includes(TaskKind.UNINSTALL)
                 ? "当前 daemon 未声明卸载能力"
                 : mutatingTaskActive
                   ? "请等待当前任务结束"

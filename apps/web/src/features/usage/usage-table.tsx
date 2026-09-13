@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@cloudflare/kumo/components/badge";
-import type { UsageGroupDto } from "@/contracts/usage";
+import type { UsageGroup } from "@bifurcation/rpc/panel/usage";
 import { formatGiB, share } from "./format";
 
 export function DataQuality({
@@ -27,7 +27,7 @@ type GroupRow = {
   estimated: boolean;
   incomplete: boolean;
 };
-function groupedUsage(groups: UsageGroupDto[], dimension: "user" | "machine") {
+function groupedUsage(groups: UsageGroup[], dimension: "user" | "machine") {
   const rows = new Map<string, GroupRow>();
   for (const group of groups) {
     const id = dimension === "user" ? group.userId : group.machineId;
@@ -39,8 +39,8 @@ function groupedUsage(groups: UsageGroupDto[], dimension: "user" | "machine") {
       estimated: false,
       incomplete: false,
     };
-    row.uploadBytes += BigInt(group.uploadBytes);
-    row.downloadBytes += BigInt(group.downloadBytes);
+    row.uploadBytes += group.uploadBytes;
+    row.downloadBytes += group.downloadBytes;
     row.estimated ||= group.estimated;
     row.incomplete ||= group.incomplete;
     rows.set(id, row);
@@ -56,7 +56,7 @@ export function GroupUsageTable({
   groups,
   dimension,
 }: {
-  groups: UsageGroupDto[];
+  groups: UsageGroup[];
   dimension: "user" | "machine";
 }) {
   const rows = groupedUsage(groups, dimension);
@@ -101,7 +101,7 @@ export function GroupUsageTable({
   );
 }
 
-export function UserMachineTable({ groups }: { groups: UsageGroupDto[] }) {
+export function UserMachineTable({ groups }: { groups: UsageGroup[] }) {
   if (!groups.length) return <p className="empty-state">暂无用量数据</p>;
   return (
     <div className="table-scroll">
@@ -124,7 +124,7 @@ export function UserMachineTable({ groups }: { groups: UsageGroupDto[] }) {
               <td>{formatGiB(row.uploadBytes)}</td>
               <td>{formatGiB(row.downloadBytes)}</td>
               <td>
-                {formatGiB(BigInt(row.uploadBytes) + BigInt(row.downloadBytes))}
+                {formatGiB(row.uploadBytes + row.downloadBytes)}
               </td>
               <td>
                 <DataQuality

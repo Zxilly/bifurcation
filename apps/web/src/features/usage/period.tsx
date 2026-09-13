@@ -40,12 +40,7 @@ export function useUsagePeriod() {
     return () => clearInterval(interval);
   }, []);
   const range = periodRange(period, month, now);
-  const query = new URLSearchParams({
-    start: String(range.start),
-    end: String(range.end),
-    grain: range.grain,
-  }).toString();
-  return { now, period, setPeriod, month, setMonth, range, query };
+  return { now, period, setPeriod, month, setMonth, range };
 }
 
 export function PeriodPicker({

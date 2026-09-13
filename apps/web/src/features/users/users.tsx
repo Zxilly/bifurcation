@@ -2,24 +2,30 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Badge } from "@cloudflare/kumo";
-import type { UserDto } from "@/contracts/identity";
+import { Role, UserStatus, type User } from "@bifurcation/rpc/panel/types";
+import { FlowPurpose } from "@bifurcation/rpc/panel/users";
 import { Modal, FormError } from "@/components/modal";
 import { SecretResult } from "@/components/secret-result";
 import { Reauthenticate } from "@/features/identity/reauth";
-import { api, ApiError, errorMessage } from "@/features/shared/api";
+import { ApiError, errorMessage } from "@/features/shared/api";
+import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 import { UserNodeUsage } from "@/features/usage/overview";
 
-const status = { pending: "待激活", active: "正常", disabled: "已禁用" };
+const status: Record<number, string> = {
+  [UserStatus.PENDING]: "待激活",
+  [UserStatus.ACTIVE]: "正常",
+  [UserStatus.DISABLED]: "已禁用",
+};
 type Action =
   | { kind: "create" }
   | {
       kind: "edit" | "disable" | "enable" | "recover" | "activate";
-      user: UserDto;
+      user: User;
     };
 export function Users() {
   const router = useRouter();
-  const resource = useResource<{ users: UserDto[] }>("/api/v1/admin/users");
+  const resource = useResource("admin-users", () => panel.users.listUsers({}));
   const [action, setAction] = useState<Action | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -48,41 +54,47 @@ export function Users() {
             !Number.isSafeInteger(Math.round(amount * 1073741824)))
         )
           throw new Error("请输入有效的每月额度。");
-        const body = {
-          role: values.get("role"),
-          monthlyLimitBytes:
-            amount === null ? null : String(Math.round(amount * 1073741824)),
-        };
+        const role =
+          values.get("role") === "admin" ? Role.ADMIN : Role.USER;
         if (action.kind === "create") {
-          const created = await api<{ user: UserDto; activationUrl: string }>(
-            "/api/v1/admin/users",
-            {
-              method: "POST",
-              body: { ...body, username: values.get("username") },
-            },
-          );
+          const created = await panel.users.createUser({
+            username: String(values.get("username")),
+            role,
+            monthlyLimitBytes:
+              amount === null
+                ? undefined
+                : String(Math.round(amount * 1073741824)),
+          });
           setResult({ title: "用户已创建", url: created.activationUrl });
         } else
-          await api(`/api/v1/admin/users/${action.user.id}`, {
-            method: "PATCH",
-            body: { ...body, expectedVersion: action.user.version },
+          await panel.users.updateUser({
+            id: action.user.id,
+            expectedVersion: action.user.version,
+            role,
+            monthlyLimitBytes:
+              amount === null
+                ? undefined
+                : String(Math.round(amount * 1073741824)),
+            clearMonthlyLimit: amount === null,
           });
       } else if (action.kind === "activate" || action.kind === "recover") {
-        const created = await api<{ url: string; expiresAt: number }>(
-          `/api/v1/admin/users/${action.user.id}/${action.kind === "activate" ? "activation" : "recovery"}`,
-          { method: "POST", body: {} },
-        );
+        const created = await panel.users.createUserFlow({
+          id: action.user.id,
+          purpose:
+            action.kind === "activate"
+              ? FlowPurpose.ACTIVATION
+              : FlowPurpose.RECOVERY,
+        });
         setResult({
           title: action.kind === "activate" ? "激活链接" : "恢复链接",
           url: created.url,
         });
       } else
-        await api(`/api/v1/admin/users/${action.user.id}`, {
-          method: "PATCH",
-          body: {
-            expectedVersion: action.user.version,
-            status: action.kind === "disable" ? "disabled" : "active",
-          },
+        await panel.users.updateUser({
+          id: action.user.id,
+          expectedVersion: action.user.version,
+          status:
+            action.kind === "disable" ? UserStatus.DISABLED : UserStatus.ACTIVE,
         });
       setAction(null);
       await resource.refresh();
@@ -132,16 +144,18 @@ export function Users() {
               {resource.data?.users.map((user) => (
                 <tr key={user.id}>
                   <td>{user.username}</td>
-                  <td>{user.role === "admin" ? "管理员" : "用户"}</td>
+                  <td>{user.role === Role.ADMIN ? "管理员" : "用户"}</td>
                   <td>
-                    {user.monthlyLimitBytes === null
+                    {user.monthlyLimitBytes === undefined
                       ? "不限量"
                       : `${(Number(user.monthlyLimitBytes) / 1073741824).toLocaleString("zh-CN")} GiB`}
                   </td>
                   <td>
                     <Badge
                       variant={
-                        user.status === "disabled" ? "destructive" : "secondary"
+                        user.status === UserStatus.DISABLED
+                          ? "destructive"
+                          : "secondary"
                       }
                     >
                       {status[user.status]}
@@ -155,7 +169,7 @@ export function Users() {
                       >
                         编辑
                       </Button>
-                      {user.status === "pending" ? (
+                      {user.status === UserStatus.PENDING ? (
                         <Button
                           variant="ghost"
                           onClick={() => open({ kind: "activate", user })}
@@ -169,20 +183,22 @@ export function Users() {
                             onClick={() =>
                               open({
                                 kind:
-                                  user.status === "disabled"
+                                  user.status === UserStatus.DISABLED
                                     ? "enable"
                                     : "disable",
                                 user,
                               })
                             }
                           >
-                            {user.status === "disabled" ? "恢复使用" : "禁用"}
+                            {user.status === UserStatus.DISABLED
+                              ? "恢复使用"
+                              : "禁用"}
                           </Button>
                           <Button
                             variant="ghost"
-                            disabled={user.status === "disabled"}
+                            disabled={user.status === UserStatus.DISABLED}
                             title={
-                              user.status === "disabled"
+                              user.status === UserStatus.DISABLED
                                 ? "请先恢复使用，再恢复登录凭据"
                                 : undefined
                             }
@@ -239,7 +255,7 @@ export function Users() {
                   <select
                     className="field-select"
                     name="role"
-                    defaultValue={editUser?.role ?? "user"}
+                    defaultValue={editUser?.role === Role.ADMIN ? "admin" : "user"}
                   >
                     <option value="user">用户</option>
                     <option value="admin">管理员</option>
@@ -252,11 +268,9 @@ export function Users() {
                   min="0"
                   step="any"
                   defaultValue={
-                    editUser?.monthlyLimitBytes
+                    editUser?.monthlyLimitBytes !== undefined
                       ? Number(editUser.monthlyLimitBytes) / 1073741824
-                      : editUser?.monthlyLimitBytes === "0"
-                        ? 0
-                        : ""
+                      : ""
                   }
                   description="留空为不限量；0 表示不允许使用流量。"
                 />

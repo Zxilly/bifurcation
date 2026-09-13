@@ -20,9 +20,9 @@ export function UsageSummary({
 }: {
   peak: number | null;
   previous: {
-    start: number;
-    end: number;
-    bytes: string | null;
+    start: bigint;
+    end: bigint;
+    bytes: bigint | null;
     incomplete: boolean;
   };
   changePercent: number | null;
@@ -38,7 +38,7 @@ export function UsageSummary({
           ? "统计不完整，暂不比较"
           : previous.bytes === null
             ? "上期无数据"
-            : BigInt(previous.bytes) === 0n
+            : previous.bytes === 0n
               ? "上期用量为 0"
               : "暂不可比较";
   return (
@@ -55,7 +55,8 @@ export function UsageSummary({
           {previous.bytes === null ? "暂无数据" : formatGiB(previous.bytes)}
         </dd>
         <dd className="subtle text-xs mt-1">
-          {date.format(previous.start)} — {date.format(previous.end - 1)}
+          {date.format(Number(previous.start))} —{" "}
+          {date.format(Number(previous.end - 1n))}
         </dd>
         {previous.incomplete && previous.bytes !== null && (
           <dd className="subtle text-xs mt-1">上期统计不完整</dd>
