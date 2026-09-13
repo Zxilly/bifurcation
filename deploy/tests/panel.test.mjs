@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
 
 const image = process.argv[2];
+const expectedRevision = process.argv[3];
 if (!image) throw new Error("Usage: node deploy/tests/panel.test.mjs IMAGE");
 const suffix = randomBytes(8).toString("hex");
 const container = `bifurcation-smoke-${suffix}`;
@@ -25,14 +26,17 @@ async function start() {
   const port = docker(["port", container, "3000/tcp"]).split(":").at(-1);
   const origin = `http://127.0.0.1:${port}`;
   const deadline = Date.now() + 30_000;
+  let health;
   while (true) {
     try {
       const response = await fetch(`${origin}/api/health`, { signal: AbortSignal.timeout(2000) });
-      if (response.ok && (await response.json()).status === "ok") break;
+      health = await response.json();
+      if (response.ok && health.status === "ok") break;
     } catch { /* The process may still be starting. */ }
     if (Date.now() >= deadline) throw new Error("Container health timed out");
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
+  if (expectedRevision) assert.equal(health.revision, expectedRevision, "Image revision does not match the build");
   const login = await fetch(`${origin}/login`);
   assert.equal(login.status, 200, "SSR login route failed");
   assert.match(await login.text(), /Passkey/);

@@ -3,10 +3,11 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -55,9 +56,9 @@ jobs:
           go-version: 1.27.x
           cache-dependency-path: services/daemon/go.sum
       - run: go mod download
-      - run: go vet -tags=with_quic ./...
-      - run: go test -tags=with_quic ./...
-      - run: go build -tags=with_quic ./cmd/bifurcation-daemon
+      - run: go vet -tags=with_quic,with_acme ./...
+      - run: go test -tags=with_quic,with_acme ./...
+      - run: go build -tags=with_quic,with_acme ./cmd/bifurcation-daemon
         env:
           CGO_ENABLED: "0"
       - run: go generate ./internal/state
@@ -72,8 +73,8 @@ jobs:
         with:
           go-version: 1.27.x
           cache-dependency-path: services/daemon/go.sum
-      - run: docker build -t bifurcation:ci .
-      - run: node deploy/tests/panel.test.mjs bifurcation:ci
+      - run: docker build --build-arg VCS_REF=${{ github.sha }} -t bifurcation:ci .
+      - run: node deploy/tests/panel.test.mjs bifurcation:ci ${{ github.sha }}
       - name: Verify backup and restore
         run: |
           docker run --rm --network none --entrypoint node \
@@ -96,11 +97,11 @@ jobs:
           CGO_ENABLED: "0"
         run: |
           mkdir -p /tmp/bif-fixtures
-          go build -tags=with_quic -ldflags='-X main.version=0.0.0-dev' -o /tmp/bif-fixtures/old ./cmd/bifurcation-daemon
-          go build -tags=with_quic -ldflags='-X main.version=0.1.0' -o /tmp/bif-fixtures/new ./cmd/bifurcation-daemon
+          go build -tags=with_quic,with_acme -ldflags='-X main.version=0.0.0-dev' -o /tmp/bif-fixtures/old ./cmd/bifurcation-daemon
+          go build -tags=with_quic,with_acme -ldflags='-X main.version=0.1.0' -o /tmp/bif-fixtures/new ./cmd/bifurcation-daemon
           go build -o /tmp/bif-fixtures/bad ./internal/updater/testdata/bad_start
-          go test -tags=with_quic -c -o /tmp/bif-fixtures/maintenance.test ./internal/updater
-          go test -tags=with_quic -c -o /tmp/bif-fixtures/core.test ./internal/adapters/singbox
+          go test -tags=with_quic,with_acme -c -o /tmp/bif-fixtures/maintenance.test ./internal/updater
+          go test -tags=with_quic,with_acme -c -o /tmp/bif-fixtures/core.test ./internal/adapters/singbox
       - name: Verify core and updater with real systemd
         run: |
           docker build -t bif-systemd-test deploy/tests/systemd
@@ -110,3 +111,82 @@ jobs:
       - name: Clean disposable service container
         if: always()
         run: docker rm -f bif-systemd-ci 2>/dev/null || true
+
+  publish:
+    name: Publish image
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [web, daemon, docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      image_tag: ${{ steps.image.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Select immutable image tag
+        id: image
+        run: echo "tag=sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            docker.io/zxilly/bifurcation:${{ steps.image.outputs.tag }}
+            docker.io/zxilly/bifurcation:latest
+          build-args: VCS_REF=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+
+  deploy:
+    name: Deploy production
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://bfc.learningman.top
+    steps:
+      - name: Redeploy Portainer stack
+        env:
+          IMAGE_TAG: ${{ needs.publish.outputs.image_tag }}
+          PORTAINER_STACK_WEBHOOK_URL: ${{ secrets.PORTAINER_STACK_WEBHOOK_URL }}
+        run: |
+          test -n "$PORTAINER_STACK_WEBHOOK_URL" || { echo "Missing production webhook secret" >&2; exit 1; }
+          separator="?"
+          case "$PORTAINER_STACK_WEBHOOK_URL" in
+            *\?|*\?*\&) separator="" ;;
+            *\?*) separator="&" ;;
+          esac
+          curl --silent --show-error --fail --connect-timeout 15 --max-time 180 \
+            --retry 3 --request POST \
+            "${PORTAINER_STACK_WEBHOOK_URL}${separator}IMAGE_TAG=${IMAGE_TAG}"
+      - name: Verify deployed revision
+        env:
+          EXPECTED_REVISION: ${{ github.sha }}
+        run: |
+          for attempt in $(seq 1 60); do
+            payload=$(curl --silent --show-error --fail --connect-timeout 5 --max-time 10 \
+              https://bfc.learningman.top/api/health || true)
+            if jq --exit-status --arg expected "$EXPECTED_REVISION" \
+              '.status == "ok" and .revision == $expected' <<<"$payload" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Production did not report revision ${EXPECTED_REVISION}." >&2
+          exit 1

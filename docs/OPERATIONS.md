@@ -23,6 +23,18 @@ docker compose logs --tail 100 panel
 
 数据卷和应用密钥必须保留。备份应复制到数据卷之外，具体命令见 [备份与恢复](BACKUP-AND-RESTORE.md)。
 
+## GitHub Actions 发布与部署
+
+`.github/workflows/ci.yml` 参考 cs-guess 的 CI/CD：Web、daemon 多平台检查和真实 Docker/systemd 测试全部通过后，`main` 发布 `zxilly/bifurcation:sha-<完整提交 SHA>` 及 `latest`。PR 只检查，不发布。手工重跑可通过 `workflow_dispatch` 触发。
+
+仓库变量 `DOCKERHUB_USERNAME` 为 `zxilly`，仓库 Secret `DOCKERHUB_TOKEN` 保存专用读写令牌。`production` 环境的 Secret `PORTAINER_STACK_WEBHOOK_URL` 指向 bifurcation 栈自己的 webhook；它是部署凭据，不可提交到 Git 或写入日志。与 cs-guess 一样，生产环境限制 `main` 分支并由仓库所有者审批。
+
+Portainer 的镜像声明使用 `zxilly/bifurcation:${IMAGE_TAG}`，栈变量 `IMAGE_TAG` 保存当前已部署标签。初次接入 CD 时保留原标签；workflow 通过 webhook 的 `IMAGE_TAG=sha-...` 参数选择新版本。保留既有 `BIFURCATION_APP_KEY`、`BIFURCATION_PUBLIC_URL` 和数据卷，不为每次部署重新生成密钥。
+
+镜像构建参数 `VCS_REF` 写入运行时 `BIFURCATION_REVISION`，`/api/health` 在数据库检查成功后返回 `status` 和 `revision`。部署步骤必须等到公网接口同时报告健康与本次提交 SHA，不能仅凭 webhook 返回成功或旧容器的健康状态判定完成。生产部署串行执行，不取消正在进行的部署。
+
+回退时选择此前通过检查的 `sha-...` 标签更新同一个栈，并核验对应 revision。涉及数据库变化时先遵循备份恢复兼容性要求；不得通过删除卷来强制回退。
+
 ## HTTPS 反向代理
 
 以下为 Nginx 服务器配置示例，替换域名和证书路径。证书申请与续期由部署方管理。
@@ -54,7 +66,7 @@ RPC 流需要关闭响应缓冲，并容许超过心跳间隔的空闲时间。�
 
 创建机器后使用详情页生成的安装命令。安装器下载白名单制品并校验 SHA-256，持久保存面板地址、Token 和安装身份。重复安装保持状态；更换同一面板的 Token 需要显式接管并生成备份。跨面板或更换状态目录不自动接管。
 
-确认机器已经连接，再发布监听地址、端口与 TLS 配置。端口需按所用协议开放：Trojan 使用 TCP，Hysteria2 使用 UDP。证书可以使用节点上的绝对文件路径或面板分发的 PEM。
+确认机器已经连接，再发布监听地址、端口与 TLS 配置。端口需按所用协议开放：Trojan 使用 TCP，Hysteria2 使用 UDP。证书可以使用节点上的绝对文件路径、面板分发的 PEM 或 ACME 自动签发；ACME 由节点向 Let's Encrypt 申请并自动续期，需从公网放行节点的 80 端口用于 HTTP 质询。
 
 ```sh
 systemctl status bifurcation-daemon.service

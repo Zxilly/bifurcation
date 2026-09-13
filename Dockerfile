@@ -25,6 +25,8 @@ RUN pnpm build \
 
 FROM node:24-bookworm-slim AS runtime
 WORKDIR /app
+ARG VCS_REF=dev
+ENV BIFURCATION_REVISION=$VCS_REF
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
 ENV BIFURCATION_ARTIFACT_DIRECTORY=/app/artifacts
 RUN mkdir -p /data && chown node:node /data
