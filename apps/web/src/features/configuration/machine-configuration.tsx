@@ -33,13 +33,10 @@ export function MachineConfiguration({
 }) {
   const resource = useResource<MachineConfigurationDto>(
     `/api/v1/admin/machines/${encodeURIComponent(machine.id)}/config`,
+    { refreshInterval: 5_000 },
   );
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState("");
-  useEffect(() => {
-    const interval = setInterval(resource.refresh, 5000);
-    return () => clearInterval(interval);
-  }, [resource.refresh]);
   const configuration = resource.data;
   return (
     <section className="panel">
@@ -152,10 +149,13 @@ function ConfigurationEditor({
   const [hysteria2Port, setHysteria2Port] = useState(
     String(existing?.hysteria2Port ?? 8443),
   );
-  const [mode, setMode] = useState<"path" | "pem">(
+  const [mode, setMode] = useState<"path" | "pem" | "acme">(
     existing?.tls.mode ?? "path",
   );
   const [serverName, setServerName] = useState(existing?.tls.serverName ?? "");
+  const [acmeEmail, setAcmeEmail] = useState(
+    existing?.tls.mode === "acme" ? existing.tls.email : "",
+  );
   const [certificatePath, setCertificatePath] = useState(
     existing?.tls.mode === "path"
       ? existing.tls.certificatePath
@@ -229,7 +229,9 @@ function ConfigurationEditor({
       tls:
         mode === "path"
           ? { mode, serverName, certificatePath, privateKeyPath }
-          : { mode, serverName, certificatePem, privateKeyPem },
+          : mode === "acme"
+            ? { mode, serverName, email: acmeEmail }
+            : { mode, serverName, certificatePem, privateKeyPem },
       baseJson: base as Record<string, unknown>,
     };
   }
@@ -356,14 +358,25 @@ function ConfigurationEditor({
                   className="field-select"
                   value={mode}
                   onChange={(event) =>
-                    setMode(event.target.value as "path" | "pem")
+                    setMode(event.target.value as "path" | "pem" | "acme")
                   }
                 >
                   <option value="path">机器上的文件路径</option>
                   <option value="pem">上传证书与私钥</option>
+                  <option value="acme">ACME 自动签发</option>
                 </select>
               </label>
-              {mode === "path" ? (
+              {mode === "acme" && (
+                <Input
+                  label="ACME 联系邮箱"
+                  type="email"
+                  value={acmeEmail}
+                  onChange={(event) => setAcmeEmail(event.target.value)}
+                  required
+                  description="节点向 Let's Encrypt 申请并自动续期证书，需放行 80 端口的 HTTP 质询。"
+                />
+              )}
+              {mode === "path" && (
                 <>
                   <Input
                     label="TLS 证书路径"
@@ -378,7 +391,8 @@ function ConfigurationEditor({
                     required
                   />
                 </>
-              ) : (
+              )}
+              {mode === "pem" && (
                 <>
                   <Input
                     label="证书文件（PEM）"

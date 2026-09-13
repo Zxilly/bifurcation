@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Input, Badge } from "@cloudflare/kumo";
@@ -21,15 +21,12 @@ export function Machines() {
   const router = useRouter();
   const resource = useResource<{ machines: MachineDto[] }>(
     "/api/v1/admin/machines",
+    { refreshInterval: 10_000 },
   );
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [reauth, setReauth] = useState(false);
-  useEffect(() => {
-    const interval = setInterval(resource.refresh, 10000);
-    return () => clearInterval(interval);
-  }, [resource.refresh]);
   async function create(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const values = new FormData(event.currentTarget);
@@ -192,6 +189,7 @@ export function MachineDetail({ id }: { id: string }) {
   const router = useRouter();
   const resource = useResource<{ machine: MachineDetailDto }>(
     `/api/v1/admin/machines/${encodeURIComponent(id)}`,
+    { refreshInterval: 5_000 },
   );
   const machine = resource.data?.machine;
   const [action, setAction] = useState<
@@ -202,10 +200,6 @@ export function MachineDetail({ id }: { id: string }) {
   const [reauth, setReauth] = useState(false);
   const [notice, setNotice] = useState("");
   const [uninstallRequestKey, setUninstallRequestKey] = useState("");
-  useEffect(() => {
-    const interval = setInterval(resource.refresh, 5000);
-    return () => clearInterval(interval);
-  }, [resource.refresh]);
   async function execute(kind: "token" | "remove" | "inspect" | "uninstall") {
     setBusy(true);
     setError("");

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import type { UsageDto } from "@/contracts/usage";
 import type { MachineDto } from "@/contracts/machines";
@@ -79,20 +78,14 @@ function UsageTrend({ usage }: { usage: UsageDto }) {
 
 export function PersonalOverview() {
   const period = useUsagePeriod();
-  const resource = useResource<UsageDto>(`/api/v1/me/usage?${period.query}`);
+  const resource = useResource<UsageDto>(`/api/v1/me/usage?${period.query}`, {
+    refreshInterval: 30_000,
+  });
   const today = periodRange("today", period.month, period.now);
   const todayUsage = useResource<UsageDto>(
     `/api/v1/me/usage?start=${today.start}&end=${today.end}&grain=day`,
+    { refreshInterval: 30_000 },
   );
-  const refreshUsage = resource.refresh;
-  const refreshToday = todayUsage.refresh;
-  useEffect(() => {
-    const interval = setInterval(() => {
-      void refreshUsage();
-      void refreshToday();
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [refreshUsage, refreshToday]);
   const usage = resource.data;
   const quota = usage?.currentMonth;
   const totalToday = todayUsage.data?.points.length
@@ -203,22 +196,16 @@ export function PersonalOverview() {
 
 export function AdminUsageOverview() {
   const period = useUsagePeriod();
-  const resource = useResource<UsageDto>(`/api/v1/admin/usage?${period.query}`);
+  const resource = useResource<UsageDto>(`/api/v1/admin/usage?${period.query}`, {
+    refreshInterval: 30_000,
+  });
   const machines = useResource<{ machines: MachineDto[] }>(
     "/api/v1/admin/machines",
+    { refreshInterval: 30_000 },
   );
-  const users = useResource<{ users: UserDto[] }>("/api/v1/admin/users");
-  const refreshUsage = resource.refresh;
-  const refreshMachines = machines.refresh;
-  const refreshUsers = users.refresh;
-  useEffect(() => {
-    const interval = setInterval(() => {
-      void refreshUsage();
-      void refreshMachines();
-      void refreshUsers();
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [refreshUsage, refreshMachines, refreshUsers]);
+  const users = useResource<{ users: UserDto[] }>("/api/v1/admin/users", {
+    refreshInterval: 30_000,
+  });
   const usage = resource.data;
   return (
     <>
@@ -294,11 +281,9 @@ export function AdminUsageOverview() {
 
 export function UserNodeUsage() {
   const period = useUsagePeriod();
-  const resource = useResource<UsageDto>(`/api/v1/admin/usage?${period.query}`);
-  useEffect(() => {
-    const interval = setInterval(resource.refresh, 30_000);
-    return () => clearInterval(interval);
-  }, [resource.refresh]);
+  const resource = useResource<UsageDto>(`/api/v1/admin/usage?${period.query}`, {
+    refreshInterval: 30_000,
+  });
   return (
     <section className="panel">
       <div className="panel-header flex-wrap">
@@ -333,11 +318,8 @@ export function MachineUsage({ machineId }: { machineId: string }) {
   const period = useUsagePeriod();
   const resource = useResource<UsageDto>(
     `/api/v1/admin/usage?${period.query}&machineId=${encodeURIComponent(machineId)}`,
+    { refreshInterval: 30_000 },
   );
-  useEffect(() => {
-    const interval = setInterval(resource.refresh, 30_000);
-    return () => clearInterval(interval);
-  }, [resource.refresh]);
   return (
     <section className="panel">
       <div className="panel-header flex-wrap">
