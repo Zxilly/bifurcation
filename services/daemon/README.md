@@ -12,10 +12,10 @@ for dependency licenses.
 
 ## Run
 
-Build with QUIC support:
+Build with QUIC and ACME support:
 
 ```sh
-go build -tags=with_quic -ldflags '-X main.version=0.1.0' ./cmd/bifurcation-daemon
+go build -tags=with_quic,with_acme -ldflags '-X main.version=0.1.0' ./cmd/bifurcation-daemon
 ```
 
 The private configuration file contains:
@@ -72,10 +72,10 @@ schema fingerprint.
 
 ```sh
 go generate ./internal/state
-go test -tags=with_quic ./...
-go vet -tags=with_quic ./...
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags=with_quic ./cmd/bifurcation-daemon
-CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags=with_quic ./cmd/bifurcation-daemon
+go test -tags=with_quic,with_acme ./...
+go vet -tags=with_quic,with_acme ./...
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags=with_quic,with_acme ./cmd/bifurcation-daemon
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags=with_quic,with_acme ./cmd/bifurcation-daemon
 ```
 
 `TestEmbeddedTCPUDPAndFinalAccounting` uses actual embedded server and client

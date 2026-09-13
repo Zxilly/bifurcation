@@ -11,8 +11,9 @@ const serverName = z.string().trim().min(1).max(253).regex(/^[a-zA-Z0-9.:-]+$/, 
 const pemTls = z.object({ mode: z.literal("pem"), serverName, certificatePem: z.string().min(1).max(128 * 1024), privateKeyPem: z.string().min(1).max(32 * 1024) });
 const absolutePath = z.string().min(2).max(1024).regex(/^\/(?!.*(?:\x00|\r|\n))/, "需要节点上的绝对文件路径");
 const pathTls = z.object({ mode: z.literal("path"), serverName, certificatePath: absolutePath, privateKeyPath: absolutePath });
+const acmeTls = z.object({ mode: z.literal("acme"), serverName: serverName.refine((value) => isIP(value) === 0 && !value.includes(":"), "ACME 签发需要公网域名，不能是 IP 地址"), email: z.string().trim().min(3).max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "填写有效的 ACME 联系邮箱") });
 const port = z.number().int().min(1).max(65535);
-const configurationInput = z.object({ listen: z.string().refine((value) => isIP(value) !== 0, "监听地址必须是 IPv4 或 IPv6 地址").default("::"), trojanPort: port, hysteria2Port: port, tls: z.discriminatedUnion("mode", [pemTls, pathTls]), baseJson: z.record(z.string(), z.unknown()).default({}) });
+const configurationInput = z.object({ listen: z.string().refine((value) => isIP(value) !== 0, "监听地址必须是 IPv4 或 IPv6 地址").default("::"), trojanPort: port, hysteria2Port: port, tls: z.discriminatedUnion("mode", [pemTls, pathTls, acmeTls]), baseJson: z.record(z.string(), z.unknown()).default({}) });
 
 export function validateSettings(input: unknown): MachineConfigurationInput {
   const settings = configurationInput.parse(input);
@@ -41,6 +42,7 @@ function validateCertificate(tls: Extract<TlsSettings, { mode: "pem" }>) {
   }
 }
 function inboundTls(tls: TlsSettings) {
+  if (tls.mode === "acme") return { enabled: true, server_name: tls.serverName, min_version: "1.3", certificate_provider: { type: "acme", domain: [tls.serverName], email: tls.email } };
   return { enabled: true, server_name: tls.serverName, min_version: "1.3", ...(tls.mode === "pem" ? { certificate: tls.certificatePem.trim().split(/\r?\n/), key: tls.privateKeyPem.trim().split(/\r?\n/) } : { certificate_path: tls.certificatePath, key_path: tls.privateKeyPath }) };
 }
 function outboundTls(tls: TlsSettings) {

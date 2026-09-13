@@ -2,7 +2,8 @@ import type { TaskDto } from "./machines";
 
 export type TlsSettings =
   | { mode: "pem"; serverName: string; certificatePem: string; privateKeyPem: string }
-  | { mode: "path"; serverName: string; certificatePath: string; privateKeyPath: string };
+  | { mode: "path"; serverName: string; certificatePath: string; privateKeyPath: string }
+  | { mode: "acme"; serverName: string; email: string };
 
 export interface MachineConfigurationInput {
   listen?: string;

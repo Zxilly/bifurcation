@@ -42,11 +42,11 @@ This tests shell failure handling, checksum rejection, configuration conflicts a
 Build Linux amd64 fixtures from `services/daemon` with `CGO_ENABLED=0`:
 
 ```sh
-go build -tags=with_quic -ldflags='-X main.version=0.0.0-dev' -o /tmp/bif-fixtures/old ./cmd/bifurcation-daemon
-go build -tags=with_quic -ldflags='-X main.version=0.1.0' -o /tmp/bif-fixtures/new ./cmd/bifurcation-daemon
+go build -tags=with_quic,with_acme -ldflags='-X main.version=0.0.0-dev' -o /tmp/bif-fixtures/old ./cmd/bifurcation-daemon
+go build -tags=with_quic,with_acme -ldflags='-X main.version=0.1.0' -o /tmp/bif-fixtures/new ./cmd/bifurcation-daemon
 go build -o /tmp/bif-fixtures/bad ./internal/updater/testdata/bad_start
-go test -tags=with_quic -c -o /tmp/bif-fixtures/maintenance.test ./internal/updater
-go test -tags=with_quic -c -o /tmp/bif-fixtures/core.test ./internal/adapters/singbox
+go test -tags=with_quic,with_acme -c -o /tmp/bif-fixtures/maintenance.test ./internal/updater
+go test -tags=with_quic,with_acme -c -o /tmp/bif-fixtures/core.test ./internal/adapters/singbox
 ```
 
 ```sh

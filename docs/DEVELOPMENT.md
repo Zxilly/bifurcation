@@ -27,14 +27,14 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm test:e2e
-go -C services/daemon test -tags=with_quic ./...
-go -C services/daemon vet -tags=with_quic ./...
+go -C services/daemon test -tags=with_quic,with_acme ./...
+go -C services/daemon vet -tags=with_quic,with_acme ./...
 ```
 
 Playwright 浏览器安装与用例说明见 [E2E](../apps/web/e2e/README.md)。Go race 检查用于状态并发、核心生命周期和计量变更；运行环境须支持 race 工具链。
 
 ```sh
-go -C services/daemon test -race -tags=with_quic ./internal/adapters/singbox ./internal/state ./internal/panelclient
+go -C services/daemon test -race -tags=with_quic,with_acme ./internal/adapters/singbox ./internal/state ./internal/panelclient
 ```
 
 ## 生成代码和数据库

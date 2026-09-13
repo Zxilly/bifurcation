@@ -326,6 +326,19 @@ describe("configuration, subscription and exact usage accounting", () => {
     expect(rendered.services).toBeUndefined();
     expect(jsonBytes(rendered).toString()).not.toContain("v2ray_api");
   });
+  it("renders the ACME certificate provider and rejects IP server names or invalid emails", () => {
+    const acme = { ...settings, tls: { mode: "acme" as const, serverName: "node.test", email: "admin@node.test" } };
+    const rendered = renderServer(validateSettings(acme), { version: 1, policyRevision: "2", users: [] });
+    const inbounds = rendered.inbounds as { tls: Record<string, unknown> }[];
+    expect(inbounds).toHaveLength(2);
+    for (const inbound of inbounds) {
+      expect(inbound.tls.certificate_provider).toEqual({ type: "acme", domain: ["node.test"], email: "admin@node.test" });
+      expect(inbound.tls.certificate).toBeUndefined();
+      expect(inbound.tls.certificate_path).toBeUndefined();
+    }
+    expect(() => validateSettings({ ...acme, tls: { ...acme.tls, serverName: "127.0.0.1" } })).toThrow("公网域名");
+    expect(() => validateSettings({ ...acme, tls: { ...acme.tls, email: "not-an-email" } })).toThrow("邮箱");
+  });
   it("overlays live metering and transport problems only on the current window and clears them after recovery", () => {
     publish(true);
     const now = Date.now();

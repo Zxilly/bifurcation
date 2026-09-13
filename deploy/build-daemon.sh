@@ -8,7 +8,7 @@ core_version=${core_version#v}
 core_directory=$(go list -m -f '{{.Dir}}' github.com/sagernet/sing-box)
 cp "$core_directory/LICENSE" /artifacts/LICENSE.sing-box
 for arch in amd64 arm64; do
-  CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -tags=with_quic -trimpath -buildvcs=false \
+  CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -tags=with_quic,with_acme -trimpath -buildvcs=false \
     -ldflags="-s -w -buildid= -X main.version=${version}" \
     -o "/artifacts/daemon-linux-${arch}" ./cmd/bifurcation-daemon
   (cd /artifacts && sha256sum "daemon-linux-${arch}" > "daemon-linux-${arch}.sha256")

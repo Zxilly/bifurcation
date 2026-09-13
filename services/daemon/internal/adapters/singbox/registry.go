@@ -31,6 +31,8 @@ func registryContext(ctx context.Context, directory string) context.Context {
 	transport.RegisterHTTPS(dnsRegistry)
 	hosts.RegisterTransport(dnsRegistry)
 	local.RegisterTransport(dnsRegistry)
+	certificates := certificate.NewRegistry()
+	registerACME(certificates)
 	ctx = filemanager.WithDefault(ctx, directory, directory, -1, -1)
-	return box.Context(ctx, ins, outs, endpoint.NewRegistry(), dnsRegistry, serviceRegistry.NewRegistry(), certificate.NewRegistry())
+	return box.Context(ctx, ins, outs, endpoint.NewRegistry(), dnsRegistry, serviceRegistry.NewRegistry(), certificates)
 }
