@@ -1,0 +1,7 @@
+# Third-party source
+
+The daemon embeds [sing-box](https://github.com/SagerNet/sing-box) as a Go module. Its exact module version and checksums are recorded in `services/daemon/go.mod` and `go.sum`; the build uses the `with_quic` tag. sing-box is distributed under GNU GPL version 3 or later, as stated by its upstream source.
+
+The container artifacts include `LICENSE.sing-box` copied from the resolved module and `daemon-build-info.txt` listing the compiled Go modules. The daemon source and build instructions are in `services/daemon` and `deploy/build-daemon.sh`. No standalone sing-box server binary is distributed by this project.
+
+Other third-party dependencies retain their upstream licenses. The JavaScript and Go lock files record their exact versions.
