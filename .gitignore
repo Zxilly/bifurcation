@@ -22,3 +22,5 @@ apps/web/playwright-report/
 apps/web/next-env.d.ts
 *.pem
 *.key
+!/apps/web/tests/fixtures/test-server-cert.pem
+!/apps/web/tests/fixtures/test-server-key.pem
