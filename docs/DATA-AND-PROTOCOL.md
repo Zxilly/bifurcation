@@ -33,25 +33,31 @@ API Key、Session 和一次性 token 按摘要验证。可恢复的机器 Token�
 
 ## HTTP
 
-认证交换位于 `/api/auth`，业务接口位于 `/api/v1`。浏览器使用 HttpOnly Session，自动化使用 Bearer API Key；二者都按账号当前角色与状态授权。Cookie 写请求验证公开 origin，Bearer 请求不回退为 Cookie 身份。
+面板 API 走 Connect 协议（见下文 Connect 章节），仅文件下载与重定向保留普通 HTTP。浏览器使用 HttpOnly Session，自动化使用 Bearer API Key；二者都按账号当前角色与状态授权。Cookie 写请求验证公开 origin，Bearer 请求不回退为 Cookie 身份。
 
-| 接口族 | 用途 |
+| 接口 | 用途 |
 | --- | --- |
-| `/api/auth/{passkey,password,activation,recovery,reauth,logout}` | 登录、激活、恢复、近期认证 |
-| `/api/v1/me` | 个人信息、用量、API Key、Passkey、密码和订阅 |
-| `/api/v1/admin/users` | 账号创建、额度/角色/状态及恢复 |
-| `/api/v1/admin/machines` | 机器管理、token、重绑、诊断、配置、升级和卸载 |
-| `/api/v1/admin/usage` | 跨用户/节点用量 |
+| `/api/v1/me/config` | 当前用户 sing-box 配置下载 |
+| `/api/health` | 存活探针 |
 | `/s/:token` | 只读订阅配置 |
 | `/install.sh`、`/artifacts/:id` | 安装函数与白名单制品 |
 
-具体路由以 [app/api](../apps/web/src/app/api) 为准，请求和响应类型位于 [contracts](../apps/web/src/contracts)。写入采用版本检查或请求幂等键；错误以稳定 code 和 HTTP 状态表示。账户及机器数据不进入公共缓存。
+面板请求和响应类型由 [proto/bifurcation/panel/v1](../proto/bifurcation/panel/v1) 定义。写入采用版本检查或请求幂等键；错误以稳定 code 和 Connect 错误详情（ErrorDetail）表示。账户及机器数据不进入公共缓存。
 
 ## Connect
 
-`bifurcation.v1.MachineService` 位于 `/rpc/[...connect]`，所有调用使用机器 Bearer Token。机器 ID 从 Token 派生，不能由请求体选择。
+`/rpc/[...connect]` 同时承载两类服务：daemon 的 `bifurcation.v1.MachineService`（机器 Bearer Token）与面板的 `bifurcation.panel.v1` 服务（Session 或 API Key，按 public/authenticated/recent/admin 分级授权，见 [panel/common.ts](../apps/web/src/server/rpc/panel/common.ts)）。机器 ID 从 Token 派生，不能由请求体选择。
 
-| RPC | 语义 |
+| 服务 | 语义 |
+| --- | --- |
+| `bifurcation.panel.v1.AuthService` | 登录、登出、激活、恢复、近期认证 |
+| `bifurcation.panel.v1.MeService` | 个人信息、用量、订阅、API Key、Passkey、密码 |
+| `bifurcation.panel.v1.AdminUserService` | 账号创建、额度/角色/状态及恢复 |
+| `bifurcation.panel.v1.AdminMachineService` | 机器管理、token、重绑、诊断、升级和卸载 |
+| `bifurcation.panel.v1.AdminConfigurationService` | 节点配置预览与发布 |
+| `bifurcation.panel.v1.UsageService` | 跨用户/节点用量 |
+
+| MachineService RPC | 语义 |
 | --- | --- |
 | `WatchTasks` | 服务端流：会话、任务通知与心跳 |
 | `AcceptTask` | 确认当前安装/会话接受任务，返回原始 payload |
