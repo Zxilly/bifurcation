@@ -14,6 +14,7 @@ import { Modal, FormError } from "@/components/modal";
 import { Reauthenticate } from "@/features/identity/reauth";
 import { ApiError, errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
+import { resourceKeys } from "@/features/shared/keys";
 import { useResource } from "@/features/shared/use-resource";
 import { formatBytes } from "@/features/usage/format";
 
@@ -32,7 +33,7 @@ export function MachineUpgrades({
   machine: MachineDetail;
   onQueued: () => Promise<void>;
 }) {
-  const resource = useResource(`machine-upgrades:${machine.id}`, () =>
+  const resource = useResource(resourceKeys.machineUpgrades(machine.id), () =>
     panel.machines
       .getMachineUpgrades({ machineId: machine.id })
       .then((r) => r.upgrades!),

@@ -2,9 +2,10 @@
 import useSWR from "swr";
 import { Code } from "@connectrpc/connect";
 import { ApiError, errorMessage } from "./api";
+import type { Snapshot } from "./snapshot";
 
-type Snapshot<T> = { value: T; updatedAt: number };
-
+// Browser-side cache for views that keep polling after the server rendered
+// them. The first snapshot arrives as SWR fallback data from the page.
 export function useResource<T>(
   key: string,
   fetcher: () => Promise<T>,

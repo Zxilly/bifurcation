@@ -1,4 +1,26 @@
+import { Suspense } from "react";
+import { SWRConfig } from "swr";
+import { ResourceState } from "@/components/resource-state";
 import { PersonalOverview } from "@/features/usage/overview";
-export default function OverviewPage() {
-  return <PersonalOverview />;
+import { snapshot } from "@/features/shared/snapshot";
+import { initialUsageRanges, usageKey } from "@/features/usage/range";
+import { requirePageUser } from "@/server/identity/queries";
+import { getMyUsage } from "@/server/usage/queries";
+export default async function OverviewPage() {
+  const me = await requirePageUser();
+  const { month: monthRange, today: todayRange } = initialUsageRanges();
+  return (
+    <SWRConfig
+      value={{
+        fallback: {
+          [usageKey(monthRange)]: snapshot(() => getMyUsage(me.principal, monthRange)),
+          [usageKey(todayRange, "today")]: snapshot(() => getMyUsage(me.principal, todayRange)),
+        },
+      }}
+    >
+      <Suspense fallback={<ResourceState loading title="正在加载用量…" />}>
+        <PersonalOverview />
+      </Suspense>
+    </SWRConfig>
+  );
 }

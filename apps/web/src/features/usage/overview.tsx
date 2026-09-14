@@ -6,10 +6,12 @@ import { ResourceFeedback } from "@/components/resource-feedback";
 import { Grain, type Usage } from "@bifurcation/rpc/panel/usage";
 import { MachineConnection } from "@bifurcation/rpc/panel/machines";
 import { UserStatus } from "@bifurcation/rpc/panel/types";
+import { resourceKeys } from "@/features/shared/keys";
 import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 import { formatGiB, formatRate, share } from "./format";
-import { PeriodPicker, periodRange, useUsagePeriod } from "./period";
+import { PeriodPicker, useUsagePeriod } from "./period";
+import { periodRange, usageKey, usageRequest } from "./range";
 import { Trend } from "./trend";
 import { DataQuality, GroupUsageTable, UserMachineTable } from "./usage-table";
 import { UsageSummary } from "./summary";
@@ -25,20 +27,6 @@ const minuteLabel = new Intl.DateTimeFormat("zh-CN", {
   hour12: false,
   timeZone: "Asia/Shanghai",
 });
-
-type Range = ReturnType<typeof periodRange>;
-
-function usageRequest(range: Range) {
-  return {
-    start: BigInt(range.start),
-    end: BigInt(range.end),
-    grain: range.grain === "minute" ? Grain.MINUTE : Grain.DAY,
-  };
-}
-
-function usageKey(range: Range, suffix = "") {
-  return `usage:${range.start}:${range.end}:${range.grain}:${suffix}`;
-}
 
 function UsageMetadata({ usage }: { usage: Usage }) {
   const previous = usage.previousPeriod;
@@ -223,13 +211,13 @@ export function AdminUsageOverview() {
     { refreshInterval: 30_000 },
   );
   const machines = useResource(
-    "admin-machines",
+    resourceKeys.machines,
     () => panel.machines.listMachines({}),
     {
       refreshInterval: 30_000,
     },
   );
-  const users = useResource("admin-users", () => panel.users.listUsers({}), {
+  const users = useResource(resourceKeys.users, () => panel.users.listUsers({}), {
     refreshInterval: 30_000,
   });
   const usage = resource.data;

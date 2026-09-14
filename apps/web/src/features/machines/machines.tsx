@@ -34,6 +34,7 @@ import { Modal, FormError } from "@/components/modal";
 import { CopyValue } from "@/components/secret-result";
 import { Reauthenticate } from "@/features/identity/reauth";
 import { ApiError, errorMessage } from "@/features/shared/api";
+import { resourceKeys } from "@/features/shared/keys";
 import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 import { MachineConfiguration } from "@/features/configuration/machine-configuration";
@@ -57,7 +58,7 @@ const detailTabs = [
 export function Machines() {
   const router = useRouter();
   const resource = useResource(
-    "machines",
+    resourceKeys.machines,
     () => panel.machines.listMachines({}),
     { refreshInterval: 10_000 },
   );
@@ -416,7 +417,7 @@ export function MachineDetailPage({ id }: { id: string }) {
     window.history.pushState(null, "", url);
   }
   const resource = useResource(
-    `machine:${id}`,
+    resourceKeys.machine(id),
     () => panel.machines.getMachine({ machineId: id }).then((r) => r.machine!),
     { refreshInterval: 5_000 },
   );

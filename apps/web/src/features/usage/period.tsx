@@ -3,33 +3,7 @@
 import { Select } from "@cloudflare/kumo";
 import { useEffect, useState } from "react";
 import { Input } from "@cloudflare/kumo/components/input";
-type UsagePeriod = "today" | "7days" | "30days" | "month";
-const dayMilliseconds = 86_400_000;
-const offset = 8 * 3_600_000;
-
-function currentShanghaiMonth(now: number) {
-  return new Date(now + offset).toISOString().slice(0, 7);
-}
-
-export function periodRange(period: UsagePeriod, month: string, now: number) {
-  const dayStart =
-    Math.floor((now + offset) / dayMilliseconds) * dayMilliseconds - offset;
-  if (period !== "month")
-    return {
-      start:
-        dayStart -
-        (period === "7days" ? 6 : period === "30days" ? 29 : 0) *
-          dayMilliseconds,
-      end: dayStart + dayMilliseconds,
-      grain: period === "today" ? ("minute" as const) : ("day" as const),
-    };
-  const [year, monthNumber] = month.split("-").map(Number);
-  return {
-    start: Date.UTC(year, monthNumber - 1, 1) - offset,
-    end: Date.UTC(year, monthNumber, 1) - offset,
-    grain: "day" as const,
-  };
-}
+import { currentShanghaiMonth, periodRange, type UsagePeriod } from "./range";
 
 export function useUsagePeriod() {
   const [now, setNow] = useState(() => Date.now());
