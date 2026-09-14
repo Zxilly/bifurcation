@@ -6,7 +6,16 @@ import { resourceKeys } from "@/features/shared/keys";
 import { snapshot } from "@/features/shared/snapshot";
 import { requireAdminPageUser } from "@/server/identity/queries";
 import { listMachines } from "@/server/modules/machines/queries";
-export default async function MachinesPage() {
+
+export default function MachinesPage() {
+  return (
+    <Suspense fallback={<ResourceState loading title="正在加载机器…" />}>
+      <MachinesData />
+    </Suspense>
+  );
+}
+
+async function MachinesData() {
   const me = await requireAdminPageUser();
   return (
     <SWRConfig
@@ -16,9 +25,7 @@ export default async function MachinesPage() {
         },
       }}
     >
-      <Suspense fallback={<ResourceState loading title="正在加载机器…" />}>
-        <Machines />
-      </Suspense>
+      <Machines />
     </SWRConfig>
   );
 }

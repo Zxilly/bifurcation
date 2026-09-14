@@ -9,7 +9,16 @@ import { requireAdminPageUser } from "@/server/identity/queries";
 import { listMachines } from "@/server/modules/machines/queries";
 import { queryUsage } from "@/server/usage/queries";
 import { listUsers } from "@/server/users/queries";
-export default async function AdminPage() {
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<ResourceState loading title="正在加载概览…" />}>
+      <AdminData />
+    </Suspense>
+  );
+}
+
+async function AdminData() {
   const me = await requireAdminPageUser();
   const range = initialUsageRanges().month;
   return (
@@ -22,9 +31,7 @@ export default async function AdminPage() {
         },
       }}
     >
-      <Suspense fallback={<ResourceState loading title="正在加载概览…" />}>
-        <AdminUsageOverview />
-      </Suspense>
+      <AdminUsageOverview />
     </SWRConfig>
   );
 }

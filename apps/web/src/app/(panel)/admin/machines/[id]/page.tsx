@@ -11,13 +11,15 @@ import { requireAdminPageUser } from "@/server/identity/queries";
 import { getMachine, getMachineUpgrades } from "@/server/modules/machines/queries";
 import { queryUsage } from "@/server/usage/queries";
 
-export default async function MachinePage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
-}) {
+export default function MachinePage({ params, searchParams }: PageProps<"/admin/machines/[id]">) {
+  return (
+    <Suspense fallback={<ResourceState loading title="正在加载机器…" />}>
+      <MachineData params={params} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function MachineData({ params, searchParams }: PageProps<"/admin/machines/[id]">) {
   const [{ id }, { tab }, me] = await Promise.all([params, searchParams, requireAdminPageUser()]);
   const machine = readOrNotFound(() => getMachine(me.principal, id));
   const range = initialUsageRanges().month;
@@ -41,9 +43,7 @@ export default async function MachinePage({
   }
   return (
     <SWRConfig value={{ fallback }}>
-      <Suspense fallback={<ResourceState loading title="正在加载机器…" />}>
-        <MachineDetailPage id={id} />
-      </Suspense>
+      <MachineDetailPage id={id} />
     </SWRConfig>
   );
 }
