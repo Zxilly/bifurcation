@@ -27,8 +27,10 @@ export function Trend({
   if (!points.length)
     return (
       <Empty
+        size="sm"
         className="rounded-none border-0 bg-transparent"
-        title="暂无用量数据"
+        title="所选期间暂无已上报用量"
+        description="请调整时间范围，或检查节点上报。未上报不代表用量为零。"
       />
     );
   return (

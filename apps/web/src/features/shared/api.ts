@@ -1,9 +1,12 @@
+import type { Code } from "@connectrpc/connect";
+
 export class ApiError extends Error {
   constructor(
     public code: string,
     message: string,
     public requestId?: string,
     public fields?: Record<string, string[]>,
+    public transportCode?: Code,
   ) {
     super(message);
   }

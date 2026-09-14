@@ -67,8 +67,8 @@ export function GroupUsageTable({
   );
   return (
     <LayerCard className="min-w-0 overflow-x-auto p-0">
-      <Table className="min-w-max tabular-nums">
-        <Table.Header>
+      <Table className={rows.length ? "min-w-max tabular-nums" : "w-full"}>
+        <Table.Header className={!rows.length ? "hidden" : undefined}>
           <Table.Row>
             <Table.Head>{dimension === "user" ? "用户" : "节点"}</Table.Head>
             <Table.Head className="text-right whitespace-nowrap">
@@ -91,8 +91,10 @@ export function GroupUsageTable({
             <Table.Row>
               <Table.Cell colSpan={6}>
                 <Empty
+                  size="sm"
                   className="rounded-none border-0 bg-transparent"
                   title="暂无用量数据"
+                  description="所选期间没有已上报明细，可调整时间范围后重试。"
                 />
               </Table.Cell>
             </Table.Row>
@@ -130,8 +132,8 @@ export function GroupUsageTable({
 export function UserMachineTable({ groups }: { groups: UsageGroup[] }) {
   return (
     <LayerCard className="min-w-0 overflow-x-auto p-0">
-      <Table className="min-w-max tabular-nums">
-        <Table.Header>
+      <Table className={groups.length ? "min-w-max tabular-nums" : "w-full"}>
+        <Table.Header className={!groups.length ? "hidden" : undefined}>
           <Table.Row>
             <Table.Head>用户</Table.Head>
             <Table.Head>节点</Table.Head>
@@ -152,8 +154,10 @@ export function UserMachineTable({ groups }: { groups: UsageGroup[] }) {
             <Table.Row>
               <Table.Cell colSpan={6}>
                 <Empty
+                  size="sm"
                   className="rounded-none border-0 bg-transparent"
                   title="暂无用量数据"
+                  description="所选期间没有已上报明细，可调整时间范围后重试。"
                 />
               </Table.Cell>
             </Table.Row>

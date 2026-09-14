@@ -8,7 +8,17 @@ test("Kumo selection, clipboard fallback and mobile navigation preserve user act
   page.on("pageerror", (error) => errors.push(error.message));
   await activate(page, app);
   await page.getByRole("link", { name: "用户", exact: true }).click();
+  await page.evaluate(() => {
+    const transitions: string[] = [];
+    Object.assign(window, { dialogTransitions: transitions });
+    document.addEventListener("transitionrun", (event) => {
+      if (event.target instanceof HTMLElement && event.target.getAttribute("role") === "dialog") {
+        transitions.push((event as TransitionEvent).propertyName);
+      }
+    });
+  });
   await page.getByRole("button", { name: "创建用户", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { dialogTransitions: string[] }).dialogTransitions)).toEqual(expect.arrayContaining(["scale", "opacity"]));
   await expect(
     page
       .getByRole("dialog")

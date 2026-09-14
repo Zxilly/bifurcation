@@ -1,23 +1,40 @@
 "use client";
 import useSWR from "swr";
-import { errorMessage } from "./api";
+import { Code } from "@connectrpc/connect";
+import { ApiError, errorMessage } from "./api";
+
+type Snapshot<T> = { value: T; updatedAt: number };
+
 export function useResource<T>(
   key: string,
   fetcher: () => Promise<T>,
   options: { refreshInterval?: number } = {},
 ) {
-  const { data, error, isLoading, mutate } = useSWR<T>(key, fetcher, {
-    refreshInterval: options.refreshInterval,
-  });
+  const { data, error, isLoading, isValidating, mutate } = useSWR<Snapshot<T>>(
+    key,
+    async () => ({ value: await fetcher(), updatedAt: Date.now() }),
+    { refreshInterval: options.refreshInterval },
+  );
+  const accessDenied =
+    error instanceof ApiError &&
+    (error.transportCode === Code.Unauthenticated ||
+      error.transportCode === Code.PermissionDenied);
   return {
-    data: data ?? null,
+    data: accessDenied ? null : (data?.value ?? null),
+    updatedAt: accessDenied ? null : (data?.updatedAt ?? null),
     error: error ? errorMessage(error) : "",
     loading: isLoading,
+    refreshing: isValidating,
     refresh: async () => {
-      await mutate();
+      try {
+        await mutate();
+      } catch {
+        // SWR reports the error. Keep it until a successful response, so a
+        // retry cannot briefly expose a snapshot whose access was denied.
+      }
     },
     update: (value: T) => {
-      void mutate(value, { revalidate: false });
+      void mutate({ value, updatedAt: Date.now() }, { revalidate: false });
     },
   };
 }

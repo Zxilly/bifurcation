@@ -9,6 +9,7 @@ import {
   Select,
 } from "@cloudflare/kumo";
 import { ResourceState } from "@/components/resource-state";
+import { ResourceFeedback } from "@/components/resource-feedback";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Role, UserStatus, type User } from "@bifurcation/rpc/panel/types";
@@ -32,10 +33,18 @@ type Action =
       kind: "edit" | "disable" | "enable" | "recover" | "activate";
       user: User;
     };
+
+function monthlyQuota(user: User) {
+  return user.monthlyLimitBytes === undefined
+    ? "不限量"
+    : `${(Number(user.monthlyLimitBytes) / 1073741824).toLocaleString("zh-CN")} GiB`;
+}
+
 export function Users() {
   const router = useRouter();
   const resource = useResource("admin-users", () => panel.users.listUsers({}));
   const [action, setAction] = useState<Action | null>(null);
+  const [actionOpen, setActionOpen] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [reauth, setReauth] = useState(false);
@@ -45,6 +54,7 @@ export function Users() {
   function open(value: Action) {
     setError("");
     setAction(value);
+    setActionOpen(true);
   }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -104,7 +114,7 @@ export function Users() {
           status:
             action.kind === "disable" ? UserStatus.DISABLED : UserStatus.ACTIVE,
         });
-      setAction(null);
+      setActionOpen(false);
       await resource.refresh();
       router.refresh();
     } catch (e) {
@@ -120,14 +130,19 @@ export function Users() {
         create: "创建用户",
         edit: "编辑用户",
         disable: "禁用用户",
-        enable: "恢复使用",
-        recover: "恢复账号",
+        enable: "启用账号",
+        recover: "恢复登录凭据",
         activate: "重新生成激活链接",
       }[action.kind]
     : "";
   const editUser = action && action.kind !== "create" ? action.user : null;
+  const activeAdmins =
+    resource.data?.users.filter(
+      (user) => user.role === Role.ADMIN && user.status === UserStatus.ACTIVE,
+    ) ?? [];
+  const lastAdminId = activeAdmins.length === 1 ? activeAdmins[0].id : null;
   return (
-    <>
+    <div className="users-workspace">
       <div className="page-heading">
         <h1>用户</h1>
         <Button variant="primary" onClick={() => open({ kind: "create" })}>
@@ -135,34 +150,49 @@ export function Users() {
         </Button>
       </div>
       <section className="panel-section stack">
-        <FormError message={resource.error} />
-        {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
+        <p className="subtle">
+          {resource.data ? `${resource.data.users.length} 位用户 · ` : ""}
+          通过一次性激活链接加入
+        </p>
+        <ResourceFeedback {...resource} onRetry={resource.refresh} />
         <LayerCard className="min-w-0 overflow-x-auto p-0">
-          <Table className="min-w-max tabular-nums">
+          <Table className="w-full table-fixed tabular-nums">
             <Table.Header>
               <Table.Row>
-                <Table.Head>用户名</Table.Head>
-                <Table.Head>角色</Table.Head>
-                <Table.Head className="text-right whitespace-nowrap">
+                <Table.Head className="w-1/2 md:w-1/5">用户名</Table.Head>
+                <Table.Head className="hidden md:table-cell">角色</Table.Head>
+                <Table.Head className="hidden text-right whitespace-nowrap md:table-cell">
                   每月额度
                 </Table.Head>
-                <Table.Head>状态</Table.Head>
-                <Table.Head>操作</Table.Head>
+                <Table.Head className="hidden md:table-cell">状态</Table.Head>
+                <Table.Head className="md:w-1/3">操作</Table.Head>
               </Table.Row>
             </Table.Header>
             <Table.Body>
               {resource.data?.users.map((user) => (
                 <Table.Row key={user.id}>
-                  <Table.Cell>{user.username}</Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell className="break-words">
+                    {user.username}
+                    <div className="mt-1 space-y-1 md:hidden">
+                      <p>
+                        {user.role === Role.ADMIN ? "管理员" : "用户"} ·{" "}
+                        {status[user.status]}
+                      </p>
+                      <p>每月额度：{monthlyQuota(user)}</p>
+                    </div>
+                    {user.id === lastAdminId && (
+                      <p className="mt-1 text-kumo-subtle">
+                        最后一个启用管理员，不能禁用或降级。
+                      </p>
+                    )}
+                  </Table.Cell>
+                  <Table.Cell className="hidden md:table-cell">
                     {user.role === Role.ADMIN ? "管理员" : "用户"}
                   </Table.Cell>
-                  <Table.Cell className="text-right whitespace-nowrap">
-                    {user.monthlyLimitBytes === undefined
-                      ? "不限量"
-                      : `${(Number(user.monthlyLimitBytes) / 1073741824).toLocaleString("zh-CN")} GiB`}
+                  <Table.Cell className="hidden text-right whitespace-nowrap md:table-cell">
+                    {monthlyQuota(user)}
                   </Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell className="hidden md:table-cell">
                     <Badge
                       variant={
                         user.status === UserStatus.DISABLED
@@ -192,6 +222,7 @@ export function Users() {
                         <>
                           <Button
                             variant="ghost"
+                            disabled={user.id === lastAdminId}
                             onClick={() =>
                               open({
                                 kind:
@@ -203,7 +234,7 @@ export function Users() {
                             }
                           >
                             {user.status === UserStatus.DISABLED
-                              ? "恢复使用"
+                              ? "启用账号"
                               : "禁用"}
                           </Button>
                           <Button
@@ -211,12 +242,12 @@ export function Users() {
                             disabled={user.status === UserStatus.DISABLED}
                             title={
                               user.status === UserStatus.DISABLED
-                                ? "请先恢复使用，再恢复登录凭据"
+                                ? "请先启用账号，再恢复登录凭据"
                                 : undefined
                             }
                             onClick={() => open({ kind: "recover", user })}
                           >
-                            恢复账号
+                            恢复登录凭据
                           </Button>
                         </>
                       )}
@@ -248,12 +279,17 @@ export function Users() {
       {action && (
         <Modal
           title={title}
-          open
+          open={actionOpen}
+          role={action.kind === "disable" ? "alertdialog" : "dialog"}
           onClose={() => {
-            if (!busy) setAction(null);
+            if (!busy) setActionOpen(false);
           }}
         >
-          <form className="stack" onSubmit={submit}>
+          <form
+            key={`${action.kind}:${editUser?.id ?? ""}:${actionOpen}`}
+            className="stack"
+            onSubmit={submit}
+          >
             {action.kind === "create" || action.kind === "edit" ? (
               <>
                 {action.kind === "create" ? (
@@ -276,7 +312,16 @@ export function Users() {
                   defaultValue={
                     editUser?.role === Role.ADMIN ? "admin" : "user"
                   }
+                  disabled={!!editUser && editUser.id === lastAdminId}
                 />
+                {editUser?.id === lastAdminId && (
+                  <>
+                    <input type="hidden" name="role" value="admin" />
+                    <p className="subtle">
+                      这是最后一个启用的管理员，不能降级；可调整每月额度。
+                    </p>
+                  </>
+                )}
                 <Input
                   label="每月额度（GiB）"
                   name="quota"
@@ -294,12 +339,12 @@ export function Users() {
             ) : (
               <p>
                 {action.kind === "disable"
-                  ? `禁用“${editUser?.username}”后，将无法登录和使用代理。`
+                  ? `禁用“${editUser?.username}”后，将无法登录或使用 API Key。代理访问撤销需等待节点确认，离线节点不能视为已完成。历史用量保留。`
                   : action.kind === "recover"
-                    ? `生成“${editUser?.username}”的恢复链接。完成恢复后，旧 Passkey、密码和登录会话将失效。`
+                    ? `生成“${editUser?.username}”的恢复链接。完成恢复后，旧 Passkey、密码和登录会话将失效，API Key 保留。用户可仅设置密码，也可添加新的 Passkey。`
                     : action.kind === "activate"
                       ? `旧激活链接将失效，请将新链接交给“${editUser?.username}”。`
-                      : `允许“${editUser?.username}”重新使用账号。`}
+                      : `允许“${editUser?.username}”重新登录和使用 API Key。代理接入仍受额度限制，以节点确认结果为准。`}
               </p>
             )}
             <FormError message={error} />
@@ -307,7 +352,7 @@ export function Users() {
               <Button
                 type="button"
                 disabled={busy}
-                onClick={() => setAction(null)}
+                onClick={() => setActionOpen(false)}
               >
                 取消
               </Button>
@@ -338,6 +383,6 @@ export function Users() {
           onClose={() => setResult(null)}
         />
       )}
-    </>
+    </div>
   );
 }

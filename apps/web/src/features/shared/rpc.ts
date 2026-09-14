@@ -27,6 +27,7 @@ export function panelTransport(transport: Transport): Transport {
                   Object.entries(detail.fields).map(([key, value]) => [key, value.messages]),
                 )
               : undefined,
+            error.code,
           );
         }
         throw error;

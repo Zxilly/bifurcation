@@ -137,6 +137,29 @@ a {
   margin-top: 0;
 }
 
+.overview-workspace,
+.users-workspace {
+  max-width: 1480px;
+  margin-inline: auto;
+}
+.account-workspace {
+  max-width: 1240px;
+  margin-inline: auto;
+}
+.admin-overview .metric-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1200px) {
+  .admin-overview .metric-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .admin-overview .metric-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .upgrade-row {
   display: flex;
   align-items: center;

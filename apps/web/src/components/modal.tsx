@@ -2,22 +2,33 @@
 
 import { Banner, Button, Dialog } from "@cloudflare/kumo";
 import { XIcon } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
 export function Modal({
   title,
   open,
   onClose,
   children,
   size = "lg",
+  role = "dialog",
 }: {
   title: string;
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
   size?: "lg" | "xl";
+  role?: "dialog" | "alertdialog";
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // Callers mount dialogs on demand. Start Base UI closed so opening still
+    // passes through its native starting styles, as with a persistent Trigger.
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
   return (
     <Dialog.Root
-      open={open}
+      role={role}
+      open={open && mounted}
       onOpenChange={(value) => {
         if (!value) onClose();
       }}

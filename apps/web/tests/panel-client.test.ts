@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { create, toBinary, toJson } from "@bufbuild/protobuf";
-import { createClient } from "@connectrpc/connect";
+import { Code, createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { AuthService, PasskeyOptionsResponseSchema } from "@bifurcation/rpc/panel/auth";
@@ -25,4 +25,22 @@ it.each(["ARTIFACT_CHANGED", "REAUTH_REQUIRED"])("preserves %s from the real Con
   const error = await client.passwordLogin({ username: "test", password: "test" }).catch((error: unknown) => error);
   expect(error).toBeInstanceOf(ApiError);
   expect(error).toMatchObject({ code, message: "请重新确认", requestId: "request-1", fields: { password: ["required"] } });
+});
+
+it.each([
+  [401, "unauthenticated", Code.Unauthenticated],
+  [403, "permission_denied", Code.PermissionDenied],
+] as const)("preserves authorization status %i even without application error details", async (status, code, transportCode) => {
+  const client = createClient(AuthService, panelTransport(createConnectTransport({
+    baseUrl: "http://localhost/rpc",
+    useBinaryFormat: false,
+    fetch: async () => new Response(JSON.stringify({ code, message: "访问已撤销" }), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    }),
+  })));
+  await expect(client.passwordLogin({ username: "test", password: "test" })).rejects.toMatchObject({
+    transportCode,
+    message: "访问已撤销",
+  });
 });

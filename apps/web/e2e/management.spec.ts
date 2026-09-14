@@ -74,9 +74,11 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
   await expect(
     page.getByRole("heading", { name: "首次安装", exact: true }),
   ).toBeVisible();
+  await page.getByRole("tab", { name: "操作记录", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "获取最近 100 行日志", exact: true }),
   ).toBeDisabled();
+  await page.getByRole("tab", { name: "接入与维护", exact: true }).click();
   const tokenSection = page.locator("section").filter({
     has: page.getByRole("heading", { name: "机器 Token", exact: true }),
   });
@@ -115,9 +117,11 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
       .getByRole("dialog")
       .getByRole("button", { name: "替换安装实例", exact: true })
       .click();
+    await page.getByRole("tab", { name: "概览", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: "首次安装", exact: true }),
     ).toBeVisible();
+    await page.getByRole("tab", { name: "接入与维护", exact: true }).click();
     const newTokenSection = page.locator("section").filter({
       has: page.getByRole("heading", { name: "机器 Token", exact: true }),
     });
@@ -128,7 +132,7 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
       .getByLabel("完整内容", { exact: true })
       .inputValue();
     expect(newToken === machineToken).toBe(false);
-    const machineId = machineUrl.split("/admin/machines/")[1];
+    const machineId = new URL(machineUrl).pathname.split("/admin/machines/")[1];
     const detail = (
       await rpc<{
         machine: {
@@ -165,7 +169,7 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
   await page.getByRole("link", { name: "账号设置", exact: true }).click();
   await expect(page).toHaveURL(`${app.origin}/account`);
   await expect(
-    page.getByRole("cell", { name: "Test API key", exact: true }),
+    page.getByRole("row").filter({ hasText: "Test API key" }),
   ).toBeVisible();
   expect(
     await page.evaluate(() => document.body.scrollWidth <= innerWidth),

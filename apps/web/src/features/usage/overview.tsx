@@ -1,15 +1,14 @@
 "use client";
 
-import { Banner, LayerCard, Collapsible } from "@cloudflare/kumo";
+import { Banner, LayerCard, Collapsible, LinkButton } from "@cloudflare/kumo";
 import { ResourceState } from "@/components/resource-state";
-import { Button } from "@cloudflare/kumo/components/button";
+import { ResourceFeedback } from "@/components/resource-feedback";
 import { Grain, type Usage } from "@bifurcation/rpc/panel/usage";
 import { MachineConnection } from "@bifurcation/rpc/panel/machines";
 import { UserStatus } from "@bifurcation/rpc/panel/types";
-import { FormError } from "@/components/modal";
 import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
-import { formatGiB, share } from "./format";
+import { formatGiB, formatRate, share } from "./format";
 import { PeriodPicker, periodRange, useUsagePeriod } from "./period";
 import { Trend } from "./trend";
 import { DataQuality, GroupUsageTable, UserMachineTable } from "./usage-table";
@@ -65,17 +64,17 @@ function UsageMetadata({ usage }: { usage: Usage }) {
 function UsageTrend({ usage }: { usage: Usage }) {
   return (
     <>
-      <UsageMetadata usage={usage} />
-      <div className="actions mb-4">
-        <DataQuality
-          estimated={usage.estimated}
-          incomplete={usage.incomplete}
-        />
-      </div>
+      {!!usage.points.length && <UsageMetadata usage={usage} />}
+      {(usage.estimated || usage.incomplete) && (
+        <div className="actions">
+          <DataQuality
+            estimated={usage.estimated}
+            incomplete={usage.incomplete}
+          />
+        </div>
+      )}
       {usage.incomplete && (
-        <p className="subtle mb-4">
-          部分统计存在缺口，显示值可能低于实际用量。
-        </p>
+        <p className="subtle">部分统计存在缺口，显示值可能低于实际用量。</p>
       )}
       <Trend
         kind={usage.grain === Grain.MINUTE ? "line" : "bar"}
@@ -121,17 +120,23 @@ export function PersonalOverview() {
         quota.period === period.month &&
         !!usage?.points.length));
   return (
-    <>
+    <div className="overview-workspace">
       <div className="page-heading">
         <h1>我的概览</h1>
         <PeriodPicker value={period} />
       </div>
-      <FormError message={resource.error || todayUsage.error} />
-      {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
-      {quota?.warning && (
+      <div className="mb-6 space-y-3">
+        <p className="subtle">
+          统计按上海时区计算，上下行合计；额度按自然月重置。
+        </p>
+        <LinkButton href="/subscription">管理我的订阅</LinkButton>
+        <ResourceFeedback {...resource} onRetry={resource.refresh} />
+        <ResourceFeedback {...todayUsage} onRetry={todayUsage.refresh} />
+      </div>
+      {(quota?.blocked || !!quota?.warning) && (
         <Banner role="status" variant="alert" className="mb-6">
           {quota.blocked
-            ? "已达到本月额度，代理接入暂停。"
+            ? "本月额度已用尽，代理接入受限。下月 1 日 00:00（上海时间）重置额度，或联系管理员调整。手工禁用的账号不会随额度重置自动启用。"
             : `本月额度已使用 ${quota.warning}% 以上。`}
         </Banner>
       )}
@@ -160,9 +165,11 @@ export function PersonalOverview() {
               ? "—"
               : remaining === null
                 ? "不限量"
-                : !hasCurrentUsage
-                  ? "—"
-                  : formatGiB(remaining > 0n ? remaining : 0n)}
+                : quota.limitBytes === 0n
+                  ? "0 GiB"
+                  : !hasCurrentUsage
+                    ? "—"
+                    : formatGiB(remaining > 0n ? remaining : 0n)}
           </strong>
           {quota && <span className="subtle">{quota.period} · 上海时区</span>}
         </LayerCard>
@@ -197,18 +204,13 @@ export function PersonalOverview() {
           />
         )}
       </section>
-      <section className="panel-section stack">
-        <h2>用在哪些节点</h2>
-        {usage ? (
+      {!!usage?.groups.length && (
+        <section className="panel-section stack">
+          <h2>用在哪些节点</h2>
           <GroupUsageTable groups={usage.groups} dimension="machine" />
-        ) : (
-          <ResourceState
-            loading={resource.loading}
-            title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
-          />
-        )}
-      </section>
-    </>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -232,13 +234,31 @@ export function AdminUsageOverview() {
   });
   const usage = resource.data;
   return (
-    <>
+    <div className="overview-workspace admin-overview">
       <div className="page-heading">
         <h1>管理概览</h1>
         <PeriodPicker value={period} />
       </div>
-      <FormError message={resource.error || machines.error || users.error} />
-      {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
+      <div className="mb-6 space-y-3">
+        <p className="subtle">所选期间 · 上海时区 · 上传 + 下载</p>
+        <ResourceFeedback {...resource} onRetry={resource.refresh} />
+        <ResourceFeedback {...machines} onRetry={machines.refresh} />
+        <ResourceFeedback {...users} onRetry={users.refresh} />
+        {!!machines.data?.machines.some(
+          (machine) =>
+            machine.connection === MachineConnection.OFFLINE &&
+            !machine.uninstalled,
+        ) && (
+          <Banner variant="alert" role="status">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p>
+                有机器失联，当前运行状态无法确认；面板失联不代表代理已停止。
+              </p>
+              <LinkButton href="/admin/machines">查看节点状态</LinkButton>
+            </div>
+          </Banner>
+        )}
+      </div>
       <div className="metric-row">
         <LayerCard render={<section />} className="panel">
           <h2>在线机器</h2>
@@ -263,6 +283,15 @@ export function AdminUsageOverview() {
           )}
         </LayerCard>
         <LayerCard render={<section />} className="panel">
+          <h2>分钟平均峰值</h2>
+          <strong className="metric-value">
+            {usage?.peakMinuteAverageBytesPerSecond == null
+              ? "—"
+              : formatRate(usage.peakMinuteAverageBytesPerSecond)}
+          </strong>
+          <span className="subtle">所选期间 · 仅完整分钟</span>
+        </LayerCard>
+        <LayerCard render={<section />} className="panel">
           <h2>启用用户</h2>
           <strong className="metric-value">
             {users.data
@@ -282,29 +311,19 @@ export function AdminUsageOverview() {
           />
         )}
       </section>
-      <section className="panel-section stack">
-        <h2>节点用量</h2>
-        {usage ? (
+      {!!usage?.groups.length && (
+        <section className="panel-section stack">
+          <h2>节点用量</h2>
           <GroupUsageTable groups={usage.groups} dimension="machine" />
-        ) : (
-          <ResourceState
-            loading={resource.loading}
-            title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
-          />
-        )}
-      </section>
-      <section className="panel-section stack">
-        <h2>用户用量</h2>
-        {usage ? (
+        </section>
+      )}
+      {!!usage?.groups.length && (
+        <section className="panel-section stack">
+          <h2>用户用量</h2>
           <GroupUsageTable groups={usage.groups} dimension="user" />
-        ) : (
-          <ResourceState
-            loading={resource.loading}
-            title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
-          />
-        )}
-      </section>
-    </>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -322,10 +341,7 @@ export function UserNodeUsage() {
         <h2>用户 × 节点用量</h2>
         <PeriodPicker value={period} />
       </div>
-      <FormError message={resource.error} />
-      {resource.error && (
-        <Button onClick={resource.refresh}>重新加载用量</Button>
-      )}
+      <ResourceFeedback {...resource} onRetry={resource.refresh} />
       {resource.data ? (
         <>
           <div className="actions">
@@ -335,7 +351,9 @@ export function UserNodeUsage() {
             />
           </div>
           <UserMachineTable groups={resource.data.groups} />
-          <UsageMetadata usage={resource.data} />
+          {!!resource.data.points.length && (
+            <UsageMetadata usage={resource.data} />
+          )}
         </>
       ) : (
         <ResourceState
@@ -363,10 +381,7 @@ export function MachineUsage({ machineId }: { machineId: string }) {
         <h2>代理用量</h2>
         <PeriodPicker value={period} />
       </div>
-      <FormError message={resource.error} />
-      {resource.error && (
-        <Button onClick={resource.refresh}>重新加载用量</Button>
-      )}
+      <ResourceFeedback {...resource} onRetry={resource.refresh} />
       {resource.data ? (
         <>
           <div className="actions mb-4 subtle">

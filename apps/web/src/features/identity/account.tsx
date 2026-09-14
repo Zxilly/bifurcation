@@ -9,6 +9,7 @@ import {
   Badge,
 } from "@cloudflare/kumo";
 import { ResourceState } from "@/components/resource-state";
+import { ResourceFeedback } from "@/components/resource-feedback";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { startRegistration } from "@simplewebauthn/browser";
@@ -20,15 +21,18 @@ import { Reauthenticate } from "./reauth";
 import { ApiError, date, errorMessage } from "@/features/shared/api";
 import { useResource } from "@/features/shared/use-resource";
 import { panel } from "@/features/shared/rpc";
+import { usePasskeySupport } from "./use-passkey-support";
 
 type Action =
   | { kind: "passkey" | "password" | "key" }
   | { kind: "remove-passkey" | "revoke-key"; id: string; name: string };
 export function Account() {
   const router = useRouter();
+  const passkeySupported = usePasskeySupport();
   const keys = useResource("me:api-keys", () => panel.me.listApiKeys({}));
   const passkeys = useResource("me:passkeys", () => panel.me.listPasskeys({}));
   const [action, setAction] = useState<Action | null>(null);
+  const [actionOpen, setActionOpen] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [reauth, setReauth] = useState(false);
@@ -36,6 +40,7 @@ export function Account() {
   const [notice, setNotice] = useState("");
   const open = (action: Action) => {
     setAction(action);
+    setActionOpen(true);
     setError("");
     setNotice("");
   };
@@ -95,7 +100,7 @@ export function Account() {
           setNotice("API Key 已撤销。");
           break;
       }
-      setAction(null);
+      setActionOpen(false);
     } catch (e) {
       if (e instanceof ApiError && e.code === "REAUTH_REQUIRED")
         setReauth(true);
@@ -112,7 +117,7 @@ export function Account() {
     "revoke-key": "撤销 API Key",
   };
   return (
-    <>
+    <div className="account-workspace">
       <div className="page-heading">
         <h1>账号设置</h1>
       </div>
@@ -122,17 +127,36 @@ export function Account() {
         </Banner>
       )}
       <section className="panel-section stack">
-        <h2>Passkey</h2>
-        <FormError message={passkeys.error} />
-        {passkeys.error && <Button onClick={passkeys.refresh}>重新加载</Button>}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2>Passkey</h2>
+          <Button
+            variant="primary"
+            disabled={!passkeySupported}
+            onClick={() => open({ kind: "passkey" })}
+          >
+            添加 Passkey
+          </Button>
+        </div>
+        <p>用设备解锁或安全密钥登录；后备密码也可独立登录。</p>
+        {!passkeySupported && (
+          <p className="subtle">
+            当前浏览器不支持 Passkey，请使用后备密码登录。可换用支持的浏览器添加
+            Passkey。
+          </p>
+        )}
+        <ResourceFeedback {...passkeys} onRetry={passkeys.refresh} />
         <LayerCard className="min-w-0 overflow-x-auto p-0">
-          <Table className="min-w-max tabular-nums">
-            <Table.Header>
+          <Table className="w-full table-fixed tabular-nums">
+            <Table.Header
+              className={!passkeys.data?.passkeys.length ? "hidden" : undefined}
+            >
               <Table.Row>
-                <Table.Head>名称</Table.Head>
-                <Table.Head>创建时间</Table.Head>
-                <Table.Head>备份</Table.Head>
-                <Table.Head>
+                <Table.Head className="w-2/3 sm:w-2/5">名称</Table.Head>
+                <Table.Head className="hidden sm:table-cell">
+                  创建时间
+                </Table.Head>
+                <Table.Head className="hidden sm:table-cell">备份</Table.Head>
+                <Table.Head className="text-right">
                   <span className="sr-only">操作</span>
                 </Table.Head>
               </Table.Row>
@@ -140,10 +164,20 @@ export function Account() {
             <Table.Body>
               {passkeys.data?.passkeys.map((key) => (
                 <Table.Row key={key.id}>
-                  <Table.Cell>{key.name}</Table.Cell>
-                  <Table.Cell>{date(key.createdAt)}</Table.Cell>
-                  <Table.Cell>{key.backedUp ? "已备份" : "本机"}</Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell className="break-words">
+                    {key.name}
+                    <div className="mt-1 space-y-1 text-kumo-subtle sm:hidden">
+                      <p>创建于 {date(key.createdAt)}</p>
+                      <p>{key.backedUp ? "已备份" : "本机"}</p>
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell className="hidden sm:table-cell">
+                    {date(key.createdAt)}
+                  </Table.Cell>
+                  <Table.Cell className="hidden sm:table-cell">
+                    {key.backedUp ? "已备份" : "本机"}
+                  </Table.Cell>
+                  <Table.Cell className="text-right">
                     <Button
                       variant="ghost"
                       onClick={() =>
@@ -171,6 +205,11 @@ export function Account() {
                             ? "未能加载 Passkey"
                             : "尚未添加 Passkey"
                       }
+                      description={
+                        !passkeys.loading && !passkeys.error
+                          ? "当前可使用后备密码登录。需要用设备解锁登录时，可添加 Passkey。"
+                          : undefined
+                      }
                     />
                   </Table.Cell>
                 </Table.Row>
@@ -178,12 +217,10 @@ export function Account() {
             </Table.Body>
           </Table>
         </LayerCard>
-        <Button variant="primary" onClick={() => open({ kind: "passkey" })}>
-          添加 Passkey
-        </Button>
       </section>
       <LayerCard render={<section />} className="panel stack">
         <h2>后备密码</h2>
+        <p>无法使用 Passkey 时，使用后备密码登录。</p>
         <div>
           <Badge variant="secondary">已设置</Badge>
         </div>
@@ -194,21 +231,32 @@ export function Account() {
         </div>
       </LayerCard>
       <section className="panel-section stack">
-        <div className="panel-header">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2>API Key</h2>
-          <span className="subtle text-xs">长期有效</span>
+          <div className="actions">
+            <span className="subtle">长期有效 · 可随时撤销</span>
+            <Button onClick={() => open({ kind: "key" })}>创建 API Key</Button>
+          </div>
         </div>
-        <FormError message={keys.error} />
-        {keys.error && <Button onClick={keys.refresh}>重新加载</Button>}
+        <p>
+          用于脚本和自动化，权限随当前账号变化。完整密钥仅创建时显示；撤销后调用立即失效。
+        </p>
+        <ResourceFeedback {...keys} onRetry={keys.refresh} />
         <LayerCard className="min-w-0 overflow-x-auto p-0">
-          <Table className="min-w-max tabular-nums">
-            <Table.Header>
+          <Table className="w-full table-fixed tabular-nums">
+            <Table.Header
+              className={!keys.data?.apiKeys.length ? "hidden" : undefined}
+            >
               <Table.Row>
-                <Table.Head>名称</Table.Head>
-                <Table.Head>密钥前缀</Table.Head>
-                <Table.Head>最近使用</Table.Head>
-                <Table.Head>状态</Table.Head>
-                <Table.Head>
+                <Table.Head className="w-2/3 sm:w-1/4">名称</Table.Head>
+                <Table.Head className="hidden sm:table-cell">
+                  密钥前缀
+                </Table.Head>
+                <Table.Head className="hidden sm:table-cell">
+                  最近使用
+                </Table.Head>
+                <Table.Head className="hidden sm:table-cell">状态</Table.Head>
+                <Table.Head className="text-right">
                   <span className="sr-only">操作</span>
                 </Table.Head>
               </Table.Row>
@@ -216,13 +264,26 @@ export function Account() {
             <Table.Body>
               {keys.data?.apiKeys.map((key) => (
                 <Table.Row key={key.id}>
-                  <Table.Cell>{key.name}</Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell className="break-words">
+                    {key.name}
+                    <div className="mt-1 space-y-1 text-kumo-subtle sm:hidden">
+                      <p>
+                        <code>{key.prefix}…</code>
+                      </p>
+                      <p>最近使用 {date(key.lastUsedAt)}</p>
+                      <p>{key.revokedAt ? "已撤销" : "有效"}</p>
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell className="hidden break-all sm:table-cell">
                     <code>{key.prefix}…</code>
                   </Table.Cell>
-                  <Table.Cell>{date(key.lastUsedAt)}</Table.Cell>
-                  <Table.Cell>{key.revokedAt ? "已撤销" : "有效"}</Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell className="hidden sm:table-cell">
+                    {date(key.lastUsedAt)}
+                  </Table.Cell>
+                  <Table.Cell className="hidden sm:table-cell">
+                    {key.revokedAt ? "已撤销" : "有效"}
+                  </Table.Cell>
+                  <Table.Cell className="text-right">
                     {!key.revokedAt && (
                       <Button
                         variant="ghost"
@@ -252,6 +313,11 @@ export function Account() {
                             ? "未能加载 API Key"
                             : "尚未创建 API Key"
                       }
+                      description={
+                        !keys.loading && !keys.error
+                          ? "仅在需要脚本或自动化调用时创建；日常使用面板无需 API Key。"
+                          : undefined
+                      }
                     />
                   </Table.Cell>
                 </Table.Row>
@@ -259,17 +325,25 @@ export function Account() {
             </Table.Body>
           </Table>
         </LayerCard>
-        <Button onClick={() => open({ kind: "key" })}>创建 API Key</Button>
       </section>
       {action && (
         <Modal
           title={titles[action.kind]}
-          open
+          open={actionOpen}
+          role={
+            action.kind === "remove-passkey" || action.kind === "revoke-key"
+              ? "alertdialog"
+              : "dialog"
+          }
           onClose={() => {
-            if (!busy) setAction(null);
+            if (!busy) setActionOpen(false);
           }}
         >
-          <form className="stack" onSubmit={submit}>
+          <form
+            key={`${action.kind}:${actionOpen}`}
+            className="stack"
+            onSubmit={submit}
+          >
             {(action.kind === "passkey" || action.kind === "key") && (
               <Input
                 label="名称"
@@ -294,8 +368,6 @@ export function Account() {
                   type="password"
                   autoComplete="new-password"
                   required
-                  minLength={12}
-                  description="至少 12 个字符。"
                 />
                 <Input
                   label="确认新密码"
@@ -303,22 +375,28 @@ export function Account() {
                   type="password"
                   autoComplete="new-password"
                   required
-                  minLength={12}
                 />
               </>
             )}
             {action.kind === "remove-passkey" && (
-              <p>移除“{action.name}”后，将无法再使用此 Passkey 登录。</p>
+              <p>
+                移除“{action.name}”后，将无法再使用此 Passkey
+                登录。你仍可使用其他已绑定的 Passkey
+                或后备密码；此操作不会删除设备上的密钥副本。
+              </p>
             )}
             {action.kind === "revoke-key" && (
-              <p>撤销“{action.name}”后，使用此 Key 的请求将立即失效。</p>
+              <p>
+                撤销“{action.name}”后，使用此 Key
+                的请求将立即失效。相关脚本需要改用新的密钥；当前登录和客户端订阅不受影响。
+              </p>
             )}
             <FormError message={error} />
             <div className="mt-8 flex flex-wrap justify-end gap-2">
               <Button
                 type="button"
                 disabled={busy}
-                onClick={() => setAction(null)}
+                onClick={() => setActionOpen(false)}
               >
                 取消
               </Button>
@@ -354,6 +432,6 @@ export function Account() {
           onClose={() => setSecret("")}
         />
       )}
-    </>
+    </div>
   );
 }

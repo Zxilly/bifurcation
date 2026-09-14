@@ -22,6 +22,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="zh-CN"
       data-mode="light"
+      // Browser extensions such as Immersive Translate add attributes before hydration.
+      suppressHydrationWarning
       className={`${inter.variable} ${chinese.variable} h-full antialiased`}
     >
       <body>{children}</body>
