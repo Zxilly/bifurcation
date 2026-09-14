@@ -8,6 +8,7 @@ import { PasskeyPurpose } from "@bifurcation/rpc/panel/auth";
 import { Modal, FormError } from "@/components/modal";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
+import { usePasskeySupport } from "./use-passkey-support";
 export function Reauthenticate({
   onComplete,
   onClose,
@@ -17,6 +18,7 @@ export function Reauthenticate({
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const passkeySupported = usePasskeySupport();
   async function passkey() {
     setBusy(true);
     setError("");
@@ -60,11 +62,13 @@ export function Reauthenticate({
     <Modal title="验证身份" open onClose={onClose}>
       <div className="stack">
         <p className="subtle">继续此操作前，请重新验证身份。</p>
-        <div>
-          <Button onClick={passkey} loading={busy}>
-            使用 Passkey 验证
-          </Button>
-        </div>
+        {passkeySupported && (
+          <div>
+            <Button onClick={passkey} loading={busy}>
+              使用 Passkey 验证
+            </Button>
+          </div>
+        )}
         <form className="stack" onSubmit={password}>
           <Input
             type="password"

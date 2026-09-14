@@ -19,6 +19,7 @@ const service = (name: string, tiers: Record<string, Tier>) =>
 // Every RPC has an explicit authorization tier; a missing entry fails closed.
 const tiers: Record<string, Tier> = {
   ...service("AuthService", {
+    SetupAdministrator: "public",
     PasswordLogin: "public",
     Logout: "authenticated",
     PasskeyOptions: "public",

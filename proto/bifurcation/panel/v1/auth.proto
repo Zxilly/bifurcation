@@ -10,6 +10,8 @@ import "google/protobuf/struct.proto";
 // Successful credential verification establishes the session through a
 // Set-Cookie response header; the token never appears in a message body.
 service AuthService {
+  // Creates the first administrator. Only available while the database has no users.
+  rpc SetupAdministrator(SetupAdministratorRequest) returns (SetupAdministratorResponse);
   rpc PasswordLogin(PasswordLoginRequest) returns (PasswordLoginResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc PasskeyOptions(PasskeyOptionsRequest) returns (PasskeyOptionsResponse);
@@ -21,6 +23,15 @@ service AuthService {
   // Marks the current session recently authenticated. Requires a session or
   // API Key principal, unlike the anonymous calls above.
   rpc ReauthPassword(ReauthPasswordRequest) returns (ReauthPasswordResponse);
+}
+
+message SetupAdministratorRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message SetupAdministratorResponse {
+  User user = 1;
 }
 
 enum PasskeyPurpose {
@@ -84,6 +95,8 @@ message ActivationCompleteRequest {
   google.protobuf.Struct response = 3;
   string name = 4;
   string password = 5;
+  // Explicitly skip Passkey registration. response must be absent in this mode.
+  bool password_only = 6;
 }
 
 message ActivationCompleteResponse {
@@ -106,6 +119,8 @@ message RecoveryCompleteRequest {
   google.protobuf.Struct response = 3;
   string name = 4;
   string password = 5;
+  // Replaces old credentials with a password only; revokes old Passkeys/sessions.
+  bool password_only = 6;
 }
 
 message RecoveryCompleteResponse {

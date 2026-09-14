@@ -4,13 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { getDatabase, openDatabase, type DatabaseHandle } from "../src/server/db";
-import { passwords, users } from "../src/server/db/schema";
+import { passwords, passkeys, users } from "../src/server/db/schema";
 import { newId, encryptSecret, decryptSecret } from "../src/server/crypto";
-import { authenticate, createApiKey, issueOnboarding, passwordLogin, consumeRateLimit, issueSession, revokeApiKey } from "../src/server/identity/service";
+import { authenticate, changePassword, reauthenticatePassword, createApiKey, issueOnboarding, passwordLogin, consumeRateLimit, issueSession, revokeApiKey } from "../src/server/identity/service";
 import { authenticationOptions, authenticationVerify, onboardingComplete, onboardingOptions, newPasskeyOptions, newPasskeyVerify } from "../src/server/identity/webauthn";
 import { createUser, updateUser } from "../src/server/users/service";
 import { checkOrigin, withApi, readJson } from "../src/server/http/route";
 import { authenticator } from "./authenticator";
+import { needsSetup, setupAdministrator } from "../src/server/identity/setup";
 
 const globals = globalThis as typeof globalThis & { bifurcationDatabase?: DatabaseHandle };
 let directory: string;
@@ -22,18 +23,94 @@ beforeEach(() => {
 });
 afterEach(() => { globals.bifurcationDatabase?.sqlite.close(); delete globals.bifurcationDatabase; rmSync(directory, { recursive: true, force: true }); });
 const request = (token: string) => new Headers({ cookie: `bifurcation_session=${token}` });
-async function activateAdmin() {
+async function activateAdmin(password = "correct horse battery staple") {
   const userId = newId();
   getDatabase().db.insert(users).values({ id: userId, username: "admin", role: "admin", status: "pending", createdAt: Date.now() }).run();
   const token = new URL(issueOnboarding(userId, "activation").url).searchParams.get("token")!;
   const options = await onboardingOptions("activation", { token });
   const device = authenticator();
-  const completion = { token, flowId: options.flowId, response: device.register(options.options.challenge), password: "correct horse battery staple" };
+  const completion = { token, flowId: options.flowId, response: device.register(options.options.challenge), password };
   const result = await onboardingComplete("activation", completion);
   return { ...result, device, completion, principal: authenticate(request(result.token)) };
 }
 
 describe("persistent identity boundary", () => {
+  it("creates exactly one initial administrator under concurrent setup requests and keeps setup closed", async () => {
+    expect(needsSetup()).toBe(true);
+    const attempts = await Promise.allSettled([
+      setupAdministrator({ username: "first", password: "1" }),
+      setupAdministrator({ username: "second", password: "2" }),
+    ]);
+    expect(attempts.filter((attempt) => attempt.status === "fulfilled")).toHaveLength(1);
+    const winner = attempts.find((attempt) => attempt.status === "fulfilled")!;
+    if (winner.status !== "fulfilled") throw new Error("No successful setup");
+    expect(authenticate(request(winner.value.token)).user.role).toBe("admin");
+    expect(getDatabase().db.select().from(users).all()).toHaveLength(1);
+    expect(getDatabase().db.select().from(passwords).all()).toHaveLength(1);
+    expect(needsSetup()).toBe(false);
+    const loser = attempts.find((attempt) => attempt.status === "rejected");
+    expect(loser).toMatchObject({ reason: { code: "SETUP_COMPLETE" } });
+    getDatabase().sqlite.close(); delete globals.bifurcationDatabase;
+    await expect(setupAdministrator({ username: "third", password: "3" })).rejects.toMatchObject({ code: "SETUP_COMPLETE" });
+  });
+  it("does not reopen setup for pending or disabled accounts", async () => {
+    const id = newId();
+    getDatabase().db.insert(users).values({ id, username: "reserved", role: "admin", status: "pending", createdAt: Date.now() }).run();
+    expect(needsSetup()).toBe(false);
+    await expect(setupAdministrator({ username: "intruder", password: "1" })).rejects.toMatchObject({ code: "SETUP_COMPLETE" });
+    getDatabase().db.update(users).set({ status: "disabled" }).where(eq(users.id, id)).run();
+    expect(needsSetup()).toBe(false);
+    await expect(setupAdministrator({ username: "intruder", password: "1" })).rejects.toMatchObject({ code: "SETUP_COMPLETE" });
+  });
+  it("activates with only a password, rejects replay, and supports disabling, re-enabling and adding a Passkey", async () => {
+    const admin = await activateAdmin();
+    const created = createUser(admin.principal, { username: "password-only" });
+    const token = new URL(created.activationUrl).searchParams.get("token")!;
+    const options = await onboardingOptions("activation", { token });
+    const completion = { token, flowId: options.flowId, password: "1", passwordOnly: true };
+    await expect(onboardingComplete("activation", { ...completion, token: "x".repeat(43) })).rejects.toMatchObject({ code: "INVALID_FLOW" });
+    await expect(onboardingComplete("activation", { ...completion, flowId: newId() })).rejects.toMatchObject({ code: "INVALID_FLOW" });
+    await expect(onboardingComplete("recovery", completion)).rejects.toMatchObject({ code: "INVALID_FLOW" });
+    await expect(onboardingComplete("activation", { ...completion, passwordOnly: false })).rejects.toThrow();
+    await expect(onboardingComplete("activation", { ...completion, response: {} })).rejects.toThrow();
+    const result = await onboardingComplete("activation", completion);
+    expect(getDatabase().db.select().from(passkeys).where(eq(passkeys.userId, result.user.id)).all()).toEqual([]);
+    await expect(onboardingComplete("activation", completion)).rejects.toMatchObject({ code: "INVALID_FLOW" });
+    const disabled = updateUser(admin.principal, result.user.id, { expectedVersion: result.user.version, status: "disabled" }).user;
+    await expect(passwordLogin({ username: "password-only", password: "1" })).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+    updateUser(admin.principal, result.user.id, { expectedVersion: disabled.version, status: "active" });
+    const login = await passwordLogin({ username: "password-only", password: "1" });
+    const principal = authenticate(request(login.token));
+    const registration = await newPasskeyOptions(principal);
+    await newPasskeyVerify(principal, { flowId: registration.flowId, response: authenticator().register(registration.options.challenge) });
+    expect(getDatabase().db.select().from(passkeys).where(eq(passkeys.userId, result.user.id)).all()).toHaveLength(1);
+  });
+  it("password-only recovery revokes old Passkeys and sessions while preserving API keys", async () => {
+    const admin = await activateAdmin();
+    const key = createApiKey(admin.principal, { name: "keep" });
+    const token = new URL(issueOnboarding(admin.user.id, "recovery").url).searchParams.get("token")!;
+    const options = await onboardingOptions("recovery", { token });
+    const completion = { token, flowId: options.flowId, password: "2", passwordOnly: true };
+    await onboardingComplete("recovery", completion);
+    expect(() => authenticate(request(admin.token))).toThrow("登录已失效");
+    expect(getDatabase().db.select().from(passkeys).all()).toEqual([]);
+    expect(authenticate(new Headers({ authorization: `Bearer ${key.token}` })).user.id).toBe(admin.user.id);
+    await expect(passwordLogin({ username: "admin", password: admin.completion.password })).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+    expect((await passwordLogin({ username: "admin", password: "2" })).user.id).toBe(admin.user.id);
+    await expect(onboardingComplete("recovery", completion)).rejects.toMatchObject({ code: "INVALID_FLOW" });
+  });
+  it.each(["1", "密", "a".repeat(257)])("accepts unrestricted nonempty passwords through activation, login and password changes (%#)", async (password) => {
+    const admin = await activateAdmin(password);
+    const login = await passwordLogin({ username: "admin", password });
+    const principal = authenticate(request(login.token));
+    await reauthenticatePassword(principal, { password });
+    const replacement = password + "2";
+    await changePassword(principal, { password: replacement });
+    expect(() => authenticate(request(login.token))).toThrow("登录已失效");
+    await expect(passwordLogin({ username: "admin", password })).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+    const updatedLogin = await passwordLogin({ username: "admin", password: replacement });
+    expect(authenticate(request(updatedLogin.token)).user.id).toBe(admin.user.id);
+  });
   it("activates atomically with a verified passkey and password, then rejects replay", async () => {
     const admin = await activateAdmin();
     expect(admin.user.status).toBe("active");

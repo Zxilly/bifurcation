@@ -13,7 +13,46 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file bifurcation/panel/v1/auth.proto.
  */
 export const file_bifurcation_panel_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("Ch9iaWZ1cmNhdGlvbi9wYW5lbC92MS9hdXRoLnByb3RvEhRiaWZ1cmNhdGlvbi5wYW5lbC52MSI6ChRQYXNzd29yZExvZ2luUmVxdWVzdBIQCgh1c2VybmFtZRgBIAEoCRIQCghwYXNzd29yZBgCIAEoCSJBChVQYXNzd29yZExvZ2luUmVzcG9uc2USKAoEdXNlchgBIAEoCzIaLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlVzZXIiDwoNTG9nb3V0UmVxdWVzdCIQCg5Mb2dvdXRSZXNwb25zZSJOChVQYXNza2V5T3B0aW9uc1JlcXVlc3QSNQoHcHVycG9zZRgBIAEoDjIkLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlBhc3NrZXlQdXJwb3NlIlMKFlBhc3NrZXlPcHRpb25zUmVzcG9uc2USDwoHZmxvd19pZBgBIAEoCRIoCgdvcHRpb25zGAIgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCJgChRQYXNza2V5VmVyaWZ5UmVxdWVzdBIPCgdmbG93X2lkGAEgASgJEikKCHJlc3BvbnNlGAIgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBIMCgRuYW1lGAMgASgJIkEKFVBhc3NrZXlWZXJpZnlSZXNwb25zZRIoCgR1c2VyGAEgASgLMhouYmlmdXJjYXRpb24ucGFuZWwudjEuVXNlciIpChhBY3RpdmF0aW9uT3B0aW9uc1JlcXVlc3QSDQoFdG9rZW4YASABKAkiaAoZQWN0aXZhdGlvbk9wdGlvbnNSZXNwb25zZRIPCgdmbG93X2lkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEigKB29wdGlvbnMYAyABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IoYBChlBY3RpdmF0aW9uQ29tcGxldGVSZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB2Zsb3dfaWQYAiABKAkSKQoIcmVzcG9uc2UYAyABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EgwKBG5hbWUYBCABKAkSEAoIcGFzc3dvcmQYBSABKAkiRgoaQWN0aXZhdGlvbkNvbXBsZXRlUmVzcG9uc2USKAoEdXNlchgBIAEoCzIaLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlVzZXIiJwoWUmVjb3ZlcnlPcHRpb25zUmVxdWVzdBINCgV0b2tlbhgBIAEoCSJmChdSZWNvdmVyeU9wdGlvbnNSZXNwb25zZRIPCgdmbG93X2lkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEigKB29wdGlvbnMYAyABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IoQBChdSZWNvdmVyeUNvbXBsZXRlUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIPCgdmbG93X2lkGAIgASgJEikKCHJlc3BvbnNlGAMgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBIMCgRuYW1lGAQgASgJEhAKCHBhc3N3b3JkGAUgASgJIkQKGFJlY292ZXJ5Q29tcGxldGVSZXNwb25zZRIoCgR1c2VyGAEgASgLMhouYmlmdXJjYXRpb24ucGFuZWwudjEuVXNlciIpChVSZWF1dGhQYXNzd29yZFJlcXVlc3QSEAoIcGFzc3dvcmQYASABKAkiGAoWUmVhdXRoUGFzc3dvcmRSZXNwb25zZSpoCg5QYXNza2V5UHVycG9zZRIfChtQQVNTS0VZX1BVUlBPU0VfVU5TUEVDSUZJRUQQABIZChVQQVNTS0VZX1BVUlBPU0VfTE9HSU4QARIaChZQQVNTS0VZX1BVUlBPU0VfUkVBVVRIEAIy4gcKC0F1dGhTZXJ2aWNlEmgKDVBhc3N3b3JkTG9naW4SKi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QYXNzd29yZExvZ2luUmVxdWVzdBorLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlBhc3N3b3JkTG9naW5SZXNwb25zZRJTCgZMb2dvdXQSIy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5Mb2dvdXRSZXF1ZXN0GiQuYmlmdXJjYXRpb24ucGFuZWwudjEuTG9nb3V0UmVzcG9uc2USawoOUGFzc2tleU9wdGlvbnMSKy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QYXNza2V5T3B0aW9uc1JlcXVlc3QaLC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QYXNza2V5T3B0aW9uc1Jlc3BvbnNlEmgKDVBhc3NrZXlWZXJpZnkSKi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QYXNza2V5VmVyaWZ5UmVxdWVzdBorLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlBhc3NrZXlWZXJpZnlSZXNwb25zZRJ0ChFBY3RpdmF0aW9uT3B0aW9ucxIuLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkFjdGl2YXRpb25PcHRpb25zUmVxdWVzdBovLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkFjdGl2YXRpb25PcHRpb25zUmVzcG9uc2USdwoSQWN0aXZhdGlvbkNvbXBsZXRlEi8uYmlmdXJjYXRpb24ucGFuZWwudjEuQWN0aXZhdGlvbkNvbXBsZXRlUmVxdWVzdBowLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkFjdGl2YXRpb25Db21wbGV0ZVJlc3BvbnNlEm4KD1JlY292ZXJ5T3B0aW9ucxIsLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlJlY292ZXJ5T3B0aW9uc1JlcXVlc3QaLS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5SZWNvdmVyeU9wdGlvbnNSZXNwb25zZRJxChBSZWNvdmVyeUNvbXBsZXRlEi0uYmlmdXJjYXRpb24ucGFuZWwudjEuUmVjb3ZlcnlDb21wbGV0ZVJlcXVlc3QaLi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5SZWNvdmVyeUNvbXBsZXRlUmVzcG9uc2USawoOUmVhdXRoUGFzc3dvcmQSKy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5SZWF1dGhQYXNzd29yZFJlcXVlc3QaLC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5SZWF1dGhQYXNzd29yZFJlc3BvbnNlYgZwcm90bzM", [file_bifurcation_panel_v1_types, file_google_protobuf_struct]);
+  fileDesc("Ch9iaWZ1cmNhdGlvbi9wYW5lbC92MS9hdXRoLnByb3RvEhRiaWZ1cmNhdGlvbi5wYW5lbC52MSI/ChlTZXR1cEFkbWluaXN0cmF0b3JSZXF1ZXN0EhAKCHVzZXJuYW1lGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJIkYKGlNldHVwQWRtaW5pc3RyYXRvclJlc3BvbnNlEigKBHVzZXIYASABKAsyGi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5Vc2VyIjoKFFBhc3N3b3JkTG9naW5SZXF1ZXN0EhAKCHVzZXJuYW1lGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJIkEKFVBhc3N3b3JkTG9naW5SZXNwb25zZRIoCgR1c2VyGAEgASgLMhouYmlmdXJjYXRpb24ucGFuZWwudjEuVXNlciIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIk4KFVBhc3NrZXlPcHRpb25zUmVxdWVzdBI1CgdwdXJwb3NlGAEgASgOMiQuYmlmdXJjYXRpb24ucGFuZWwudjEuUGFzc2tleVB1cnBvc2UiUwoWUGFzc2tleU9wdGlvbnNSZXNwb25zZRIPCgdmbG93X2lkGAEgASgJEigKB29wdGlvbnMYAiABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0ImAKFFBhc3NrZXlWZXJpZnlSZXF1ZXN0Eg8KB2Zsb3dfaWQYASABKAkSKQoIcmVzcG9uc2UYAiABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EgwKBG5hbWUYAyABKAkiQQoVUGFzc2tleVZlcmlmeVJlc3BvbnNlEigKBHVzZXIYASABKAsyGi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5Vc2VyIikKGEFjdGl2YXRpb25PcHRpb25zUmVxdWVzdBINCgV0b2tlbhgBIAEoCSJoChlBY3RpdmF0aW9uT3B0aW9uc1Jlc3BvbnNlEg8KB2Zsb3dfaWQYASABKAkSEAoIdXNlcm5hbWUYAiABKAkSKAoHb3B0aW9ucxgDIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QinQEKGUFjdGl2YXRpb25Db21wbGV0ZVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHZmxvd19pZBgCIAEoCRIpCghyZXNwb25zZRgDIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSDAoEbmFtZRgEIAEoCRIQCghwYXNzd29yZBgFIAEoCRIVCg1wYXNzd29yZF9vbmx5GAYgASgIIkYKGkFjdGl2YXRpb25Db21wbGV0ZVJlc3BvbnNlEigKBHVzZXIYASABKAsyGi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5Vc2VyIicKFlJlY292ZXJ5T3B0aW9uc1JlcXVlc3QSDQoFdG9rZW4YASABKAkiZgoXUmVjb3ZlcnlPcHRpb25zUmVzcG9uc2USDwoHZmxvd19pZBgBIAEoCRIQCgh1c2VybmFtZRgCIAEoCRIoCgdvcHRpb25zGAMgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCKbAQoXUmVjb3ZlcnlDb21wbGV0ZVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHZmxvd19pZBgCIAEoCRIpCghyZXNwb25zZRgDIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSDAoEbmFtZRgEIAEoCRIQCghwYXNzd29yZBgFIAEoCRIVCg1wYXNzd29yZF9vbmx5GAYgASgIIkQKGFJlY292ZXJ5Q29tcGxldGVSZXNwb25zZRIoCgR1c2VyGAEgASgLMhouYmlmdXJjYXRpb24ucGFuZWwudjEuVXNlciIpChVSZWF1dGhQYXNzd29yZFJlcXVlc3QSEAoIcGFzc3dvcmQYASABKAkiGAoWUmVhdXRoUGFzc3dvcmRSZXNwb25zZSpoCg5QYXNza2V5UHVycG9zZRIfChtQQVNTS0VZX1BVUlBPU0VfVU5TUEVDSUZJRUQQABIZChVQQVNTS0VZX1BVUlBPU0VfTE9HSU4QARIaChZQQVNTS0VZX1BVUlBPU0VfUkVBVVRIEAIy2wgKC0F1dGhTZXJ2aWNlEncKElNldHVwQWRtaW5pc3RyYXRvchIvLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlNldHVwQWRtaW5pc3RyYXRvclJlcXVlc3QaMC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5TZXR1cEFkbWluaXN0cmF0b3JSZXNwb25zZRJoCg1QYXNzd29yZExvZ2luEiouYmlmdXJjYXRpb24ucGFuZWwudjEuUGFzc3dvcmRMb2dpblJlcXVlc3QaKy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QYXNzd29yZExvZ2luUmVzcG9uc2USUwoGTG9nb3V0EiMuYmlmdXJjYXRpb24ucGFuZWwudjEuTG9nb3V0UmVxdWVzdBokLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkxvZ291dFJlc3BvbnNlEmsKDlBhc3NrZXlPcHRpb25zEisuYmlmdXJjYXRpb24ucGFuZWwudjEuUGFzc2tleU9wdGlvbnNSZXF1ZXN0GiwuYmlmdXJjYXRpb24ucGFuZWwudjEuUGFzc2tleU9wdGlvbnNSZXNwb25zZRJoCg1QYXNza2V5VmVyaWZ5EiouYmlmdXJjYXRpb24ucGFuZWwudjEuUGFzc2tleVZlcmlmeVJlcXVlc3QaKy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QYXNza2V5VmVyaWZ5UmVzcG9uc2USdAoRQWN0aXZhdGlvbk9wdGlvbnMSLi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5BY3RpdmF0aW9uT3B0aW9uc1JlcXVlc3QaLy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5BY3RpdmF0aW9uT3B0aW9uc1Jlc3BvbnNlEncKEkFjdGl2YXRpb25Db21wbGV0ZRIvLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkFjdGl2YXRpb25Db21wbGV0ZVJlcXVlc3QaMC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5BY3RpdmF0aW9uQ29tcGxldGVSZXNwb25zZRJuCg9SZWNvdmVyeU9wdGlvbnMSLC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5SZWNvdmVyeU9wdGlvbnNSZXF1ZXN0Gi0uYmlmdXJjYXRpb24ucGFuZWwudjEuUmVjb3ZlcnlPcHRpb25zUmVzcG9uc2UScQoQUmVjb3ZlcnlDb21wbGV0ZRItLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlJlY292ZXJ5Q29tcGxldGVSZXF1ZXN0Gi4uYmlmdXJjYXRpb24ucGFuZWwudjEuUmVjb3ZlcnlDb21wbGV0ZVJlc3BvbnNlEmsKDlJlYXV0aFBhc3N3b3JkEisuYmlmdXJjYXRpb24ucGFuZWwudjEuUmVhdXRoUGFzc3dvcmRSZXF1ZXN0GiwuYmlmdXJjYXRpb24ucGFuZWwudjEuUmVhdXRoUGFzc3dvcmRSZXNwb25zZWIGcHJvdG8z", [file_bifurcation_panel_v1_types, file_google_protobuf_struct]);
+
+/**
+ * @generated from message bifurcation.panel.v1.SetupAdministratorRequest
+ */
+export type SetupAdministratorRequest = Message<"bifurcation.panel.v1.SetupAdministratorRequest"> & {
+  /**
+   * @generated from field: string username = 1;
+   */
+  username: string;
+
+  /**
+   * @generated from field: string password = 2;
+   */
+  password: string;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.SetupAdministratorRequest.
+ * Use `create(SetupAdministratorRequestSchema)` to create a new message.
+ */
+export const SetupAdministratorRequestSchema: GenMessage<SetupAdministratorRequest> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_auth, 0);
+
+/**
+ * @generated from message bifurcation.panel.v1.SetupAdministratorResponse
+ */
+export type SetupAdministratorResponse = Message<"bifurcation.panel.v1.SetupAdministratorResponse"> & {
+  /**
+   * @generated from field: bifurcation.panel.v1.User user = 1;
+   */
+  user?: User | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.SetupAdministratorResponse.
+ * Use `create(SetupAdministratorResponseSchema)` to create a new message.
+ */
+export const SetupAdministratorResponseSchema: GenMessage<SetupAdministratorResponse> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_auth, 1);
 
 /**
  * @generated from message bifurcation.panel.v1.PasswordLoginRequest
@@ -35,7 +74,7 @@ export type PasswordLoginRequest = Message<"bifurcation.panel.v1.PasswordLoginRe
  * Use `create(PasswordLoginRequestSchema)` to create a new message.
  */
 export const PasswordLoginRequestSchema: GenMessage<PasswordLoginRequest> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 0);
+  messageDesc(file_bifurcation_panel_v1_auth, 2);
 
 /**
  * @generated from message bifurcation.panel.v1.PasswordLoginResponse
@@ -52,7 +91,7 @@ export type PasswordLoginResponse = Message<"bifurcation.panel.v1.PasswordLoginR
  * Use `create(PasswordLoginResponseSchema)` to create a new message.
  */
 export const PasswordLoginResponseSchema: GenMessage<PasswordLoginResponse> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 1);
+  messageDesc(file_bifurcation_panel_v1_auth, 3);
 
 /**
  * @generated from message bifurcation.panel.v1.LogoutRequest
@@ -65,7 +104,7 @@ export type LogoutRequest = Message<"bifurcation.panel.v1.LogoutRequest"> & {
  * Use `create(LogoutRequestSchema)` to create a new message.
  */
 export const LogoutRequestSchema: GenMessage<LogoutRequest> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 2);
+  messageDesc(file_bifurcation_panel_v1_auth, 4);
 
 /**
  * @generated from message bifurcation.panel.v1.LogoutResponse
@@ -78,7 +117,7 @@ export type LogoutResponse = Message<"bifurcation.panel.v1.LogoutResponse"> & {
  * Use `create(LogoutResponseSchema)` to create a new message.
  */
 export const LogoutResponseSchema: GenMessage<LogoutResponse> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 3);
+  messageDesc(file_bifurcation_panel_v1_auth, 5);
 
 /**
  * @generated from message bifurcation.panel.v1.PasskeyOptionsRequest
@@ -98,7 +137,7 @@ export type PasskeyOptionsRequest = Message<"bifurcation.panel.v1.PasskeyOptions
  * Use `create(PasskeyOptionsRequestSchema)` to create a new message.
  */
 export const PasskeyOptionsRequestSchema: GenMessage<PasskeyOptionsRequest> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 4);
+  messageDesc(file_bifurcation_panel_v1_auth, 6);
 
 /**
  * options is the opaque PublicKeyCredentialRequestOptionsJSON document for
@@ -123,7 +162,7 @@ export type PasskeyOptionsResponse = Message<"bifurcation.panel.v1.PasskeyOption
  * Use `create(PasskeyOptionsResponseSchema)` to create a new message.
  */
 export const PasskeyOptionsResponseSchema: GenMessage<PasskeyOptionsResponse> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 5);
+  messageDesc(file_bifurcation_panel_v1_auth, 7);
 
 /**
  * response is the opaque AuthenticationResponseJSON envelope produced by the
@@ -153,7 +192,7 @@ export type PasskeyVerifyRequest = Message<"bifurcation.panel.v1.PasskeyVerifyRe
  * Use `create(PasskeyVerifyRequestSchema)` to create a new message.
  */
 export const PasskeyVerifyRequestSchema: GenMessage<PasskeyVerifyRequest> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 6);
+  messageDesc(file_bifurcation_panel_v1_auth, 8);
 
 /**
  * @generated from message bifurcation.panel.v1.PasskeyVerifyResponse
@@ -170,7 +209,7 @@ export type PasskeyVerifyResponse = Message<"bifurcation.panel.v1.PasskeyVerifyR
  * Use `create(PasskeyVerifyResponseSchema)` to create a new message.
  */
 export const PasskeyVerifyResponseSchema: GenMessage<PasskeyVerifyResponse> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 7);
+  messageDesc(file_bifurcation_panel_v1_auth, 9);
 
 /**
  * @generated from message bifurcation.panel.v1.ActivationOptionsRequest
@@ -187,7 +226,7 @@ export type ActivationOptionsRequest = Message<"bifurcation.panel.v1.ActivationO
  * Use `create(ActivationOptionsRequestSchema)` to create a new message.
  */
 export const ActivationOptionsRequestSchema: GenMessage<ActivationOptionsRequest> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 8);
+  messageDesc(file_bifurcation_panel_v1_auth, 10);
 
 /**
  * options is the opaque PublicKeyCredentialCreationOptionsJSON document.
@@ -216,7 +255,7 @@ export type ActivationOptionsResponse = Message<"bifurcation.panel.v1.Activation
  * Use `create(ActivationOptionsResponseSchema)` to create a new message.
  */
 export const ActivationOptionsResponseSchema: GenMessage<ActivationOptionsResponse> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 9);
+  messageDesc(file_bifurcation_panel_v1_auth, 11);
 
 /**
  * @generated from message bifurcation.panel.v1.ActivationCompleteRequest
@@ -246,6 +285,13 @@ export type ActivationCompleteRequest = Message<"bifurcation.panel.v1.Activation
    * @generated from field: string password = 5;
    */
   password: string;
+
+  /**
+   * Explicitly skip Passkey registration. response must be absent in this mode.
+   *
+   * @generated from field: bool password_only = 6;
+   */
+  passwordOnly: boolean;
 };
 
 /**
@@ -253,7 +299,7 @@ export type ActivationCompleteRequest = Message<"bifurcation.panel.v1.Activation
  * Use `create(ActivationCompleteRequestSchema)` to create a new message.
  */
 export const ActivationCompleteRequestSchema: GenMessage<ActivationCompleteRequest> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 10);
+  messageDesc(file_bifurcation_panel_v1_auth, 12);
 
 /**
  * @generated from message bifurcation.panel.v1.ActivationCompleteResponse
@@ -270,7 +316,7 @@ export type ActivationCompleteResponse = Message<"bifurcation.panel.v1.Activatio
  * Use `create(ActivationCompleteResponseSchema)` to create a new message.
  */
 export const ActivationCompleteResponseSchema: GenMessage<ActivationCompleteResponse> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 11);
+  messageDesc(file_bifurcation_panel_v1_auth, 13);
 
 /**
  * @generated from message bifurcation.panel.v1.RecoveryOptionsRequest
@@ -287,7 +333,7 @@ export type RecoveryOptionsRequest = Message<"bifurcation.panel.v1.RecoveryOptio
  * Use `create(RecoveryOptionsRequestSchema)` to create a new message.
  */
 export const RecoveryOptionsRequestSchema: GenMessage<RecoveryOptionsRequest> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 12);
+  messageDesc(file_bifurcation_panel_v1_auth, 14);
 
 /**
  * @generated from message bifurcation.panel.v1.RecoveryOptionsResponse
@@ -314,7 +360,7 @@ export type RecoveryOptionsResponse = Message<"bifurcation.panel.v1.RecoveryOpti
  * Use `create(RecoveryOptionsResponseSchema)` to create a new message.
  */
 export const RecoveryOptionsResponseSchema: GenMessage<RecoveryOptionsResponse> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 13);
+  messageDesc(file_bifurcation_panel_v1_auth, 15);
 
 /**
  * @generated from message bifurcation.panel.v1.RecoveryCompleteRequest
@@ -344,6 +390,13 @@ export type RecoveryCompleteRequest = Message<"bifurcation.panel.v1.RecoveryComp
    * @generated from field: string password = 5;
    */
   password: string;
+
+  /**
+   * Replaces old credentials with a password only; revokes old Passkeys/sessions.
+   *
+   * @generated from field: bool password_only = 6;
+   */
+  passwordOnly: boolean;
 };
 
 /**
@@ -351,7 +404,7 @@ export type RecoveryCompleteRequest = Message<"bifurcation.panel.v1.RecoveryComp
  * Use `create(RecoveryCompleteRequestSchema)` to create a new message.
  */
 export const RecoveryCompleteRequestSchema: GenMessage<RecoveryCompleteRequest> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 14);
+  messageDesc(file_bifurcation_panel_v1_auth, 16);
 
 /**
  * @generated from message bifurcation.panel.v1.RecoveryCompleteResponse
@@ -368,7 +421,7 @@ export type RecoveryCompleteResponse = Message<"bifurcation.panel.v1.RecoveryCom
  * Use `create(RecoveryCompleteResponseSchema)` to create a new message.
  */
 export const RecoveryCompleteResponseSchema: GenMessage<RecoveryCompleteResponse> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 15);
+  messageDesc(file_bifurcation_panel_v1_auth, 17);
 
 /**
  * @generated from message bifurcation.panel.v1.ReauthPasswordRequest
@@ -385,7 +438,7 @@ export type ReauthPasswordRequest = Message<"bifurcation.panel.v1.ReauthPassword
  * Use `create(ReauthPasswordRequestSchema)` to create a new message.
  */
 export const ReauthPasswordRequestSchema: GenMessage<ReauthPasswordRequest> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 16);
+  messageDesc(file_bifurcation_panel_v1_auth, 18);
 
 /**
  * @generated from message bifurcation.panel.v1.ReauthPasswordResponse
@@ -398,7 +451,7 @@ export type ReauthPasswordResponse = Message<"bifurcation.panel.v1.ReauthPasswor
  * Use `create(ReauthPasswordResponseSchema)` to create a new message.
  */
 export const ReauthPasswordResponseSchema: GenMessage<ReauthPasswordResponse> = /*@__PURE__*/
-  messageDesc(file_bifurcation_panel_v1_auth, 17);
+  messageDesc(file_bifurcation_panel_v1_auth, 19);
 
 /**
  * @generated from enum bifurcation.panel.v1.PasskeyPurpose
@@ -435,6 +488,16 @@ export const PasskeyPurposeSchema: GenEnum<PasskeyPurpose> = /*@__PURE__*/
  * @generated from service bifurcation.panel.v1.AuthService
  */
 export const AuthService: GenService<{
+  /**
+   * Creates the first administrator. Only available while the database has no users.
+   *
+   * @generated from rpc bifurcation.panel.v1.AuthService.SetupAdministrator
+   */
+  setupAdministrator: {
+    methodKind: "unary";
+    input: typeof SetupAdministratorRequestSchema;
+    output: typeof SetupAdministratorResponseSchema;
+  },
   /**
    * @generated from rpc bifurcation.panel.v1.AuthService.PasswordLogin
    */

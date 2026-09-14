@@ -11,7 +11,7 @@ import { getEnvironment } from "../runtime/env";
 const SESSION_COOKIE = "bifurcation_session";
 const SESSION_TTL = 30 * 24 * 60 * 60 * 1000;
 export const RECENT_TTL = 10 * 60 * 1000;
-export const passwordInput = z.string().min(12, "密码至少 12 位").max(256);
+export const passwordInput = z.string().min(1, "请输入密码");
 export const usernameInput = z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9_.-]{2,31}$/, "用户名为 3–32 位小写字母、数字、点、下划线或短横线");
 export const quotaInput = z.string().regex(/^(0|[1-9]\d*)$/).refine((value) => BigInt(value) <= 9223372036854775807n, "额度超出范围").nullable();
 export type Principal = { user: UserDto; authentication: "session" | "apiKey"; sessionHash?: string; recentAuthentication: boolean };
@@ -70,7 +70,7 @@ export function consumeRateLimit(key: string, limit = 8, windowMs = 15 * 60 * 10
 }
 let dummyHash: Promise<string> | undefined;
 export async function passwordLogin(input: unknown) {
-  const { username, password } = z.object({ username: usernameInput, password: z.string().min(1).max(256) }).parse(input);
+  const { username, password } = z.object({ username: usernameInput, password: passwordInput }).parse(input);
   consumeRateLimit("password:global", 60, 60_000);
   consumeRateLimit("password:" + username);
   const { db } = getDatabase();
@@ -89,7 +89,7 @@ export async function passwordLogin(input: unknown) {
 }
 export async function reauthenticatePassword(principal: Principal, input: unknown) {
   if (!principal.sessionHash) throw new AppError("SESSION_REQUIRED", "需要网页登录", 403);
-  const { password } = z.object({ password: z.string().min(1).max(256) }).parse(input);
+  const { password } = z.object({ password: passwordInput }).parse(input);
   consumeRateLimit("reauth:" + principal.user.id);
   const { db } = getDatabase();
   const credential = db.select().from(passwords).where(eq(passwords.userId, principal.user.id)).get();

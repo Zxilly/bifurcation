@@ -61,8 +61,9 @@ async function stopServer(server: ChildProcess) {
   await exited;
 }
 
-export const test = base.extend<{ app: TestApp }>({
-  app: async ({}, provide) => {
+export const test = base.extend<{ app: TestApp; initializeAdmin: boolean }>({
+  initializeAdmin: [true, { option: true }],
+  app: async ({ initializeAdmin }, provide) => {
     await Promise.all([
       access(join(webRoot, ".next", "BUILD_ID")),
       access(join(webRoot, "scripts", "admin.mjs")),
@@ -89,17 +90,20 @@ export const test = base.extend<{ app: TestApp }>({
         BIFURCATION_APP_KEY: randomBytes(32).toString("hex"),
         BIFURCATION_ARTIFACT_DIRECTORY: artifactDirectory,
       };
-      const { stdout } = await execFileAsync(
-        process.execPath,
-        ["scripts/admin.mjs", "init", username],
-        { cwd: webRoot, env, encoding: "utf8" },
-      );
+      const { stdout } = initializeAdmin
+        ? await execFileAsync(
+            process.execPath,
+            ["scripts/admin.mjs", "init", username],
+            { cwd: webRoot, env, encoding: "utf8" },
+          )
+        : { stdout: `${origin}/setup` };
       const activationUrl = stdout.trim();
       const activation = new URL(activationUrl);
       if (
-        activation.origin !== origin ||
-        activation.pathname !== "/activate" ||
-        !activation.searchParams.has("token")
+        initializeAdmin &&
+        (activation.origin !== origin ||
+          activation.pathname !== "/activate" ||
+          !activation.searchParams.has("token"))
       )
         throw new Error("Admin initializer did not return an activation URL");
       server = spawn(
@@ -161,6 +165,9 @@ export async function activate(page: Page, app: TestApp) {
     },
   );
   await page.goto(app.activationUrl);
+  await page
+    .getByRole("button", { name: "添加 Passkey（可选）", exact: true })
+    .click();
   await page
     .getByLabel("Passkey 名称", { exact: true })
     .fill("Test authenticator");

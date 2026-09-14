@@ -123,10 +123,16 @@ export async function onboardingOptions(purpose: "activation" | "recovery", inpu
   return { flowId: flow.id, username: user.username, options };
 }
 export async function onboardingComplete(purpose: "activation" | "recovery", input: unknown) {
-  const { token, flowId, response, password, name } = completionInput.extend({ token: z.string().min(32).max(128), password: passwordInput }).parse(input);
+  const common = z.object({ token: z.string().min(32).max(128), flowId: z.string().uuid(), password: passwordInput });
+  const parsed = z.discriminatedUnion("passwordOnly", [
+    common.extend({ passwordOnly: z.literal(true), response: z.undefined().optional() }),
+    common.extend({ passwordOnly: z.literal(false).default(false), response: responseInput, name: completionInput.shape.name }),
+  ]).parse(input);
+  const { token, flowId, password } = parsed;
   const { flow, user } = onboardingFlow(token, purpose);
   if (flow.id !== flowId || !flow.challenge) throw invalidFlow();
-  const info = await verifyRegistration(response, flow.challenge);
+  consumeRateLimit("onboarding-complete:" + tokenHash(token), 15);
+  const info = parsed.passwordOnly ? undefined : await verifyRegistration(parsed.response, flow.challenge);
   const hash = await hashPassword(password);
   return getDatabase().db.transaction((tx) => {
     const current = onboardingFlow(token, purpose);
@@ -136,7 +142,7 @@ export async function onboardingComplete(purpose: "activation" | "recovery", inp
       tx.delete(passkeys).where(eq(passkeys.userId, user.id)).run();
       tx.delete(sessions).where(eq(sessions.userId, user.id)).run();
     }
-    insertPasskey(user.id, name, info);
+    if (info && !parsed.passwordOnly) insertPasskey(user.id, parsed.name, info);
     tx.insert(passwords).values({ userId: user.id, hash, changedAt: Date.now() }).onConflictDoUpdate({ target: passwords.userId, set: { hash, changedAt: Date.now() } }).run();
     tx.update(users).set({ status: "active", version: current.user.version + 1 }).where(eq(users.id, user.id)).run();
     initializeUserSecrets(user.id);

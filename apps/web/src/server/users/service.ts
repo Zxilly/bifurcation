@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDatabase } from "../db";
-import { passwords, passkeys, sessions, users } from "../db/schema";
+import { passwords, sessions, users } from "../db/schema";
 import { newId } from "../crypto";
 import { AppError } from "../http/errors";
 import { issueOnboarding, quotaInput, requireAdmin, usernameInput, userDto, type Principal } from "../identity/service";
@@ -33,7 +33,7 @@ export function updateUser(principal: Principal, id: string, input: unknown) {
     const user = tx.select().from(users).where(eq(users.id, id)).get();
     if (!user) throw new AppError("NOT_FOUND", "账号不存在", 404);
     if (user.version !== expectedVersion) throw new AppError("VERSION_CONFLICT", "账号已更新，请刷新后重试", 409);
-    if (changes.status === "active" && (!tx.select().from(passwords).where(eq(passwords.userId, id)).get() || !tx.select().from(passkeys).where(eq(passkeys.userId, id)).get())) throw new AppError("ACTIVATION_REQUIRED", "账号需要先完成激活", 409);
+    if (changes.status === "active" && !tx.select().from(passwords).where(eq(passwords.userId, id)).get()) throw new AppError("ACTIVATION_REQUIRED", "账号需要先完成激活", 409);
     if (user.role === "admin" && user.status === "active" && (changes.role === "user" || changes.status === "disabled")) {
       const admins = tx.select().from(users).where(and(eq(users.role, "admin"), eq(users.status, "active"))).all();
       if (admins.length <= 1) throw new AppError("LAST_ADMIN", "不能禁用或降级最后一个启用的管理员", 409);

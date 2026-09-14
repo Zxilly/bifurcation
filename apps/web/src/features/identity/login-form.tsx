@@ -11,12 +11,14 @@ import { Role, type User } from "@bifurcation/rpc/panel/types";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 import { FormError } from "@/components/modal";
+import { usePasskeySupport } from "./use-passkey-support";
 
 export function LoginForm() {
   const router = useRouter();
   const [passwordMode, setPasswordMode] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const passkeySupported = usePasskeySupport();
   function complete(user: User) {
     router.replace(user.role === Role.ADMIN ? "/admin" : "/overview");
     router.refresh();
@@ -66,7 +68,10 @@ export function LoginForm() {
       <LayerCard render={<section />} className="auth-card">
         <div className="brand">bifurcation</div>
         <h1>欢迎回来</h1>
-        {passwordMode ? (
+        {!passkeySupported && (
+          <p className="mb-4">当前环境无法使用 Passkey，请使用后备密码登录。</p>
+        )}
+        {passwordMode || !passkeySupported ? (
           <form onSubmit={password} className="stack">
             <Input
               label="用户名"
@@ -87,17 +92,19 @@ export function LoginForm() {
               <Button type="submit" variant="primary" loading={busy}>
                 登录
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={busy}
-                onClick={() => {
-                  setPasswordMode(false);
-                  setError("");
-                }}
-              >
-                使用 Passkey
-              </Button>
+              {passkeySupported && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    setPasswordMode(false);
+                    setError("");
+                  }}
+                >
+                  使用 Passkey
+                </Button>
+              )}
             </div>
           </form>
         ) : (

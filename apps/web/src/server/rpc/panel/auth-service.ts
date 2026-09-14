@@ -11,6 +11,7 @@ import {
 } from "@/server/identity/webauthn";
 import { optionalPrincipal, panelCall, requirePrincipal } from "./common";
 import { toProtoUser } from "./mappers";
+import { setupAdministrator } from "@/server/identity/setup";
 
 const purposes: Record<PasskeyPurpose, "login" | "reauth"> = {
   [PasskeyPurpose.UNSPECIFIED]: "login",
@@ -19,6 +20,13 @@ const purposes: Record<PasskeyPurpose, "login" | "reauth"> = {
 };
 
 export const authImplementation: ServiceImpl<typeof AuthService> = {
+  setupAdministrator(request, context) {
+    return panelCall(async () => {
+      const { user, token } = await setupAdministrator({ username: request.username, password: request.password });
+      context.responseHeader.set("Set-Cookie", sessionCookie(token));
+      return { user: toProtoUser(user) };
+    });
+  },
   passwordLogin(request, context) {
     return panelCall(async () => {
       const { user, token } = await passwordLogin({ username: request.username, password: request.password });
@@ -78,6 +86,7 @@ export const authImplementation: ServiceImpl<typeof AuthService> = {
         response: request.response,
         name: request.name || undefined,
         password: request.password,
+        passwordOnly: request.passwordOnly,
       });
       context.responseHeader.set("Set-Cookie", sessionCookie(token));
       return { user: toProtoUser(user) };
@@ -99,6 +108,7 @@ export const authImplementation: ServiceImpl<typeof AuthService> = {
         response: request.response,
         name: request.name || undefined,
         password: request.password,
+        passwordOnly: request.passwordOnly,
       });
       context.responseHeader.set("Set-Cookie", sessionCookie(token));
       return { user: toProtoUser(user) };
