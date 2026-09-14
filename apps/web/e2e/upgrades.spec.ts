@@ -190,11 +190,12 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
       .click();
     const upgradeResponse = page.waitForResponse(
       (response) =>
-        response.url().endsWith(`/machines/${machine.id}/upgrades`) &&
+        response.url().endsWith("/bifurcation.panel.v1.AdminMachineService/EnqueueUpgrade") &&
         response.request().method() === "POST",
     );
     await page.getByRole("button", { name: "开始升级", exact: true }).click();
     expect((await upgradeResponse).request().postDataJSON()).toEqual({
+      machineId: machine.id,
       expectedSha256: expect.any(String),
       requestKey: expect.any(String),
     });
@@ -301,12 +302,13 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
     ).toBeVisible();
     const uninstallResponse = page.waitForResponse(
       (response) =>
-        response.url().endsWith(`/machines/${machine.id}/uninstall`) &&
+        response.url().endsWith("/bifurcation.panel.v1.AdminMachineService/UninstallMachine") &&
         response.request().method() === "POST",
     );
     await page.getByRole("button", { name: "开始卸载", exact: true }).click();
     const uninstallRequest = await uninstallResponse;
     expect(uninstallRequest.request().postDataJSON()).toEqual({
+      machineId: machine.id,
       requestKey: expect.any(String),
     });
     const uninstallResult = (await uninstallRequest.json()) as {
@@ -356,7 +358,7 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
       )
     ).body.subscription;
     expect(
-      subscriptionAfterUninstall.nodes.some(
+      (subscriptionAfterUninstall.nodes ?? []).some(
         (node) => node.machineId === machine.id,
       ),
     ).toBe(false);

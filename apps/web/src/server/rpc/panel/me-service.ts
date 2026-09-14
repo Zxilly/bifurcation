@@ -1,7 +1,7 @@
 import "server-only";
 import type { ServiceImpl } from "@connectrpc/connect";
 import { MeService } from "@bifurcation/rpc/panel/me";
-import type { JsonObject } from "@bufbuild/protobuf";
+import { webauthnOptionsJson } from "./webauthn-json";
 import {
   changePassword,
   createApiKey,
@@ -88,7 +88,7 @@ export const meImplementation: ServiceImpl<typeof MeService> = {
   newPasskeyOptions(_request, context) {
     return panelCall(async () => {
       const { flowId, options } = await newPasskeyOptions(requirePrincipal(context));
-      return { flowId, options: options as unknown as JsonObject };
+      return { flowId, options: webauthnOptionsJson(options) };
     });
   },
 

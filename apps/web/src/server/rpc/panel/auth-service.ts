@@ -1,7 +1,7 @@
 import "server-only";
 import type { ServiceImpl } from "@connectrpc/connect";
 import { AuthService, PasskeyPurpose } from "@bifurcation/rpc/panel/auth";
-import type { JsonObject } from "@bufbuild/protobuf";
+import { webauthnOptionsJson } from "./webauthn-json";
 import { logout, passwordLogin, reauthenticatePassword, sessionCookie } from "@/server/identity/service";
 import {
   authenticationOptions,
@@ -42,7 +42,7 @@ export const authImplementation: ServiceImpl<typeof AuthService> = {
         { purpose },
         purpose === "reauth" ? optionalPrincipal(context) : undefined,
       );
-      return { flowId, options: options as unknown as JsonObject };
+      return { flowId, options: webauthnOptionsJson(options) };
     });
   },
 
@@ -66,7 +66,7 @@ export const authImplementation: ServiceImpl<typeof AuthService> = {
   activationOptions(request) {
     return panelCall(async () => {
       const { flowId, username, options } = await onboardingOptions("activation", { token: request.token });
-      return { flowId, username, options: options as unknown as JsonObject };
+      return { flowId, username, options: webauthnOptionsJson(options) };
     });
   },
 
@@ -87,7 +87,7 @@ export const authImplementation: ServiceImpl<typeof AuthService> = {
   recoveryOptions(request) {
     return panelCall(async () => {
       const { flowId, username, options } = await onboardingOptions("recovery", { token: request.token });
-      return { flowId, username, options: options as unknown as JsonObject };
+      return { flowId, username, options: webauthnOptionsJson(options) };
     });
   },
 
