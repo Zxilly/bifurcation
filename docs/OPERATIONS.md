@@ -14,12 +14,11 @@
 
 ```sh
 docker compose up -d --build
-docker compose exec panel node scripts/admin.mjs init admin
 docker compose ps
 docker compose logs --tail 100 panel
 ```
 
-初始化链接只能使用一次。管理员丢失登录凭据时执行 `docker compose exec panel node scripts/admin.mjs recover admin`。
+首次启动后打开面板首页，空数据库自动进入创建管理员界面；设置用户名与后备密码后直接登录。首次设置完成前，仅向部署管理员开放访问。已有任意账号后初始化入口关闭，后续账号由管理员创建。管理员丢失登录凭据时执行 `docker compose exec panel node scripts/admin.mjs recover admin`，生成的一次性恢复链接用于重新设置凭据。
 
 数据卷和应用密钥必须保留。备份应复制到数据卷之外，具体命令见 [备份与恢复](BACKUP-AND-RESTORE.md)。
 

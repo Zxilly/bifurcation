@@ -1,5 +1,43 @@
 # 界面设计规范
 
+## 全站审视增量 · 2026-09-14
+
+本次审视覆盖登录、激活/恢复、管理与个人概览、用户管理、账号设置及移动端对应视图。已对照本地页面和 Figma 实现对应调整，继续使用 Kumo 原生组件。机器工作区的实现说明仍见本文后段。
+
+主要调整：
+
+- 概览先呈现需处理的状态，再显示指标和趋势。统计期间明确上海时区、上下行口径；分钟平均峰值不称为瞬时速率。无上报显示未知，不补成零；刷新失败保留带时间的最近数据并提供重试，不能把旧在线状态当作当前状态。
+- 个人概览提供多订阅管理入口；移动概览不再默认展示一条完整订阅 URL。额度用尽说明重置时间和联系管理员的路径，并明确手工禁用不会随额度重置解除。
+- 用户管理区分启用账号、调整额度和恢复登录凭据。操作说明区分账号目标状态与节点确认，列表不推测节点已执行完成；不能禁用或降级最后一个启用管理员，客户端禁用对应入口并保留服务端保护。
+- 账号设置把添加操作放在各区域标题行，说明 Passkey、后备密码和 API Key 的用途。API Key 仍继承账号当前权限、长期有效、仅创建时展示完整值。移除 Passkey 和撤销 API Key 分别确认影响。
+- 激活和恢复流程允许直接完成密码设置，Passkey 为可选步骤。恢复替换旧登录凭据并撤销旧会话，但保留 API Key。补充 Passkey 不可用时的密码登录入口。
+- 首次使用采用紧凑说明与就近操作，不重复堆叠大块空白。移动用户/账号页保留状态、额度、凭据前缀及操作。
+
+### 参考与取舍
+
+参考 [Tailscale 用户停用与恢复](https://tailscale.com/docs/features/sharing/how-to/remove-team-members) 对操作结果的区分、[Cloudflare API Token 创建](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/) 对用途命名和创建后保存步骤的组织，以及 [Grafana Time series](https://grafana.com/docs/grafana/latest/visualizations/panels-visualizations/visualizations/time-series/) 对时间范围和空值的表达。只借鉴交互说明，不引入对应产品的服务账号、权限范围、设备删除或授权生效规则。
+
+### 新增状态与入口
+
+| 视图 | Figma |
+| --- | --- |
+| 审视结论、来源与验收边界 | [审视说明](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=107-367) |
+| 管理概览：尚无上报 | [空状态](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=104-321) |
+| 管理概览：刷新失败 | [最近值与重试](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=104-474) |
+| 个人概览：额度用尽 | [额度阻断](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=104-625) |
+| 账号设置：首次使用 | [尚未添加凭据](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=104-750) |
+| 登录：Passkey 不可用 | [密码入口](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=105-335) |
+| 撤销 API Key | [影响确认](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=105-345) |
+| 移除 Passkey | [影响确认](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=105-360) |
+| 移动账号设置 | [390px 账号页](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=106-342) |
+| 移动用户管理 | [390px 用户页](https://www.figma.com/design/IKaSuhU32hlyWYqxPUMUsg?node-id=106-412) |
+
+原有主要画板 ID 保留。已逐图查看新增状态和主要更新画板，修正多行文本高度与移动操作重叠；18 个本轮核心画板的文字裁切检查通过，新增分区无画板重叠。原型连接主要页面与确认入口，不模拟真实网络和凭据变更；键盘焦点、移动弹窗尺寸、请求重试、最后管理员保护和授权传播应在实现阶段按真实行为验证。
+
+代码使用 SWR 在同一个缓存项内保存结果和成功时间；切换统计范围使用独立键。普通请求失败显示最近成功时间和重试，认证失效或权限拒绝时隐藏缓存结果。尚无明细时不重复呈现空统计区，空表不保留无意义的表头或横向滚动。账号和用户表在窄屏将次级字段移入名称单元格，保留所有操作；危险确认使用原生 alertdialog，取消恢复触发按钮焦点，重新打开表单不沿用已取消的输入。浏览器回归位于 `e2e/page-states.spec.ts`，认证、订阅和机器流程保留各自的真实端到端用例。
+
+## 多订阅设计基线
+
 2026-09-14 增量：多订阅、完整客户端配置及 Kumo Table/Dialog 一致性。业务规则以 [多订阅 PRD](PRD-SUBSCRIPTIONS.md) 为准；本轮是设计与文档更新，不表示线上界面已经变更。
 
 ## 来源与组件使用
@@ -89,3 +127,25 @@ Dialog 采用 `p-8`；标题行横向排列，标题 24px semibold，右侧为 s
 已检查本轮 15 个核心视图的字体族及容器裁切边界，并对桌面列表、配置编辑、节点组、Patch、预览 Dialog、创建/重置 Dialog、移动列表及原有用户表格/创建用户 Dialog 做了截图检查。此验证针对 Figma 设计；线上 CSS、真实焦点行为、JSON Patch 执行和客户端兼容性留待实现阶段按 PRD 验收。
 
 后续完整页面审查发现：原有表格换用 Kumo 外框后仍保留外层卡片，造成重复边框和 24px 额外留白。已移除机器、用户、用量、状态/操作历史及普通用户/管理员账号设置共 13 处表格外层装饰，并把表格和标题栏扩展至内容宽度。截图验收必须同时包含完整页面与组件局部，避免局部截图遗漏祖先容器叠加问题。
+
+## 已实现：属性驱动的多订阅
+
+订阅列表用单层 Kumo Table/LayerCard 展示命名订阅；完整 URL 默认不占用列表，复制失败时仅显示一个可选中的 Input。移动端将状态与节点数移到名称下方，所有操作仍可达。共享节点及账号代理凭据为次级区域。
+
+`/subscription/[id]` 是独立编辑页，使用 Kumo Input/InputArea/Button 编辑完整客户端模板和按 tag 定位的节点组。地区、标签、协议和机器 ID 选择与 JSON 模板分开保存；平台元数据不进入客户端下载结果。草稿、预览、发布状态明确区分；预览包含凭据的完整 JSON 默认折叠。创建、单链接生命周期与账号凭据重置保留确认弹窗。
+
+## 已实现：机器工作区
+
+`/admin/machines` 与 `/admin/machines/[id]` 沿用现有 Kumo 语义颜色、字体及组件，以先查看运行状况、再进入维护为页面顺序。这里记录已实现界面，不改变前述订阅设计规格的范围。
+
+列表使用单层 LayerCard/Table；工具栏提供名称、地址、地区、标签搜索，在线、失联、待接入、已卸载筛选，以及刷新、清除筛选和结果数量。机器名称是明确的详情链接。移动端将系统、版本、资源、代理连接数和最近上报移至名称下方的带标签字段，状态仍单列可见，保留地区、标签与进行中任务数。
+
+详情头部集中显示名称、管理连接、代理状态、地址和标签，并提供信息编辑和配置入口。用户确定的四个标签为「概览、用量、操作记录、接入与维护」，使用原生 Kumo 下划线 Tabs。选择写入 URL 的 `tab` 参数，概览省略参数，未知值回到概览；刷新、直接访问及浏览器前进后退保留对应视图。保留原生键盘切换，标签与可聚焦的 tabpanel 相互关联；窄屏由原生滚动导航保持标签可达。进行中的任务和全局问题位于标签内容之外，切换视图仍然可见。
+
+概览先展示 CPU、内存、磁盘剩余、代理连接数；CPU 与内存使用原生 Meter，未知值明确显示「未上报」。最近上报时间与失联时的最近值提示紧邻数据；网卡累计接收/发送另列，并说明不计入代理用量。下方以两组定义列表并列展示机器信息及配置版本、授权同步、端口、TLS 域名。待接入机器直接显示首次安装命令；已卸载状态提供历史保留与后续操作说明。用量保留独立统计视图，操作记录提供任务结果和最近日志入口。
+
+接入与维护将版本对照表和长期可查看、复制的机器 Token 并列放置，安装与绑定、卸载与移除依次排列在后。维护说明依据节点报告区分在线维护、容器更新镜像、手动维护、安装需要修复及待确认；禁用操作附近解释具体原因，不从缺失信息推测部署方式。升级说明连接中断；Token 重置说明旧凭据失效及节点同步要求；替换实例说明旧实例失去访问权限；卸载程序与移除面板记录分别说明结果，并保留显式确认和任务互斥状态。
+
+布局仅在机器页面作用域内调整：详情最大宽度 1480px，内容间距 16px；资源由四列在 1200px 以下改为两列，概览与维护的双列在 960px 以下改为单列，600px 以下内边距从 20px 收至 16px、操作行纵向排列。组件外观仍由 Kumo 提供，不增加全局 Table/Tabs/Meter 覆盖。
+
+构图参考为 [Cockpit 概览](https://cockpit-project.org/images/screenshot/overview.webp)、[Cockpit 性能监测介绍](https://cockpit-project.org/blog/pcp-grafana.html)，以及 Tailscale 的[设备管理](https://tailscale.com/docs/features/access-control/device-management/how-to/set-up)与[标签](https://tailscale.com/docs/features/tags)文档；这些参考不引入对应产品的功能或授权语义。本轮未增加随产品发布的位图资产。桌面和移动端的列表、概览、维护共六张最终截图已通过独立完成度审查，结论为可交付、无实质性修正项；业务与自动化检查以开发验证结果为准。

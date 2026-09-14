@@ -16,7 +16,8 @@ API Key、Session 和一次性 token 按摘要验证。可恢复的机器 Token�
 | `sessions`、`auth_flows`、`rate_limits`、`api_keys` | 会话、一次性流程、限速与自动化认证 |
 | `machines` | 机器、Token、绑定/会话 epoch、最新状态和移除标记 |
 | `tasks` | payload/hash、幂等键、执行与终态回报 |
-| `proxy_credentials`、`subscription_tokens` | 代理凭据和订阅 token 的独立代次 |
+| `proxy_credentials`、`subscription_tokens` | 账号代理凭据和兼容旧接口的默认订阅 token |
+| `subscriptions`、`subscription_previews` | 命名订阅、独立 token、加密草稿/发布模板、预览版本与 digest |
 | `policy_state` | 授权版本、当前月份和策略指纹 |
 | `machine_configs`、`config_previews`、`config_revisions` | 设置、预览、不可变配置与目标版本 |
 | `machine_user_history` | 历史用户与机器归属 |
@@ -68,9 +69,13 @@ API Key、Session 和一次性 token 按摘要验证。可恢复的机器 Token�
 
 任务仅有 INSPECT、APPLY_CONFIG、UPGRADE_DAEMON、UNINSTALL。首次配置也使用 APPLY_CONFIG；核心随 daemon 升级。
 
+`MachineStatus.maintenance_status` 随状态上报说明在线维护可用性：标准安装可用、容器维护、系统不支持、非标准程序路径、无效状态目录/文件或非受管服务。该字段为向后兼容的枚举，旧 daemon 缺省为未知；未知且未声明维护任务时，面板提示检查安装方式，不推断为容器。维护说明不授予任务能力；新任务仍需 supported_tasks，明确的安装限制也会阻止升级/卸载。维护原因保存在现有 status_json 中，不新增凭据或数据库表。
+
 首次连接绑定安装 ID，相同实例重连提升 session epoch。管理员重绑提升 binding epoch 并更换 Token，普通 Token 重置不改变安装身份。旧会话不能覆盖新状态，旧绑定不能执行新任务。计量和终态重报不依赖临时会话，仍须属于正确安装与任务。
 
 TaskSpec 和 UsageBatch 的 SHA-256 针对持久化的原始 protobuf 字节；不能跨语言重新序列化后比较。重复终态须保持相同内容。daemon 升级成功还要求当前会话已独立报告目标版本。
+
+客户端订阅通过 MeService 的 List/Get/CreateSubscriptionProfile、SaveSubscriptionDraft、Preview/PublishSubscriptionProfile、UpdateSubscriptionProfile 管理，均按当前账号隔离。草稿使用版本检查；创建使用账号作用域幂等键；发布以预览 ID 幂等，并重新生成核对 digest。`/s/:token` 根据已发布模板和最新节点属性/授权生成，所有成功和失败响应禁止缓存。旧 subscription_tokens 保留为兼容入口，独立订阅的链接互不影响。
 
 配置 SHA 对应批准的字节内容。若收到更高授权版本，daemon 先保存授权下限；旧配置不能将其降低。回退生成的新实际配置报告自己的 digest，不冒充原 revision 的原始字节。
 

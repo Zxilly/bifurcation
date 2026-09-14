@@ -13,9 +13,10 @@ pnpm install --frozen-lockfile
 在 `apps/web/.env.local` 设置 `BIFURCATION_PUBLIC_URL=http://localhost:3000` 与独立开发密钥。默认数据库为 `apps/web/data/bifurcation.sqlite`。CLI 不自动加载 Next 的环境文件，运行初始化命令时需向环境提供同样的变量。
 
 ```sh
-pnpm --filter @bifurcation/web admin:init admin
 pnpm dev
 ```
+
+启动后打开首页，空数据库会自动进入创建管理员界面，无需运行 `admin:init`。已有账号的数据库不开放初始化；CLI 仍可用于预置激活账号和恢复凭据。
 
 开发数据库、凭据和临时产物不提交。不要让开发服务使用生产数据库。节点运行方式见 [daemon README](../services/daemon/README.md)。
 
@@ -47,7 +48,7 @@ pnpm --filter @bifurcation/web db:generate
 
 Protobuf 定义位于 proto，生成的 Go/TypeScript 随源代码维护。Ent schema 位于 internal/state/ent/schema，生成客户端同样入库。修改定义与生成产物应在同一变更交付，重新生成不能产生意外差异。
 
-数据库当前使用初始 schema。新增持久字段需同步模型、经过审阅的 SQL 和行为测试；已部署的迁移不能原位改写。二进制回滚不应覆盖数据库快照，发布涉及 schema 时必须明确其兼容性。
+数据库使用初始 schema 与增量迁移；0001 新增命名订阅、预览和机器标签，不重写旧 token。新增持久字段需同步模型、经过审阅的 SQL 和行为测试；已部署的迁移不能原位改写。二进制回滚不应覆盖数据库快照，发布涉及 schema 时必须明确其兼容性。
 
 ## 测试层次
 
@@ -68,3 +69,7 @@ Protobuf 定义位于 proto，生成的 Go/TypeScript 随源代码维护。Ent s
 保持前端/服务端边界、任务幂等、授权下限及 cursor/outbox 原子性。下载、哈希和核心启停不占用长期数据库事务。诊断输出应有界，凭据不能进入 URL、构建产物或测试快照。
 
 CI 覆盖 Web、Go 多平台、代码生成、Docker 和隔离 systemd 测试。提交前检查完整改动、锁文件和生成产物，提交消息遵循最近一致的仓库风格。
+
+## 客户端模板验证
+
+多订阅的回归覆盖于 `tests/proxy.test.ts` 和 `e2e/subscriptions.spec.ts`：真实 SQLite、属性筛选、独立规则、链接生命周期、授权隔离与预览一致性。2026-09-14 将两套运行时默认模板通过实际生成器组装为仅含虚构节点/测试凭据的完整 JSON，并使用参考目录中的 sing-box 1.14.0-beta.9 执行 `check`，PC 与手机模板均通过。该检查不代表所有用户模板或第三方客户端已验证；线上预览的检查范围在界面中明确说明。
