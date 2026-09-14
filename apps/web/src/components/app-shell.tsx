@@ -6,14 +6,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSidebar } from "@cloudflare/kumo/components/sidebar";
 import { ListIcon, SignOutIcon } from "@phosphor-icons/react";
-import { Role, type User } from "@bifurcation/rpc/panel/types";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
+
+// The shell itself needs no request data, so the layout renders it
+// synchronously; the identity and admin navigation slots stream in from
+// Server Components once the session is known.
 export function AppShell({
-  user,
+  identity,
+  adminNavigation,
   children,
 }: {
-  user: Pick<User, "username" | "role">;
+  identity: React.ReactNode;
+  adminNavigation: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -24,34 +29,24 @@ export function AppShell({
       defaultWidth={224}
       className="flex-col"
     >
-      <ShellContent user={user}>{children}</ShellContent>
+      <ShellContent identity={identity} adminNavigation={adminNavigation}>
+        {children}
+      </ShellContent>
     </Sidebar.Provider>
   );
 }
 
-function ShellContent({
-  user,
-  children,
-}: {
-  user: Pick<User, "username" | "role">;
-  children: React.ReactNode;
-}) {
+export function NavLink({ href, label }: { href: string; label: string }) {
   const path = usePathname();
   const router = useRouter();
-  const { openMobile, setOpenMobile } = useSidebar();
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const link = (href: string, label: string) => (
+  const { setOpenMobile } = useSidebar();
+  const active =
+    path === href || (href !== "/admin" && path.startsWith(href + "/"));
+  return (
     <Sidebar.MenuButton
       href={href}
-      active={
-        path === href || (href !== "/admin" && path.startsWith(href + "/"))
-      }
-      aria-current={
-        path === href || (href !== "/admin" && path.startsWith(href + "/"))
-          ? "page"
-          : undefined
-      }
+      active={active}
+      aria-current={active ? "page" : undefined}
       onClick={(event) => {
         if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
           return;
@@ -63,6 +58,34 @@ function ShellContent({
       {label}
     </Sidebar.MenuButton>
   );
+}
+
+export function AdminNavigation() {
+  return (
+    <Sidebar.Group>
+      <Sidebar.GroupLabel>管理</Sidebar.GroupLabel>
+      <Sidebar.Menu>
+        <NavLink href="/admin" label="管理概览" />
+        <NavLink href="/admin/machines" label="机器" />
+        <NavLink href="/admin/users" label="用户" />
+      </Sidebar.Menu>
+    </Sidebar.Group>
+  );
+}
+
+function ShellContent({
+  identity,
+  adminNavigation,
+  children,
+}: {
+  identity: React.ReactNode;
+  adminNavigation: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const { openMobile, setOpenMobile } = useSidebar();
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   async function logout() {
     setBusy(true);
     setError("");
@@ -94,12 +117,7 @@ function ShellContent({
           </Link>
         </div>
         <div className="actions">
-          <span
-            className="max-w-32 truncate sm:max-w-none"
-            title={user.username}
-          >
-            {user.username}
-          </span>
+          {identity}
           <Button
             variant="ghost"
             aria-label="退出登录"
@@ -122,22 +140,13 @@ function ShellContent({
             <Sidebar.Close aria-label="关闭导航" />
           </Sidebar.Header>
           <Sidebar.Content>
-            {user.role === Role.ADMIN && (
-              <Sidebar.Group>
-                <Sidebar.GroupLabel>管理</Sidebar.GroupLabel>
-                <Sidebar.Menu>
-                  {link("/admin", "管理概览")}
-                  {link("/admin/machines", "机器")}
-                  {link("/admin/users", "用户")}
-                </Sidebar.Menu>
-              </Sidebar.Group>
-            )}
+            {adminNavigation}
             <Sidebar.Group>
               <Sidebar.GroupLabel>我的空间</Sidebar.GroupLabel>
               <Sidebar.Menu>
-                {link("/overview", "我的概览")}
-                {link("/subscription", "接入与订阅")}
-                {link("/account", "账号设置")}
+                <NavLink href="/overview" label="我的概览" />
+                <NavLink href="/subscription" label="接入与订阅" />
+                <NavLink href="/account" label="账号设置" />
               </Sidebar.Menu>
             </Sidebar.Group>
           </Sidebar.Content>
