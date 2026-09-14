@@ -1,8 +1,17 @@
 "use client";
+
+import {
+  LayerCard,
+  Table,
+  Banner,
+  Button,
+  Input,
+  Badge,
+} from "@cloudflare/kumo";
+import { ResourceState } from "@/components/resource-state";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button, Input, Badge } from "@cloudflare/kumo";
 import { TaskKind } from "@bifurcation/rpc";
 import {
   MachineConnection,
@@ -78,25 +87,25 @@ export function Machines() {
           添加机器
         </Button>
       </div>
-      <section className="panel">
+      <section className="panel-section stack">
         <FormError message={resource.error} />
         {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>机器</th>
-                <th>地址</th>
-                <th>状态</th>
-                <th>内嵌 sing-box</th>
-                <th>daemon</th>
-                <th>最近连接</th>
-              </tr>
-            </thead>
-            <tbody>
+        <LayerCard className="min-w-0 overflow-x-auto p-0">
+          <Table className="min-w-max tabular-nums">
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>机器</Table.Head>
+                <Table.Head>地址</Table.Head>
+                <Table.Head>状态</Table.Head>
+                <Table.Head>内嵌 sing-box</Table.Head>
+                <Table.Head>daemon</Table.Head>
+                <Table.Head>最近连接</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {resource.data?.machines.map((machine) => (
-                <tr key={machine.id}>
-                  <td>
+                <Table.Row key={machine.id}>
+                  <Table.Cell>
                     <Link
                       className="underline"
                       href={`/admin/machines/${machine.id}`}
@@ -108,9 +117,9 @@ export function Machines() {
                         {machine.region}
                       </span>
                     )}
-                  </td>
-                  <td>{machine.address}</td>
-                  <td>
+                  </Table.Cell>
+                  <Table.Cell>{machine.address}</Table.Cell>
+                  <Table.Cell>
                     <Badge
                       variant={
                         machine.connection === MachineConnection.OFFLINE &&
@@ -123,26 +132,33 @@ export function Machines() {
                         ? "已卸载"
                         : connection[machine.connection]}
                     </Badge>
-                  </td>
-                  <td>{machine.coreVersion ?? "—"}</td>
-                  <td>{machine.daemonVersion ?? "—"}</td>
-                  <td>
+                  </Table.Cell>
+                  <Table.Cell>{machine.coreVersion ?? "—"}</Table.Cell>
+                  <Table.Cell>{machine.daemonVersion ?? "—"}</Table.Cell>
+                  <Table.Cell>
                     {machine.lastSeenAt ? date(machine.lastSeenAt) : "尚未连接"}
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </tbody>
-          </table>
-          {!resource.data?.machines.length && (
-            <div className="empty-state">
-              {resource.loading
-                ? "正在加载…"
-                : resource.error
-                  ? "未能加载机器"
-                  : "尚未添加机器"}
-            </div>
-          )}
-        </div>
+              {!resource.data?.machines.length && (
+                <Table.Row>
+                  <Table.Cell colSpan={6}>
+                    <ResourceState
+                      loading={resource.loading}
+                      title={
+                        resource.loading
+                          ? "正在加载…"
+                          : resource.error
+                            ? "未能加载机器"
+                            : "尚未添加机器"
+                      }
+                    />
+                  </Table.Cell>
+                </Table.Row>
+              )}
+            </Table.Body>
+          </Table>
+        </LayerCard>
       </section>
       {open && (
         <Modal
@@ -168,16 +184,16 @@ export function Machines() {
               placeholder="例如：东京"
             />
             <FormError message={error} />
-            <div className="actions">
-              <Button variant="primary" type="submit" loading={busy}>
-                创建机器
-              </Button>
+            <div className="mt-8 flex flex-wrap justify-end gap-2">
               <Button
                 type="button"
                 disabled={busy}
                 onClick={() => setOpen(false)}
               >
                 取消
+              </Button>
+              <Button variant="primary" type="submit" loading={busy}>
+                创建机器
               </Button>
             </div>
           </form>
@@ -252,7 +268,7 @@ export function MachineDetailPage({ id }: { id: string }) {
   }
   if (!machine)
     return (
-      <div className="panel stack">
+      <LayerCard render={<div />} className="panel stack">
         <h1>机器详情</h1>
         <FormError message={resource.error} />
         {resource.loading ? (
@@ -260,7 +276,7 @@ export function MachineDetailPage({ id }: { id: string }) {
         ) : (
           <Button onClick={resource.refresh}>重新加载</Button>
         )}
-      </div>
+      </LayerCard>
     );
   const uninstallActive = machine.tasks.some(
     (task) => task.kind === TaskKind.UNINSTALL && ACTIVE_STATES.has(task.state),
@@ -315,20 +331,20 @@ export function MachineDetailPage({ id }: { id: string }) {
       <FormError message={resource.error} />
       {!action && <FormError message={error} />}
       {notice && (
-        <p role="status" className="notice mb-6">
+        <Banner role="status" variant="secondary" className="mb-6">
           {notice}
-        </p>
+        </Banner>
       )}
       {machine.issue && (
-        <p role="alert" className="notice mb-6">
+        <Banner role="alert" variant="error" className="mb-6">
           {machine.issue}
-        </p>
+        </Banner>
       )}
       <ActiveTasks
         tasks={machine.tasks}
         streamConnected={machine.streamConnected}
       />
-      <section className="panel">
+      <LayerCard render={<section />} className="panel">
         <div className="panel-header">
           <h2>机器信息</h2>
           <div className="actions">
@@ -354,12 +370,12 @@ export function MachineDetailPage({ id }: { id: string }) {
             <dd>{machine.daemonVersion ?? "未上报"}</dd>
           </div>
         </dl>
-      </section>
+      </LayerCard>
       {machine.connection === MachineConnection.WAITING && (
-        <section className="panel stack">
+        <LayerCard render={<section />} className="panel stack">
           <h2>首次安装</h2>
           <CopyValue value={machine.installCommand} />
-        </section>
+        </LayerCard>
       )}
       {!uninstallComplete && (
         <MachineConfiguration
@@ -374,7 +390,7 @@ export function MachineDetailPage({ id }: { id: string }) {
         <MachineResources machine={machine} />
       )}
       {machine.installationId && <MachineUsage machineId={machine.id} />}
-      <section className="panel stack">
+      <LayerCard render={<section />} className="panel stack">
         <div className="panel-header mb-0">
           <h2>机器 Token</h2>
           <Badge variant="secondary">
@@ -398,8 +414,8 @@ export function MachineDetailPage({ id }: { id: string }) {
             onChanged={informationChanged}
           />
         </div>
-      </section>
-      <section className="panel">
+      </LayerCard>
+      <section className="panel-section stack">
         <div className="panel-header">
           <h2>操作记录与诊断</h2>
           <Button
@@ -425,16 +441,16 @@ export function MachineDetailPage({ id }: { id: string }) {
         </div>
         <TaskHistory tasks={machine.tasks} />
       </section>
-      <section className="panel">
+      <LayerCard render={<section />} className="panel">
         {uninstallComplete && (
-          <p role="status" className="notice mb-5">
+          <Banner role="status" variant="secondary" className="mb-5">
             节点已报告卸载完成，可继续移除面板记录。
-          </p>
+          </Banner>
         )}
         {uninstallActive && (
-          <p role="status" className="notice mb-5">
+          <Banner role="status" variant="secondary" className="mb-5">
             正在卸载，请保留机器记录以接收执行结果。
-          </p>
+          </Banner>
         )}
         <div className="actions">
           <Button
@@ -470,7 +486,7 @@ export function MachineDetailPage({ id }: { id: string }) {
             移除记录
           </Button>
         </div>
-      </section>
+      </LayerCard>
       {action && (
         <Modal
           title={
@@ -516,7 +532,10 @@ export function MachineDetailPage({ id }: { id: string }) {
                     另一项节点操作正在进行，请等待任务结束。
                   </p>
                 )}
-                <div className="actions">
+                <div className="mt-8 flex flex-wrap justify-end gap-2">
+                  <Button disabled={busy} onClick={() => setAction(null)}>
+                    取消
+                  </Button>
                   <Button
                     variant="destructive"
                     loading={busy}
@@ -532,9 +551,6 @@ export function MachineDetailPage({ id }: { id: string }) {
                       : action === "uninstall"
                         ? "开始卸载"
                         : "移除记录"}
-                  </Button>
-                  <Button disabled={busy} onClick={() => setAction(null)}>
-                    取消
                   </Button>
                 </div>
               </>

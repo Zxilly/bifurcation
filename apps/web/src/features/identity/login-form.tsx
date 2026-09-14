@@ -1,7 +1,8 @@
 "use client";
+
+import { LayerCard, Button, Input } from "@cloudflare/kumo";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input } from "@cloudflare/kumo";
 import { startAuthentication } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import type { JsonObject } from "@bufbuild/protobuf";
@@ -24,9 +25,12 @@ export function LoginForm() {
     setError("");
     setBusy(true);
     try {
-      const flow = await panel.auth.passkeyOptions({ purpose: PasskeyPurpose.LOGIN });
+      const flow = await panel.auth.passkeyOptions({
+        purpose: PasskeyPurpose.LOGIN,
+      });
       const response = await startAuthentication({
-        optionsJSON: flow.options as unknown as PublicKeyCredentialRequestOptionsJSON,
+        optionsJSON:
+          flow.options as unknown as PublicKeyCredentialRequestOptionsJSON,
       });
       const result = await panel.auth.passkeyVerify({
         flowId: flow.flowId,
@@ -59,7 +63,7 @@ export function LoginForm() {
   }
   return (
     <div className="auth-page">
-      <section className="auth-card">
+      <LayerCard render={<section />} className="auth-card">
         <div className="brand">bifurcation</div>
         <h1>欢迎回来</h1>
         {passwordMode ? (
@@ -119,7 +123,7 @@ export function LoginForm() {
           </div>
         )}
         <footer>无法登录？联系管理员恢复账号。</footer>
-      </section>
+      </LayerCard>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { LayerCard } from "@cloudflare/kumo";
 import { create } from "@bufbuild/protobuf";
 import { CoreHealth } from "@bifurcation/rpc";
 import {
@@ -64,7 +65,7 @@ export function MachineResources({ machine }: { machine: MachineDetail }) {
     ],
   ];
   return (
-    <section className="panel">
+    <LayerCard render={<section />} className="panel">
       <div className="panel-header flex-wrap">
         <h2>运行信息</h2>
         <span className="subtle text-xs">
@@ -81,6 +82,6 @@ export function MachineResources({ machine }: { machine: MachineDetail }) {
           </div>
         ))}
       </dl>
-    </section>
+    </LayerCard>
   );
 }

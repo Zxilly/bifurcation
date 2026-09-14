@@ -1,5 +1,7 @@
 "use client";
 
+import { Banner, LayerCard, Table, Empty } from "@cloudflare/kumo";
+import { ResourceState } from "@/components/resource-state";
 import { useState } from "react";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
@@ -65,21 +67,21 @@ export function Subscription() {
       </div>
       <FormError message={resource.error} />
       {notice && (
-        <p role="status" className="notice mb-6">
+        <Banner role="status" variant="secondary" className="mb-6">
           {notice}
-        </p>
+        </Banner>
       )}
       {subscription ? (
         <>
           {subscription.blocked && (
-            <p role="alert" className="notice mb-6">
+            <Banner role="alert" variant="error" className="mb-6">
               {subscription.blockReason === BlockReason.QUOTA
                 ? "已达到本月额度，代理接入暂停。"
                 : "账号已禁用，代理接入暂停。"}{" "}
               当前配置不包含可用代理节点。
-            </p>
+            </Banner>
           )}
-          <section className="panel">
+          <LayerCard render={<section />} className="panel">
             <div className="panel-header">
               <h2>sing-box 订阅</h2>
               <Badge variant="secondary">长期有效</Badge>
@@ -95,59 +97,71 @@ export function Subscription() {
                 重置订阅链接
               </Button>
             </div>
-          </section>
-          <section className="panel">
+          </LayerCard>
+          <section className="panel-section stack">
             <div className="panel-header">
               <h2>客户端配置格式</h2>
               <span>sing-box {subscription.configFormatVersion}</span>
             </div>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>节点</th>
-                    <th>协议</th>
-                    <th>地址</th>
-                    <th>配置状态</th>
-                    <th>接入状态</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <LayerCard className="min-w-0 overflow-x-auto p-0">
+              <Table className="min-w-max tabular-nums">
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Head>节点</Table.Head>
+                    <Table.Head>协议</Table.Head>
+                    <Table.Head>地址</Table.Head>
+                    <Table.Head>配置状态</Table.Head>
+                    <Table.Head>接入状态</Table.Head>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
                   {subscription.nodes.map((node) => (
-                    <tr key={node.machineId}>
-                      <td>{node.name}</td>
-                      <td>
+                    <Table.Row key={node.machineId}>
+                      <Table.Cell>{node.name}</Table.Cell>
+                      <Table.Cell>
                         {node.protocols
                           .map((protocol) =>
-                            protocol === Protocol.TROJAN ? "Trojan" : "Hysteria2",
+                            protocol === Protocol.TROJAN
+                              ? "Trojan"
+                              : "Hysteria2",
                           )
                           .join(" + ")}
-                      </td>
-                      <td>{node.address}</td>
-                      <td>
+                      </Table.Cell>
+                      <Table.Cell>{node.address}</Table.Cell>
+                      <Table.Cell>
                         <Badge variant="secondary">
-                          {node.configurationState === ConfigurationState.APPLIED
+                          {node.configurationState ===
+                          ConfigurationState.APPLIED
                             ? "已应用"
                             : "等待应用"}
                         </Badge>
-                      </td>
-                      <td>{node.available ? "可接入" : "未就绪"}</td>
-                    </tr>
+                      </Table.Cell>
+                      <Table.Cell>
+                        {node.available ? "可接入" : "未就绪"}
+                      </Table.Cell>
+                    </Table.Row>
                   ))}
-                </tbody>
-              </table>
-              {!subscription.nodes.length && (
-                <p className="empty-state">暂无可用节点</p>
-              )}
+                  {!subscription.nodes.length && (
+                    <Table.Row>
+                      <Table.Cell colSpan={5}>
+                        <Empty
+                          className="rounded-none border-0 bg-transparent"
+                          title="暂无可用节点"
+                        />
+                      </Table.Cell>
+                    </Table.Row>
+                  )}
+                </Table.Body>
+              </Table>
               {subscription.nodes.length > 0 &&
                 subscription.nodes.every((node) => !node.available) && (
-                  <p className="notice mt-4">
+                  <Banner variant="secondary" className="mt-4">
                     节点尚未就绪，当前订阅不包含可用代理。
-                  </p>
+                  </Banner>
                 )}
-            </div>
+            </LayerCard>
           </section>
-          <section className="panel">
+          <LayerCard render={<section />} className="panel">
             <div className="panel-header">
               <h2>代理凭据</h2>
               <span className="subtle text-xs">
@@ -157,9 +171,9 @@ export function Subscription() {
             {subscription.nodes.some(
               (node) => node.configurationState === ConfigurationState.PENDING,
             ) && (
-              <p className="notice mb-4">
+              <Banner variant="secondary" className="mb-4">
                 部分节点正在等待应用配置，旧配置可能仍在运行。
-              </p>
+              </Banner>
             )}
             <Button
               variant="secondary-destructive"
@@ -167,17 +181,17 @@ export function Subscription() {
             >
               重置代理凭据
             </Button>
-          </section>
+          </LayerCard>
         </>
       ) : (
-        <section className="panel">
-          <p
-            className="empty-state"
-            role={resource.loading ? "status" : undefined}
-          >
-            {resource.loading ? "正在加载订阅…" : "订阅暂时无法加载，请重试。"}
-          </p>
-        </section>
+        <LayerCard render={<section />} className="panel">
+          <ResourceState
+            loading={resource.loading}
+            title={
+              resource.loading ? "正在加载订阅…" : "订阅暂时无法加载，请重试。"
+            }
+          />
+        </LayerCard>
       )}
       {action && subscription && (
         <Modal
@@ -204,12 +218,12 @@ export function Subscription() {
                   : "机器应用新配置后，旧代理凭据将失效。请重新获取订阅并更新客户端配置；订阅链接保持有效。"}
               </p>
               <FormError message={error} />
-              <div className="actions">
-                <Button variant="destructive" loading={busy} onClick={reset}>
-                  {action === "subscription" ? "重置订阅链接" : "重置代理凭据"}
-                </Button>
+              <div className="mt-8 flex flex-wrap justify-end gap-2">
                 <Button disabled={busy} onClick={() => setAction(null)}>
                   取消
+                </Button>
+                <Button variant="destructive" loading={busy} onClick={reset}>
+                  {action === "subscription" ? "重置订阅链接" : "重置代理凭据"}
                 </Button>
               </div>
             </div>

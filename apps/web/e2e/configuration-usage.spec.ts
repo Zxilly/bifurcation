@@ -5,10 +5,16 @@ import { test, expect, activate } from "./fixtures";
 import { connectMachine } from "./machine-fixture";
 import { rpc } from "./rpc";
 
-type SubscriptionBody = { subscription: { url: string; credentialGeneration: number } };
+type SubscriptionBody = {
+  subscription: { url: string; credentialGeneration: number };
+};
 
 function getSubscription(request: Parameters<typeof rpc>[0], origin: string) {
-  return rpc<SubscriptionBody>(request, origin, "bifurcation.panel.v1.MeService/GetSubscription");
+  return rpc<SubscriptionBody>(
+    request,
+    origin,
+    "bifurcation.panel.v1.MeService/GetSubscription",
+  );
 }
 
 test("configuration preview and publish, independent subscription resets, and real usage query charts", async ({
@@ -93,8 +99,11 @@ test("configuration preview and publish, independent subscription resets, and re
     ).toBeVisible();
     const publishedResponse = page.waitForResponse(
       (response) =>
-        response.url().endsWith("/bifurcation.panel.v1.AdminConfigurationService/PublishConfiguration") &&
-        response.request().method() === "POST",
+        response
+          .url()
+          .endsWith(
+            "/bifurcation.panel.v1.AdminConfigurationService/PublishConfiguration",
+          ) && response.request().method() === "POST",
     );
     await page.getByRole("button", { name: "检查并发布", exact: true }).click();
     const published = (await (await publishedResponse).json()) as {
@@ -166,8 +175,11 @@ test("configuration preview and publish, independent subscription resets, and re
     await expect(page.getByText("已同步", { exact: true })).toBeVisible();
     const diagnosticResponse = page.waitForResponse(
       (response) =>
-        response.url().endsWith("/bifurcation.panel.v1.AdminMachineService/EnqueueInspectTask") &&
-        response.request().method() === "POST",
+        response
+          .url()
+          .endsWith(
+            "/bifurcation.panel.v1.AdminMachineService/EnqueueInspectTask",
+          ) && response.request().method() === "POST",
     );
     await page
       .getByRole("button", { name: "获取最近 100 行日志", exact: true })
@@ -224,7 +236,8 @@ test("configuration preview and publish, independent subscription resets, and re
     await expect(
       page.getByRole("cell", { name: "Traffic fixture", exact: true }),
     ).toBeVisible();
-    const subscriptionBefore = (await getSubscription(page.request, app.origin)).body.subscription;
+    const subscriptionBefore = (await getSubscription(page.request, app.origin))
+      .body.subscription;
     await page
       .getByRole("button", { name: "重置订阅链接", exact: true })
       .click();
@@ -237,7 +250,8 @@ test("configuration preview and publish, independent subscription resets, and re
         exact: true,
       }),
     ).toBeVisible();
-    const subscriptionAfter = (await getSubscription(page.request, app.origin)).body.subscription;
+    const subscriptionAfter = (await getSubscription(page.request, app.origin))
+      .body.subscription;
     expect(subscriptionAfter.url === subscriptionBefore.url).toBe(false);
     expect(subscriptionAfter.credentialGeneration).toBe(
       subscriptionBefore.credentialGeneration,
@@ -255,7 +269,8 @@ test("configuration preview and publish, independent subscription resets, and re
         exact: true,
       }),
     ).toBeVisible();
-    const credentialsAfter = (await getSubscription(page.request, app.origin)).body.subscription;
+    const credentialsAfter = (await getSubscription(page.request, app.origin))
+      .body.subscription;
     expect(credentialsAfter.url === subscriptionAfter.url).toBe(true);
     expect(credentialsAfter.credentialGeneration).toBeGreaterThan(
       subscriptionAfter.credentialGeneration,
@@ -285,7 +300,13 @@ test("configuration preview and publish, independent subscription resets, and re
     };
     await peer.call("ReportUsage", usageRequest);
     await peer.call("ReportUsage", usageRequest);
-    const usage = (await rpc<{ usage: { uploadBytes: string; downloadBytes: string } }>(page.request, app.origin, "bifurcation.panel.v1.MeService/GetMyUsage")).body.usage;
+    const usage = (
+      await rpc<{ usage: { uploadBytes: string; downloadBytes: string } }>(
+        page.request,
+        app.origin,
+        "bifurcation.panel.v1.MeService/GetMyUsage",
+      )
+    ).body.usage;
     expect(usage).toMatchObject({
       uploadBytes: "1073741824",
       downloadBytes: "2147483648",
@@ -313,7 +334,8 @@ test("configuration preview and publish, independent subscription resets, and re
     expect(
       await page.evaluate(() => document.body.scrollWidth <= innerWidth),
     ).toBe(true);
-    await page.getByLabel("时间范围", { exact: true }).selectOption("today");
+    await page.getByRole("combobox", { name: "时间范围", exact: true }).click();
+    await page.getByRole("option", { name: "今天", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: "今天用了多少", exact: true }),
     ).toBeVisible();

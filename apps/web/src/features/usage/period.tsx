@@ -1,8 +1,8 @@
 "use client";
 
+import { Select } from "@cloudflare/kumo";
 import { useEffect, useState } from "react";
 import { Input } from "@cloudflare/kumo/components/input";
-
 type UsagePeriod = "today" | "7days" | "30days" | "month";
 const dayMilliseconds = 86_400_000;
 const offset = 8 * 3_600_000;
@@ -50,20 +50,17 @@ export function PeriodPicker({
 }) {
   return (
     <div className="actions">
-      <label className="sr-only" htmlFor="usage-period">
-        时间范围
-      </label>
-      <select
-        id="usage-period"
-        className="field-select"
+      <Select
+        aria-label="时间范围"
+        items={{
+          today: "今天",
+          "7days": "最近 7 天",
+          "30days": "最近 30 天",
+          month: "指定月份",
+        }}
         value={value.period}
-        onChange={(event) => value.setPeriod(event.target.value as UsagePeriod)}
-      >
-        <option value="today">今天</option>
-        <option value="7days">最近 7 天</option>
-        <option value="30days">最近 30 天</option>
-        <option value="month">指定月份</option>
-      </select>
+        onValueChange={(period) => value.setPeriod(period as UsagePeriod)}
+      />
       {value.period === "month" && (
         <Input
           aria-label="统计月份"

@@ -49,10 +49,14 @@ test("Passkey activation, login, recovery and password change use real authentic
     await expect(
       page.getByRole("heading", { name: "恢复链接", exact: true }),
     ).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "查看完整内容 / 手动复制", exact: true })
+      .click();
     const recoveryUrl = await page
       .getByRole("dialog")
-      .locator("code")
-      .innerText();
+      .getByLabel("完整内容", { exact: true })
+      .inputValue();
     // Model a lost local credential: the server still has the old Passkey until
     // successful recovery atomically replaces it with the newly registered one.
     await authenticator.cdp.send("WebAuthn.clearCredentials", {

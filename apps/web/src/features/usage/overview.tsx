@@ -1,5 +1,7 @@
 "use client";
 
+import { Banner, LayerCard, Collapsible } from "@cloudflare/kumo";
+import { ResourceState } from "@/components/resource-state";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Grain, type Usage } from "@bifurcation/rpc/panel/usage";
 import { MachineConnection } from "@bifurcation/rpc/panel/machines";
@@ -127,14 +129,14 @@ export function PersonalOverview() {
       <FormError message={resource.error || todayUsage.error} />
       {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
       {quota?.warning && (
-        <p role="status" className="notice mb-6">
+        <Banner role="status" variant="alert" className="mb-6">
           {quota.blocked
             ? "已达到本月额度，代理接入暂停。"
             : `本月额度已使用 ${quota.warning}% 以上。`}
-        </p>
+        </Banner>
       )}
       <div className="metric-row">
-        <section className="panel">
+        <LayerCard render={<section />} className="panel">
           <h2>本月已用</h2>
           <strong className="metric-value">
             {quota && hasCurrentUsage ? formatGiB(quota.usedBytes) : "—"}
@@ -150,8 +152,8 @@ export function PersonalOverview() {
                     : `额度 ${formatGiB(quota.limitBytes)} · 暂无统计记录`}
             </span>
           )}
-        </section>
-        <section className="panel">
+        </LayerCard>
+        <LayerCard render={<section />} className="panel">
           <h2>本月剩余</h2>
           <strong className="metric-value">
             {!quota
@@ -163,8 +165,8 @@ export function PersonalOverview() {
                   : formatGiB(remaining > 0n ? remaining : 0n)}
           </strong>
           {quota && <span className="subtle">{quota.period} · 上海时区</span>}
-        </section>
-        <section className="panel">
+        </LayerCard>
+        <LayerCard render={<section />} className="panel">
           <h2>今日用量</h2>
           <strong className="metric-value">
             {totalToday === null ? "—" : formatGiB(totalToday)}
@@ -175,9 +177,9 @@ export function PersonalOverview() {
               {formatGiB(todayUsage.data.downloadBytes)}
             </span>
           )}
-        </section>
+        </LayerCard>
       </div>
-      <section className="panel">
+      <section className="panel-section stack">
         <div className="panel-header">
           <h2>{period.period === "today" ? "今天用了多少" : "每天用了多少"}</h2>
           {!!usage?.points.length && (
@@ -189,17 +191,21 @@ export function PersonalOverview() {
         {usage ? (
           <UsageTrend usage={usage} />
         ) : (
-          <p className="empty-state">
-            {resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
-          </p>
+          <ResourceState
+            loading={resource.loading}
+            title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
+          />
         )}
       </section>
-      <section className="panel">
+      <section className="panel-section stack">
         <h2>用在哪些节点</h2>
         {usage ? (
           <GroupUsageTable groups={usage.groups} dimension="machine" />
         ) : (
-          <p className="empty-state">尚未加载用量</p>
+          <ResourceState
+            loading={resource.loading}
+            title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
+          />
         )}
       </section>
     </>
@@ -214,9 +220,13 @@ export function AdminUsageOverview() {
       panel.usage.queryUsage(usageRequest(period.range)).then((r) => r.usage!),
     { refreshInterval: 30_000 },
   );
-  const machines = useResource("admin-machines", () => panel.machines.listMachines({}), {
-    refreshInterval: 30_000,
-  });
+  const machines = useResource(
+    "admin-machines",
+    () => panel.machines.listMachines({}),
+    {
+      refreshInterval: 30_000,
+    },
+  );
   const users = useResource("admin-users", () => panel.users.listUsers({}), {
     refreshInterval: 30_000,
   });
@@ -230,15 +240,15 @@ export function AdminUsageOverview() {
       <FormError message={resource.error || machines.error || users.error} />
       {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
       <div className="metric-row">
-        <section className="panel">
+        <LayerCard render={<section />} className="panel">
           <h2>在线机器</h2>
           <strong className="metric-value">
             {machines.data
               ? `${machines.data.machines.filter((machine) => machine.connection === MachineConnection.ONLINE && !machine.uninstalled).length} / ${machines.data.machines.length}`
               : "—"}
           </strong>
-        </section>
-        <section className="panel">
+        </LayerCard>
+        <LayerCard render={<section />} className="panel">
           <h2>所选期间流量</h2>
           <strong className="metric-value">
             {usage?.points.length
@@ -251,40 +261,47 @@ export function AdminUsageOverview() {
               {formatGiB(usage.downloadBytes)}
             </span>
           )}
-        </section>
-        <section className="panel">
+        </LayerCard>
+        <LayerCard render={<section />} className="panel">
           <h2>启用用户</h2>
           <strong className="metric-value">
             {users.data
               ? `${users.data.users.filter((user) => user.status === UserStatus.ACTIVE).length} / ${users.data.users.length}`
               : "—"}
           </strong>
-        </section>
+        </LayerCard>
       </div>
-      <section className="panel">
+      <section className="panel-section stack">
         <h2>上下行趋势</h2>
         {usage ? (
           <UsageTrend usage={usage} />
         ) : (
-          <p className="empty-state">
-            {resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
-          </p>
+          <ResourceState
+            loading={resource.loading}
+            title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
+          />
         )}
       </section>
-      <section className="panel">
+      <section className="panel-section stack">
         <h2>节点用量</h2>
         {usage ? (
           <GroupUsageTable groups={usage.groups} dimension="machine" />
         ) : (
-          <p className="empty-state">尚未加载用量</p>
+          <ResourceState
+            loading={resource.loading}
+            title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
+          />
         )}
       </section>
-      <section className="panel">
+      <section className="panel-section stack">
         <h2>用户用量</h2>
         {usage ? (
           <GroupUsageTable groups={usage.groups} dimension="user" />
         ) : (
-          <p className="empty-state">尚未加载用量</p>
+          <ResourceState
+            loading={resource.loading}
+            title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
+          />
         )}
       </section>
     </>
@@ -300,7 +317,7 @@ export function UserNodeUsage() {
     { refreshInterval: 30_000 },
   );
   return (
-    <section className="panel">
+    <section className="panel-section stack">
       <div className="panel-header flex-wrap">
         <h2>用户 × 节点用量</h2>
         <PeriodPicker value={period} />
@@ -321,9 +338,10 @@ export function UserNodeUsage() {
           <UsageMetadata usage={resource.data} />
         </>
       ) : (
-        <p className="empty-state">
-          {resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
-        </p>
+        <ResourceState
+          loading={resource.loading}
+          title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
+        />
       )}
     </section>
   );
@@ -340,7 +358,7 @@ export function MachineUsage({ machineId }: { machineId: string }) {
     { refreshInterval: 30_000 },
   );
   return (
-    <section className="panel">
+    <section className="panel-section stack">
       <div className="panel-header flex-wrap">
         <h2>代理用量</h2>
         <PeriodPicker value={period} />
@@ -362,15 +380,20 @@ export function MachineUsage({ machineId }: { machineId: string }) {
             )}
           </div>
           <UsageTrend usage={resource.data} />
-          <details className="mt-4">
-            <summary className="cursor-pointer py-2">用户分布</summary>
-            <GroupUsageTable groups={resource.data.groups} dimension="user" />
-          </details>
+          <Collapsible.Root className="mt-4">
+            <Collapsible.DefaultTrigger className="cursor-pointer py-2">
+              用户分布
+            </Collapsible.DefaultTrigger>
+            <Collapsible.DefaultPanel>
+              <GroupUsageTable groups={resource.data.groups} dimension="user" />
+            </Collapsible.DefaultPanel>
+          </Collapsible.Root>
         </>
       ) : (
-        <p className="empty-state">
-          {resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
-        </p>
+        <ResourceState
+          loading={resource.loading}
+          title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
+        />
       )}
     </section>
   );

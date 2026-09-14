@@ -1,8 +1,10 @@
 "use client";
 
+import { Banner, Collapsible } from "@cloudflare/kumo";
 import { useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { FormError } from "@/components/modal";
+import { CodeDocument } from "@/components/code-document";
 
 function record(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -57,16 +59,17 @@ export function DiagnosticResult({ value }: { value: unknown }) {
             <p className="subtle text-xs">采集时间 {observedAt}</p>
           )}
           {logs?.truncated === true && (
-            <p className="notice">日志内容因行数或大小限制被截断。</p>
+            <Banner variant="secondary">
+              日志内容因行数或大小限制被截断。
+            </Banner>
           )}
           {lines.length ? (
             <>
-              <pre
-                aria-label="最近日志"
-                className="secret max-h-96 overflow-auto whitespace-pre-wrap"
-              >
-                <code>{lines.join("\n")}</code>
-              </pre>
+              <CodeDocument
+                label="最近日志"
+                code={lines.join("\n")}
+                lang="text"
+              />
               <FormError message={error} />
               <div>
                 <Button onClick={copy}>
@@ -79,19 +82,19 @@ export function DiagnosticResult({ value }: { value: unknown }) {
           )}
         </>
       )}
-      <details
-        open={rawOpen}
-        onToggle={(event) => setRawOpen(event.currentTarget.open)}
-      >
-        <summary className="cursor-pointer subtle text-xs py-2">
+      <Collapsible.Root open={rawOpen} onOpenChange={setRawOpen}>
+        <Collapsible.DefaultTrigger className="cursor-pointer subtle text-xs py-2">
           原始诊断 JSON
-        </summary>
-        {rawOpen && (
-          <pre className="secret max-h-96 overflow-auto">
-            {JSON.stringify(value, null, 2)}
-          </pre>
-        )}
-      </details>
+        </Collapsible.DefaultTrigger>
+        <Collapsible.DefaultPanel>
+          {rawOpen && (
+            <CodeDocument
+              label="原始诊断 JSON"
+              code={JSON.stringify(value, null, 2)}
+            />
+          )}
+        </Collapsible.DefaultPanel>
+      </Collapsible.Root>
     </div>
   );
 }

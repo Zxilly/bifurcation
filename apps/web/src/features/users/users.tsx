@@ -1,7 +1,16 @@
 "use client";
+
+import {
+  LayerCard,
+  Table,
+  Button,
+  Input,
+  Badge,
+  Select,
+} from "@cloudflare/kumo";
+import { ResourceState } from "@/components/resource-state";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Badge } from "@cloudflare/kumo";
 import { Role, UserStatus, type User } from "@bifurcation/rpc/panel/types";
 import { FlowPurpose } from "@bifurcation/rpc/panel/users";
 import { Modal, FormError } from "@/components/modal";
@@ -54,8 +63,7 @@ export function Users() {
             !Number.isSafeInteger(Math.round(amount * 1073741824)))
         )
           throw new Error("请输入有效的每月额度。");
-        const role =
-          values.get("role") === "admin" ? Role.ADMIN : Role.USER;
+        const role = values.get("role") === "admin" ? Role.ADMIN : Role.USER;
         if (action.kind === "create") {
           const created = await panel.users.createUser({
             username: String(values.get("username")),
@@ -126,31 +134,35 @@ export function Users() {
           创建用户
         </Button>
       </div>
-      <section className="panel">
+      <section className="panel-section stack">
         <FormError message={resource.error} />
         {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>用户名</th>
-                <th>角色</th>
-                <th>每月额度</th>
-                <th>状态</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
+        <LayerCard className="min-w-0 overflow-x-auto p-0">
+          <Table className="min-w-max tabular-nums">
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>用户名</Table.Head>
+                <Table.Head>角色</Table.Head>
+                <Table.Head className="text-right whitespace-nowrap">
+                  每月额度
+                </Table.Head>
+                <Table.Head>状态</Table.Head>
+                <Table.Head>操作</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {resource.data?.users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.username}</td>
-                  <td>{user.role === Role.ADMIN ? "管理员" : "用户"}</td>
-                  <td>
+                <Table.Row key={user.id}>
+                  <Table.Cell>{user.username}</Table.Cell>
+                  <Table.Cell>
+                    {user.role === Role.ADMIN ? "管理员" : "用户"}
+                  </Table.Cell>
+                  <Table.Cell className="text-right whitespace-nowrap">
                     {user.monthlyLimitBytes === undefined
                       ? "不限量"
                       : `${(Number(user.monthlyLimitBytes) / 1073741824).toLocaleString("zh-CN")} GiB`}
-                  </td>
-                  <td>
+                  </Table.Cell>
+                  <Table.Cell>
                     <Badge
                       variant={
                         user.status === UserStatus.DISABLED
@@ -160,8 +172,8 @@ export function Users() {
                     >
                       {status[user.status]}
                     </Badge>
-                  </td>
-                  <td>
+                  </Table.Cell>
+                  <Table.Cell>
                     <div className="actions">
                       <Button
                         variant="ghost"
@@ -209,21 +221,28 @@ export function Users() {
                         </>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </tbody>
-          </table>
-          {!resource.data?.users.length && (
-            <p className="empty-state">
-              {resource.loading
-                ? "正在加载…"
-                : resource.error
-                  ? "未能加载用户"
-                  : "暂无用户"}
-            </p>
-          )}
-        </div>
+              {!resource.data?.users.length && (
+                <Table.Row>
+                  <Table.Cell colSpan={5}>
+                    <ResourceState
+                      loading={resource.loading}
+                      title={
+                        resource.loading
+                          ? "正在加载…"
+                          : resource.error
+                            ? "未能加载用户"
+                            : "暂无用户"
+                      }
+                    />
+                  </Table.Cell>
+                </Table.Row>
+              )}
+            </Table.Body>
+          </Table>
+        </LayerCard>
       </section>
       <UserNodeUsage />
       {action && (
@@ -250,17 +269,14 @@ export function Users() {
                 ) : (
                   <p>{editUser?.username}</p>
                 )}
-                <label className="stack gap-2">
-                  角色
-                  <select
-                    className="field-select"
-                    name="role"
-                    defaultValue={editUser?.role === Role.ADMIN ? "admin" : "user"}
-                  >
-                    <option value="user">用户</option>
-                    <option value="admin">管理员</option>
-                  </select>
-                </label>
+                <Select
+                  label="角色"
+                  items={{ user: "用户", admin: "管理员" }}
+                  name="role"
+                  defaultValue={
+                    editUser?.role === Role.ADMIN ? "admin" : "user"
+                  }
+                />
                 <Input
                   label="每月额度（GiB）"
                   name="quota"
@@ -287,20 +303,20 @@ export function Users() {
               </p>
             )}
             <FormError message={error} />
-            <div className="actions">
-              <Button
-                type="submit"
-                variant={action.kind === "disable" ? "destructive" : "primary"}
-                loading={busy}
-              >
-                {title}
-              </Button>
+            <div className="mt-8 flex flex-wrap justify-end gap-2">
               <Button
                 type="button"
                 disabled={busy}
                 onClick={() => setAction(null)}
               >
                 取消
+              </Button>
+              <Button
+                type="submit"
+                variant={action.kind === "disable" ? "destructive" : "primary"}
+                loading={busy}
+              >
+                {title}
               </Button>
             </div>
           </form>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { FormError } from "./modal";
+import { CodeDocument } from "./code-document";
 
 export function JsonDocument({
   value,
@@ -38,12 +39,7 @@ export function JsonDocument({
   }
   return (
     <div className="stack gap-3">
-      <pre
-        aria-label={label}
-        className="secret max-h-[26rem] overflow-auto whitespace-pre"
-      >
-        <code>{text}</code>
-      </pre>
+      <CodeDocument code={text} label={label} />
       <FormError message={error} />
       <div className="actions">
         <Button onClick={copy}>{copied ? "已复制 JSON" : "复制 JSON"}</Button>

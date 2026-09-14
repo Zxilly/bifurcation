@@ -1,7 +1,7 @@
 "use client";
 
+import { Banner, Button, Input } from "@cloudflare/kumo";
 import { useState } from "react";
-import { Button, Input } from "@cloudflare/kumo";
 import { TaskState, type MachineDetail } from "@bifurcation/rpc/panel/machines";
 import { Modal, FormError } from "@/components/modal";
 import { ApiError, errorMessage } from "@/features/shared/api";
@@ -24,7 +24,8 @@ export function MachineInformationAction({
   const replacementBlocked =
     mode === "rebind" &&
     machine.tasks.some(
-      (task) => task.state === TaskState.ACCEPTED || task.state === TaskState.RUNNING,
+      (task) =>
+        task.state === TaskState.ACCEPTED || task.state === TaskState.RUNNING,
     );
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,7 +57,9 @@ export function MachineInformationAction({
     } catch (e) {
       if (e instanceof ApiError && e.code === "VERSION_CONFLICT") {
         try {
-          const latest = await panel.machines.getMachine({ machineId: machine.id });
+          const latest = await panel.machines.getMachine({
+            machineId: machine.id,
+          });
           onChanged(latest.machine!, "");
         } catch {
           /* The original conflict remains actionable. */
@@ -120,7 +123,9 @@ export function MachineInformationAction({
                   将失效，新实例接入后会自动安装已保存配置，历史用量与操作记录保留。
                 </p>
                 {!snapshot.uninstalled && (
-                  <p className="notice">旧机器上的程序不会自动卸载。</p>
+                  <Banner variant="secondary">
+                    旧机器上的程序不会自动卸载。
+                  </Banner>
                 )}
                 {replacementBlocked && (
                   <p className="subtle">
@@ -130,7 +135,14 @@ export function MachineInformationAction({
               </>
             )}
             <FormError message={error} />
-            <div className="actions">
+            <div className="mt-8 flex flex-wrap justify-end gap-2">
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={() => setSnapshot(null)}
+              >
+                取消
+              </Button>
               <Button
                 variant={mode === "edit" ? "primary" : "destructive"}
                 type="submit"
@@ -138,13 +150,6 @@ export function MachineInformationAction({
                 disabled={replacementBlocked}
               >
                 {mode === "edit" ? "保存信息" : label}
-              </Button>
-              <Button
-                type="button"
-                disabled={busy}
-                onClick={() => setSnapshot(null)}
-              >
-                取消
               </Button>
             </div>
           </form>

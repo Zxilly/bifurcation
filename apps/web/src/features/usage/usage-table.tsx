@@ -1,5 +1,6 @@
 "use client";
 
+import { Empty, LayerCard, Table } from "@cloudflare/kumo";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import type { UsageGroup } from "@bifurcation/rpc/panel/usage";
 import { formatGiB, share } from "./format";
@@ -64,79 +65,123 @@ export function GroupUsageTable({
     (sum, row) => sum + row.uploadBytes + row.downloadBytes,
     0n,
   );
-  if (!rows.length) return <p className="empty-state">暂无用量数据</p>;
   return (
-    <div className="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>{dimension === "user" ? "用户" : "节点"}</th>
-            <th>上传</th>
-            <th>下载</th>
-            <th>合计</th>
-            <th>占比</th>
-            <th>统计状态</th>
-          </tr>
-        </thead>
-        <tbody>
+    <LayerCard className="min-w-0 overflow-x-auto p-0">
+      <Table className="min-w-max tabular-nums">
+        <Table.Header>
+          <Table.Row>
+            <Table.Head>{dimension === "user" ? "用户" : "节点"}</Table.Head>
+            <Table.Head className="text-right whitespace-nowrap">
+              上传
+            </Table.Head>
+            <Table.Head className="text-right whitespace-nowrap">
+              下载
+            </Table.Head>
+            <Table.Head className="text-right whitespace-nowrap">
+              合计
+            </Table.Head>
+            <Table.Head className="text-right whitespace-nowrap">
+              占比
+            </Table.Head>
+            <Table.Head>统计状态</Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {!rows.length && (
+            <Table.Row>
+              <Table.Cell colSpan={6}>
+                <Empty
+                  className="rounded-none border-0 bg-transparent"
+                  title="暂无用量数据"
+                />
+              </Table.Cell>
+            </Table.Row>
+          )}
           {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.name}</td>
-              <td>{formatGiB(row.uploadBytes)}</td>
-              <td>{formatGiB(row.downloadBytes)}</td>
-              <td>{formatGiB(row.uploadBytes + row.downloadBytes)}</td>
-              <td>{share(row.uploadBytes + row.downloadBytes, total)}%</td>
-              <td>
+            <Table.Row key={row.id}>
+              <Table.Cell>{row.name}</Table.Cell>
+              <Table.Cell className="text-right whitespace-nowrap">
+                {formatGiB(row.uploadBytes)}
+              </Table.Cell>
+              <Table.Cell className="text-right whitespace-nowrap">
+                {formatGiB(row.downloadBytes)}
+              </Table.Cell>
+              <Table.Cell className="text-right whitespace-nowrap">
+                {formatGiB(row.uploadBytes + row.downloadBytes)}
+              </Table.Cell>
+              <Table.Cell className="text-right whitespace-nowrap">
+                {share(row.uploadBytes + row.downloadBytes, total)}%
+              </Table.Cell>
+              <Table.Cell>
                 <DataQuality
                   estimated={row.estimated}
                   incomplete={row.incomplete}
                 />
                 {!row.estimated && !row.incomplete && "完整"}
-              </td>
-            </tr>
+              </Table.Cell>
+            </Table.Row>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </Table.Body>
+      </Table>
+    </LayerCard>
   );
 }
 
 export function UserMachineTable({ groups }: { groups: UsageGroup[] }) {
-  if (!groups.length) return <p className="empty-state">暂无用量数据</p>;
   return (
-    <div className="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>用户</th>
-            <th>节点</th>
-            <th>上传</th>
-            <th>下载</th>
-            <th>合计</th>
-            <th>统计状态</th>
-          </tr>
-        </thead>
-        <tbody>
+    <LayerCard className="min-w-0 overflow-x-auto p-0">
+      <Table className="min-w-max tabular-nums">
+        <Table.Header>
+          <Table.Row>
+            <Table.Head>用户</Table.Head>
+            <Table.Head>节点</Table.Head>
+            <Table.Head className="text-right whitespace-nowrap">
+              上传
+            </Table.Head>
+            <Table.Head className="text-right whitespace-nowrap">
+              下载
+            </Table.Head>
+            <Table.Head className="text-right whitespace-nowrap">
+              合计
+            </Table.Head>
+            <Table.Head>统计状态</Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {!groups.length && (
+            <Table.Row>
+              <Table.Cell colSpan={6}>
+                <Empty
+                  className="rounded-none border-0 bg-transparent"
+                  title="暂无用量数据"
+                />
+              </Table.Cell>
+            </Table.Row>
+          )}
           {groups.map((row) => (
-            <tr key={`${row.userId}/${row.machineId}`}>
-              <td>{row.username}</td>
-              <td>{row.machineName}</td>
-              <td>{formatGiB(row.uploadBytes)}</td>
-              <td>{formatGiB(row.downloadBytes)}</td>
-              <td>
+            <Table.Row key={`${row.userId}/${row.machineId}`}>
+              <Table.Cell>{row.username}</Table.Cell>
+              <Table.Cell>{row.machineName}</Table.Cell>
+              <Table.Cell className="text-right whitespace-nowrap">
+                {formatGiB(row.uploadBytes)}
+              </Table.Cell>
+              <Table.Cell className="text-right whitespace-nowrap">
+                {formatGiB(row.downloadBytes)}
+              </Table.Cell>
+              <Table.Cell className="text-right whitespace-nowrap">
                 {formatGiB(row.uploadBytes + row.downloadBytes)}
-              </td>
-              <td>
+              </Table.Cell>
+              <Table.Cell>
                 <DataQuality
                   estimated={row.estimated}
                   incomplete={row.incomplete}
                 />
                 {!row.estimated && !row.incomplete && "完整"}
-              </td>
-            </tr>
+              </Table.Cell>
+            </Table.Row>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </Table.Body>
+      </Table>
+    </LayerCard>
   );
 }

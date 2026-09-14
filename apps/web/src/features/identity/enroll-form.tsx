@@ -1,7 +1,8 @@
 "use client";
+
+import { LayerCard, Banner, Button, Input } from "@cloudflare/kumo";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input } from "@cloudflare/kumo";
 import { startRegistration } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import type { JsonObject } from "@bufbuild/protobuf";
@@ -33,7 +34,8 @@ export function EnrollForm({
         ? await panel.auth.recoveryOptions({ token })
         : await panel.auth.activationOptions({ token });
       const response = await startRegistration({
-        optionsJSON: flow.options as unknown as PublicKeyCredentialCreationOptionsJSON,
+        optionsJSON:
+          flow.options as unknown as PublicKeyCredentialCreationOptionsJSON,
       });
       const completion = {
         token,
@@ -54,7 +56,7 @@ export function EnrollForm({
   }
   return (
     <div className="auth-page">
-      <section className="auth-card">
+      <LayerCard render={<section />} className="auth-card">
         <div className="brand">bifurcation</div>
         <h1>{recovery ? "恢复账号" : "激活账号"}</h1>
         {!token ? (
@@ -62,9 +64,9 @@ export function EnrollForm({
         ) : (
           <form className="stack" onSubmit={submit}>
             {recovery && (
-              <p className="notice">
+              <Banner variant="secondary">
                 恢复后，旧 Passkey、密码和登录会话将失效。
-              </p>
+              </Banner>
             )}
             <Input
               name="name"
@@ -96,7 +98,7 @@ export function EnrollForm({
             </Button>
           </form>
         )}
-      </section>
+      </LayerCard>
     </div>
   );
 }

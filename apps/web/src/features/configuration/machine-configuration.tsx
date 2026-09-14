@@ -1,5 +1,6 @@
 "use client";
 
+import { LayerCard, Banner, Select } from "@cloudflare/kumo";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Badge } from "@cloudflare/kumo/components/badge";
@@ -47,7 +48,7 @@ export function MachineConfiguration({
   const [notice, setNotice] = useState("");
   const configuration = resource.data;
   return (
-    <section className="panel">
+    <LayerCard render={<section />} className="panel">
       <div className="panel-header">
         <h2>节点配置</h2>
         {configuration && (
@@ -67,9 +68,9 @@ export function MachineConfiguration({
         <Button onClick={resource.refresh}>重新加载配置</Button>
       )}
       {notice && (
-        <p role="status" className="notice mb-5">
+        <Banner role="status" variant="secondary" className="mb-5">
           {notice}
-        </p>
+        </Banner>
       )}
       {configuration ? (
         <>
@@ -134,7 +135,7 @@ export function MachineConfiguration({
           }}
         />
       )}
-    </section>
+    </LayerCard>
   );
 }
 
@@ -364,20 +365,18 @@ function ConfigurationEditor({
                 placeholder="证书对应的域名"
                 required
               />
-              <label className="stack gap-2">
-                证书来源
-                <select
-                  className="field-select"
-                  value={mode}
-                  onChange={(event) =>
-                    setMode(event.target.value as "path" | "pem" | "acme")
-                  }
-                >
-                  <option value="path">机器上的文件路径</option>
-                  <option value="pem">上传证书与私钥</option>
-                  <option value="acme">ACME 自动签发</option>
-                </select>
-              </label>
+              <Select
+                label="证书来源"
+                items={{
+                  path: "机器上的文件路径",
+                  pem: "上传证书与私钥",
+                  acme: "ACME 自动签发",
+                }}
+                value={mode}
+                onValueChange={(value) =>
+                  setMode(value as "path" | "pem" | "acme")
+                }
+              />
               {mode === "acme" && (
                 <Input
                   label="ACME 联系邮箱"
@@ -451,7 +450,7 @@ function ConfigurationEditor({
                 className="font-mono text-xs"
                 description="监听与用户列表由上方设置生成；其他 JSON 选项会保留。"
               />
-              <div className="actions">
+              <div className="mt-8 flex flex-wrap justify-end gap-2">
                 <Button type="submit" loading={busy}>
                   生成预览
                 </Button>
@@ -475,12 +474,12 @@ function ConfigurationEditor({
               <p className="subtle break-all text-xs">
                 SHA-256 · {preview.digest}
               </p>
-              <div className="notice">
+              <Banner variant="alert">
                 <p className="font-medium">发布可能短暂中断连接</p>
                 <p className="mt-1">
                   机器会先检查候选配置，失败时恢复上一可用配置。
                 </p>
-              </div>
+              </Banner>
               {!machine.installationId && (
                 <p className="subtle">机器接入后才能发布配置。</p>
               )}
@@ -489,7 +488,10 @@ function ConfigurationEditor({
                   当前 daemon 不支持此配置任务，请先升级 daemon。
                 </p>
               )}
-              <div className="actions">
+              <div className="mt-8 flex flex-wrap justify-end gap-2">
+                <Button disabled={busy} onClick={onClose}>
+                  取消
+                </Button>
                 <Button
                   variant="primary"
                   loading={busy}
@@ -497,9 +499,6 @@ function ConfigurationEditor({
                   onClick={publish}
                 >
                   检查并发布
-                </Button>
-                <Button disabled={busy} onClick={onClose}>
-                  取消
                 </Button>
               </div>
             </>

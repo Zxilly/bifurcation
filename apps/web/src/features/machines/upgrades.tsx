@@ -1,5 +1,6 @@
 "use client";
 
+import { LayerCard, Banner } from "@cloudflare/kumo";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Badge } from "@cloudflare/kumo/components/badge";
@@ -30,7 +31,9 @@ export function MachineUpgrades({
   onQueued: () => Promise<void>;
 }) {
   const resource = useResource(`machine-upgrades:${machine.id}`, () =>
-    panel.machines.getMachineUpgrades({ machineId: machine.id }).then((r) => r.upgrades!),
+    panel.machines
+      .getMachineUpgrades({ machineId: machine.id })
+      .then((r) => r.upgrades!),
   );
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [checking, setChecking] = useState(false);
@@ -109,7 +112,7 @@ export function MachineUpgrades({
   const candidate = resource.data?.daemon;
   const target = confirmation?.candidate;
   return (
-    <section className="panel">
+    <LayerCard render={<section />} className="panel">
       <div className="panel-header">
         <h2>daemon 更新</h2>
         <Button variant="ghost" onClick={resource.refresh}>
@@ -118,9 +121,9 @@ export function MachineUpgrades({
       </div>
       <FormError message={resource.error || (!confirmation ? error : "")} />
       {notice && (
-        <p role="status" className="notice mb-5">
+        <Banner role="status" variant="secondary" className="mb-5">
           {notice}
-        </p>
+        </Banner>
       )}
       {resource.loading && (
         <p className="subtle" role="status">
@@ -185,13 +188,13 @@ export function MachineUpgrades({
               内嵌 sing-box {confirmation.bundledCoreVersion || "未知"} →{" "}
               {confirmation.availableBundledCoreVersion || "未提供版本"}
             </p>
-            <div className="notice">
+            <Banner variant="alert">
               <p className="font-medium">代理连接会中断</p>
               <p className="mt-1">
                 daemon 重启会同时重启内嵌
                 sing-box，代理连接与管理连接都会暂时中断。
               </p>
-            </div>
+            </Banner>
             <p className="subtle">
               重新连接并收到新版本状态后，才确认升级完成。启动失败时会尝试恢复上一版本。
             </p>
@@ -237,6 +240,6 @@ export function MachineUpgrades({
           }}
         />
       )}
-    </section>
+    </LayerCard>
   );
 }

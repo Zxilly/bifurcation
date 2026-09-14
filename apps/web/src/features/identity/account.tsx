@@ -1,7 +1,16 @@
 "use client";
+
+import {
+  Banner,
+  LayerCard,
+  Table,
+  Button,
+  Input,
+  Badge,
+} from "@cloudflare/kumo";
+import { ResourceState } from "@/components/resource-state";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Badge } from "@cloudflare/kumo";
 import { startRegistration } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import type { JsonObject } from "@bufbuild/protobuf";
@@ -48,7 +57,8 @@ export function Account() {
         case "passkey": {
           const flow = await panel.me.newPasskeyOptions({});
           const response = await startRegistration({
-            optionsJSON: flow.options as unknown as PublicKeyCredentialCreationOptionsJSON,
+            optionsJSON:
+              flow.options as unknown as PublicKeyCredentialCreationOptionsJSON,
           });
           await panel.me.newPasskeyVerify({
             flowId: flow.flowId,
@@ -60,12 +70,16 @@ export function Account() {
           break;
         }
         case "password":
-          await panel.me.changePassword({ password: String(values.get("password")) });
+          await panel.me.changePassword({
+            password: String(values.get("password")),
+          });
           router.replace("/login");
           router.refresh();
           break;
         case "key": {
-          const result = await panel.me.createApiKey({ name: String(values.get("name")) });
+          const result = await panel.me.createApiKey({
+            name: String(values.get("name")),
+          });
           setSecret(result.token);
           await keys.refresh();
           break;
@@ -103,33 +117,33 @@ export function Account() {
         <h1>账号设置</h1>
       </div>
       {notice && (
-        <p role="status" className="notice mb-6">
+        <Banner role="status" variant="secondary" className="mb-6">
           {notice}
-        </p>
+        </Banner>
       )}
-      <section className="panel">
+      <section className="panel-section stack">
         <h2>Passkey</h2>
         <FormError message={passkeys.error} />
         {passkeys.error && <Button onClick={passkeys.refresh}>重新加载</Button>}
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>名称</th>
-                <th>创建时间</th>
-                <th>备份</th>
-                <th>
+        <LayerCard className="min-w-0 overflow-x-auto p-0">
+          <Table className="min-w-max tabular-nums">
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>名称</Table.Head>
+                <Table.Head>创建时间</Table.Head>
+                <Table.Head>备份</Table.Head>
+                <Table.Head>
                   <span className="sr-only">操作</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {passkeys.data?.passkeys.map((key) => (
-                <tr key={key.id}>
-                  <td>{key.name}</td>
-                  <td>{date(key.createdAt)}</td>
-                  <td>{key.backedUp ? "已备份" : "本机"}</td>
-                  <td>
+                <Table.Row key={key.id}>
+                  <Table.Cell>{key.name}</Table.Cell>
+                  <Table.Cell>{date(key.createdAt)}</Table.Cell>
+                  <Table.Cell>{key.backedUp ? "已备份" : "本机"}</Table.Cell>
+                  <Table.Cell>
                     <Button
                       variant="ghost"
                       onClick={() =>
@@ -142,26 +156,33 @@ export function Account() {
                     >
                       移除
                     </Button>
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </tbody>
-          </table>
-          {!passkeys.data?.passkeys.length && (
-            <p className="empty-state">
-              {passkeys.loading
-                ? "正在加载…"
-                : passkeys.error
-                  ? "未能加载 Passkey"
-                  : "尚未添加 Passkey"}
-            </p>
-          )}
-        </div>
+              {!passkeys.data?.passkeys.length && (
+                <Table.Row>
+                  <Table.Cell colSpan={4}>
+                    <ResourceState
+                      loading={passkeys.loading}
+                      title={
+                        passkeys.loading
+                          ? "正在加载…"
+                          : passkeys.error
+                            ? "未能加载 Passkey"
+                            : "尚未添加 Passkey"
+                      }
+                    />
+                  </Table.Cell>
+                </Table.Row>
+              )}
+            </Table.Body>
+          </Table>
+        </LayerCard>
         <Button variant="primary" onClick={() => open({ kind: "passkey" })}>
           添加 Passkey
         </Button>
       </section>
-      <section className="panel stack">
+      <LayerCard render={<section />} className="panel stack">
         <h2>后备密码</h2>
         <div>
           <Badge variant="secondary">已设置</Badge>
@@ -171,37 +192,37 @@ export function Account() {
             修改后备密码
           </Button>
         </div>
-      </section>
-      <section className="panel">
+      </LayerCard>
+      <section className="panel-section stack">
         <div className="panel-header">
           <h2>API Key</h2>
           <span className="subtle text-xs">长期有效</span>
         </div>
         <FormError message={keys.error} />
         {keys.error && <Button onClick={keys.refresh}>重新加载</Button>}
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>名称</th>
-                <th>密钥前缀</th>
-                <th>最近使用</th>
-                <th>状态</th>
-                <th>
+        <LayerCard className="min-w-0 overflow-x-auto p-0">
+          <Table className="min-w-max tabular-nums">
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>名称</Table.Head>
+                <Table.Head>密钥前缀</Table.Head>
+                <Table.Head>最近使用</Table.Head>
+                <Table.Head>状态</Table.Head>
+                <Table.Head>
                   <span className="sr-only">操作</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {keys.data?.apiKeys.map((key) => (
-                <tr key={key.id}>
-                  <td>{key.name}</td>
-                  <td>
+                <Table.Row key={key.id}>
+                  <Table.Cell>{key.name}</Table.Cell>
+                  <Table.Cell>
                     <code>{key.prefix}…</code>
-                  </td>
-                  <td>{date(key.lastUsedAt)}</td>
-                  <td>{key.revokedAt ? "已撤销" : "有效"}</td>
-                  <td>
+                  </Table.Cell>
+                  <Table.Cell>{date(key.lastUsedAt)}</Table.Cell>
+                  <Table.Cell>{key.revokedAt ? "已撤销" : "有效"}</Table.Cell>
+                  <Table.Cell>
                     {!key.revokedAt && (
                       <Button
                         variant="ghost"
@@ -216,21 +237,28 @@ export function Account() {
                         撤销
                       </Button>
                     )}
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </tbody>
-          </table>
-          {!keys.data?.apiKeys.length && (
-            <p className="empty-state">
-              {keys.loading
-                ? "正在加载…"
-                : keys.error
-                  ? "未能加载 API Key"
-                  : "尚未创建 API Key"}
-            </p>
-          )}
-        </div>
+              {!keys.data?.apiKeys.length && (
+                <Table.Row>
+                  <Table.Cell colSpan={5}>
+                    <ResourceState
+                      loading={keys.loading}
+                      title={
+                        keys.loading
+                          ? "正在加载…"
+                          : keys.error
+                            ? "未能加载 API Key"
+                            : "尚未创建 API Key"
+                      }
+                    />
+                  </Table.Cell>
+                </Table.Row>
+              )}
+            </Table.Body>
+          </Table>
+        </LayerCard>
         <Button onClick={() => open({ kind: "key" })}>创建 API Key</Button>
       </section>
       {action && (
@@ -257,9 +285,9 @@ export function Account() {
             )}
             {action.kind === "password" && (
               <>
-                <p className="notice">
+                <Banner variant="secondary">
                   修改后，所有设备的登录会话将失效，需要重新登录。
-                </p>
+                </Banner>
                 <Input
                   label="新后备密码"
                   name="password"
@@ -286,7 +314,14 @@ export function Account() {
               <p>撤销“{action.name}”后，使用此 Key 的请求将立即失效。</p>
             )}
             <FormError message={error} />
-            <div className="actions">
+            <div className="mt-8 flex flex-wrap justify-end gap-2">
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={() => setAction(null)}
+              >
+                取消
+              </Button>
               <Button
                 type="submit"
                 variant={
@@ -298,13 +333,6 @@ export function Account() {
                 loading={busy}
               >
                 {titles[action.kind]}
-              </Button>
-              <Button
-                type="button"
-                disabled={busy}
-                onClick={() => setAction(null)}
-              >
-                取消
               </Button>
             </div>
           </form>

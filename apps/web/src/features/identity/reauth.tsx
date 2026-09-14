@@ -21,9 +21,12 @@ export function Reauthenticate({
     setBusy(true);
     setError("");
     try {
-      const flow = await panel.auth.passkeyOptions({ purpose: PasskeyPurpose.REAUTH });
+      const flow = await panel.auth.passkeyOptions({
+        purpose: PasskeyPurpose.REAUTH,
+      });
       const response = await startAuthentication({
-        optionsJSON: flow.options as unknown as PublicKeyCredentialRequestOptionsJSON,
+        optionsJSON:
+          flow.options as unknown as PublicKeyCredentialRequestOptionsJSON,
       });
       await panel.auth.passkeyVerify({
         flowId: flow.flowId,
@@ -43,7 +46,9 @@ export function Reauthenticate({
     setError("");
     const values = new FormData(event.currentTarget);
     try {
-      await panel.auth.reauthPassword({ password: String(values.get("password")) });
+      await panel.auth.reauthPassword({
+        password: String(values.get("password")),
+      });
       onComplete();
     } catch (e) {
       setError(errorMessage(e));
@@ -69,12 +74,12 @@ export function Reauthenticate({
             required
           />
           <FormError message={error} />
-          <div className="actions">
-            <Button type="submit" variant="primary" loading={busy}>
-              验证密码
-            </Button>
+          <div className="mt-8 flex flex-wrap justify-end gap-2">
             <Button type="button" onClick={onClose}>
               取消
+            </Button>
+            <Button type="submit" variant="primary" loading={busy}>
+              验证密码
             </Button>
           </div>
         </form>

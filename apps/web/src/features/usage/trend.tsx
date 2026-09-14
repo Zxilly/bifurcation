@@ -1,5 +1,6 @@
 "use client";
 
+import { Empty, Collapsible, LayerCard, Table } from "@cloudflare/kumo";
 import dynamic from "next/dynamic";
 import type { UsageChartPoint } from "./usage-chart";
 import { formatGiB } from "./format";
@@ -23,43 +24,55 @@ export function Trend({
   points: UsageChartPoint[];
   kind?: "bar" | "line";
 }) {
-  if (!points.length) return <p className="empty-state">暂无用量数据</p>;
+  if (!points.length)
+    return (
+      <Empty
+        className="rounded-none border-0 bg-transparent"
+        title="暂无用量数据"
+      />
+    );
   return (
     <>
       <UsageChart points={points} kind={kind} />
-      <details className="mt-5">
-        <summary className="cursor-pointer subtle text-xs py-2">
+      <Collapsible.Root className="mt-5">
+        <Collapsible.DefaultTrigger className="cursor-pointer subtle text-xs py-2">
           查看数值
-        </summary>
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>上传</th>
-                <th>下载</th>
-              </tr>
-            </thead>
-            <tbody>
-              {points.map((point, index) => (
-                <tr key={`${point.label}-${index}`}>
-                  <td>{point.label}</td>
-                  <td>
-                    {point.uploadBytes === null
-                      ? "无数据"
-                      : formatGiB(point.uploadBytes)}
-                  </td>
-                  <td>
-                    {point.downloadBytes === null
-                      ? "无数据"
-                      : formatGiB(point.downloadBytes)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+        </Collapsible.DefaultTrigger>
+        <Collapsible.DefaultPanel>
+          <LayerCard className="min-w-0 overflow-x-auto p-0">
+            <Table className="min-w-max tabular-nums">
+              <Table.Header>
+                <Table.Row>
+                  <Table.Head>时间</Table.Head>
+                  <Table.Head className="text-right whitespace-nowrap">
+                    上传
+                  </Table.Head>
+                  <Table.Head className="text-right whitespace-nowrap">
+                    下载
+                  </Table.Head>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {points.map((point, index) => (
+                  <Table.Row key={`${point.label}-${index}`}>
+                    <Table.Cell>{point.label}</Table.Cell>
+                    <Table.Cell className="text-right whitespace-nowrap">
+                      {point.uploadBytes === null
+                        ? "无数据"
+                        : formatGiB(point.uploadBytes)}
+                    </Table.Cell>
+                    <Table.Cell className="text-right whitespace-nowrap">
+                      {point.downloadBytes === null
+                        ? "无数据"
+                        : formatGiB(point.downloadBytes)}
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+          </LayerCard>
+        </Collapsible.DefaultPanel>
+      </Collapsible.Root>
     </>
   );
 }
