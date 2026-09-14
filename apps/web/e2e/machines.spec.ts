@@ -7,7 +7,7 @@ test("machine navigation keeps runtime, maintenance and credentials distinct", a
   app,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   await activate(page, app);
   const created = await rpc<{ machine: { id: string; token: string } }>(
     page.request,

@@ -6,7 +6,7 @@ test("overview retains its last successful snapshot during failed polling and re
   app,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   await activate(page, app);
   await page.goto(`${app.origin}/admin`);
   const enabled = page.locator("section").filter({

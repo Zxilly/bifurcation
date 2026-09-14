@@ -88,7 +88,7 @@ test("Passkey activation, login, recovery and password change use real authentic
   app,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   const authenticator = await activate(page, app);
   const createdKey = await rpc<{ token: string }>(
     page.request,

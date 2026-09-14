@@ -7,7 +7,7 @@ type MarkerWindow = Window & {
 
 test("the subscription editor validates and completes against the sing-box schema", async ({ page, app }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   await activate(page, app);
   await page.goto(`${app.origin}/subscription`);
   await page.getByRole("button", { name: "创建订阅", exact: true }).click();

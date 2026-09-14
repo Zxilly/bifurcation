@@ -39,6 +39,12 @@ jobs:
       - run: git diff --exit-code -- packages/rpc/src/gen services/daemon/gen
       - run: pnpm --filter @bifurcation/web exec playwright install --with-deps chromium
       - run: pnpm --filter @bifurcation/web test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: web-e2e-results
+          path: apps/web/test-results
+          if-no-files-found: ignore
 
   daemon:
     timeout-minutes: 20

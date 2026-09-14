@@ -7,7 +7,7 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
   app,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   await activate(page, app);
   await page.getByRole("button", { name: "创建 API Key", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("Test API key");

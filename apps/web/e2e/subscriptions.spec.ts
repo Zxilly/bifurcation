@@ -8,7 +8,7 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
   app,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   await activate(page, app);
   const created = await rpc<{ machine: { id: string; token: string } }>(
     page.request,

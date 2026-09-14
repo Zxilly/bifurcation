@@ -8,7 +8,7 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
   app,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   page.on("console", (message) => {
     if (message.type() === "error" && /hydration|cannot be a descendant/i.test(message.text())) errors.push(message.text());
   });

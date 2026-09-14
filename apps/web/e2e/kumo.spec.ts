@@ -5,7 +5,7 @@ test("Kumo selection, clipboard fallback and mobile navigation preserve user act
   app,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   await activate(page, app);
   await page.getByRole("link", { name: "用户", exact: true }).click();
   await page.evaluate(() => {
