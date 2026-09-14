@@ -247,12 +247,10 @@ test("configuration preview and publish, independent subscription resets, and re
     await expect(
       page.getByRole("cell", { name: "Traffic fixture", exact: true }),
     ).toBeVisible();
-    await page.getByText("更多", { exact: true }).click();
+    await page.getByRole("button", { name: "默认订阅 的更多操作", exact: true }).click();
     const subscriptionBefore = (await getSubscription(page.request, app.origin))
       .body.subscription;
-    await page
-      .getByRole("button", { name: "重置订阅链接", exact: true })
-      .click();
+    await page.getByRole("menuitem", { name: "重置订阅链接", exact: true }).click();
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "重置订阅链接", exact: true })

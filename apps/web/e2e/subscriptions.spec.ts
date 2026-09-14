@@ -218,8 +218,8 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
       1,
     );
     await page.keyboard.press("Escape");
-    await phone.getByText("更多", { exact: true }).click();
-    await phone.getByRole("button", { name: "暂停订阅", exact: true }).click();
+    await phone.getByRole("button", { name: "手机规则 的更多操作", exact: true }).click();
+    await page.getByRole("menuitem", { name: "暂停订阅", exact: true }).click();
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "暂停订阅", exact: true })

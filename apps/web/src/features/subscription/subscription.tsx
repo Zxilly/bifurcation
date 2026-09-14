@@ -1,6 +1,7 @@
 "use client";
 
-import { Banner, LayerCard, Table, Empty, Button, Input, Select, Badge } from "@cloudflare/kumo";
+import { Banner, LayerCard, Table, Empty, Button, DropdownMenu, Input, LinkButton, Select, Badge } from "@cloudflare/kumo";
+import { CaretDownIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -86,19 +87,23 @@ export function Subscription({ profiles, context }: Pick<ListSubscriptionProfile
               <Table.Cell><Link href={`/subscription/${encodeURIComponent(profile.id)}`} className="underline font-medium">{profile.name}</Link><p className="subtle mt-1">{profile.preset === "legacy" ? "原有配置" : profile.preset === "mobile" ? "手机" : "PC"} · {profile.publishedVersion ? `已发布 v${profile.publishedVersion}` : "未发布"}</p><p className="mt-2 sm:hidden">{profileState(profile)} · {profile.nodeCount} 个节点</p></Table.Cell>
               <Table.Cell className="hidden sm:table-cell"><Badge variant={profile.generationError && profile.publishedVersion ? "destructive" : "secondary"}>{profileState(profile)}</Badge></Table.Cell>
               <Table.Cell className="hidden sm:table-cell">{profile.nodeCount}</Table.Cell>
-              <Table.Cell><div className="flex flex-wrap items-center gap-3">
+              <Table.Cell><div className="actions">
                 <Button disabled={busy} onClick={() => void inspect(profile, "link")}>复制链接</Button>
-                <Link href={`/subscription/${encodeURIComponent(profile.id)}`} className="underline">编辑配置</Link>
-                <details><summary className="cursor-pointer">更多</summary><div className="flex flex-col items-start gap-2 py-3">
-                  <Button variant="ghost" onClick={() => void inspect(profile, "config")}>查看与下载配置</Button>
-                  <Button variant="ghost" onClick={() => startCreate(profile)}>复制为新订阅</Button>
-                  <Button variant="ghost" onClick={() => void inspect(profile, "rotate")}>重置订阅链接</Button>
-                  <Button variant="ghost" onClick={() => void inspect(profile, profile.enabled ? "pause" : "resume")}>{profile.enabled ? "暂停订阅" : "恢复订阅"}</Button>
-                  <Button variant="secondary-destructive" onClick={() => void inspect(profile, "delete")}>删除订阅</Button>
-                </div></details>
+                <LinkButton variant="secondary" href={`/subscription/${encodeURIComponent(profile.id)}`}>编辑配置</LinkButton>
+                <DropdownMenu>
+                  <DropdownMenu.Trigger render={<Button variant="ghost" aria-label={`${profile.name} 的更多操作`}>更多 <CaretDownIcon size={14} aria-hidden /></Button>} />
+                  <DropdownMenu.Content>
+                    <DropdownMenu.Item onClick={() => void inspect(profile, "config")}>查看与下载配置</DropdownMenu.Item>
+                    <DropdownMenu.Item onClick={() => startCreate(profile)}>复制为新订阅</DropdownMenu.Item>
+                    <DropdownMenu.Item onClick={() => void inspect(profile, "rotate")}>重置订阅链接</DropdownMenu.Item>
+                    <DropdownMenu.Item onClick={() => void inspect(profile, profile.enabled ? "pause" : "resume")}>{profile.enabled ? "暂停订阅" : "恢复订阅"}</DropdownMenu.Item>
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item variant="danger" onClick={() => void inspect(profile, "delete")}>删除订阅</DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu>
               </div></Table.Cell>
             </Table.Row>)}
-            {!profiles.length && <Table.Row><Table.Cell colSpan={4}><Empty className="rounded-none border-0 bg-transparent" title="还没有订阅" /></Table.Cell></Table.Row>}
+            {!profiles.length && <Table.Row><Table.Cell colSpan={4}><Empty size="sm" className="rounded-none border-0 bg-transparent" title="还没有订阅" description="创建订阅后，客户端可通过链接获取配置。" /></Table.Cell></Table.Row>}
           </Table.Body>
         </Table>
       </LayerCard>
@@ -107,7 +112,7 @@ export function Subscription({ profiles, context }: Pick<ListSubscriptionProfile
         <LayerCard className="min-w-0 overflow-x-auto p-0"><Table>
           <Table.Header><Table.Row><Table.Head>节点</Table.Head><Table.Head>地区 / 标签</Table.Head><Table.Head>接入状态</Table.Head></Table.Row></Table.Header>
           <Table.Body>{context?.nodes.map((node) => <Table.Row key={node.machineId}><Table.Cell>{node.name}</Table.Cell><Table.Cell>{node.region || "未设置地区"}{node.tags.length > 0 && <p className="subtle">{node.tags.join(" · ")}</p>}</Table.Cell><Table.Cell>{node.available ? "可接入" : "未就绪"}</Table.Cell></Table.Row>)}
-            {!context?.nodes.length && <Table.Row><Table.Cell colSpan={3}><Empty className="rounded-none border-0 bg-transparent" title="暂无可用节点" /></Table.Cell></Table.Row>}
+            {!context?.nodes.length && <Table.Row><Table.Cell colSpan={3}><Empty size="sm" className="rounded-none border-0 bg-transparent" title="暂无可用节点" description="管理员发布节点配置后，节点会出现在这里。" /></Table.Cell></Table.Row>}
           </Table.Body>
         </Table></LayerCard>
       </section>
