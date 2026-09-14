@@ -24,7 +24,7 @@ async function MachineData({ params, searchParams }: PageProps<"/admin/machines/
   const machine = readOrNotFound(() => getMachine(me.principal, id));
   const range = initialUsageRanges().month;
   // Only the visible tab is prefetched; the others load when selected.
-  const fallback: Record<string, Promise<unknown>> = {
+  const fallback: Record<string, unknown> = {
     [resourceKeys.machine(id)]: snapshot(() => machine),
   };
   if (tab === "usage") {
