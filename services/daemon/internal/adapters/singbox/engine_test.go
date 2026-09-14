@@ -204,6 +204,12 @@ func TestEmbeddedTCPUDPAndFinalAccounting(t *testing.T) {
 			}
 			client := embeddedClient(t, protocol, password, cert, port)
 			connection, err := client.DialContext(ctx, "tcp", M.ParseSocksaddr(tcp.Addr().String()))
+			// The initial default-interface notification can reset Hysteria2's
+			// QUIC handshake after Start returns (especially on Windows). Retry
+			// only that pre-payload failure; never replay accounted test traffic.
+			for attempt := 0; err != nil && err.Error() == "network changed" && attempt < 3; attempt++ {
+				connection, err = client.DialContext(ctx, "tcp", M.ParseSocksaddr(tcp.Addr().String()))
+			}
 			if err != nil {
 				t.Fatal(err)
 			}

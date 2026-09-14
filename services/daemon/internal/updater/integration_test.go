@@ -161,6 +161,8 @@ func systemctl(t *testing.T, args ...string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if output, err := exec.CommandContext(ctx, "systemctl", args...).CombinedOutput(); err != nil {
+		journal, _ := exec.CommandContext(ctx, "journalctl", "--no-pager", "-u", DaemonUnit, "-n", "40").CombinedOutput()
+		t.Logf("daemon journal: %s", journal)
 		t.Fatalf("systemctl %v: %v %s", args, err, output)
 	}
 }
@@ -214,9 +216,6 @@ func setupMaintenance(t *testing.T, oldBinary, artifact string) (*maintenancePan
 	if err := system.AtomicWrite(filepath.Join(unitDirectory, DaemonUnit), []byte(unit), 0644); err != nil {
 		t.Fatal(err)
 	}
-	systemctl(t, "daemon-reload")
-	systemctl(t, "enable", DaemonUnit)
-	systemctl(t, "start", DaemonUnit)
 	t.Cleanup(func() {
 		_ = exec.Command("systemctl", "disable", DaemonUnit, UninstallUnit).Run()
 		_ = exec.Command("systemctl", "stop", DaemonUnit, UninstallUnit).Run()
@@ -232,6 +231,9 @@ func setupMaintenance(t *testing.T, oldBinary, artifact string) (*maintenancePan
 		_ = os.Remove(RecoveryBinary)
 		_ = exec.Command("systemctl", "daemon-reload").Run()
 	})
+	systemctl(t, "daemon-reload")
+	systemctl(t, "enable", DaemonUnit)
+	systemctl(t, "start", DaemonUnit)
 	eventually(t, 15*time.Second, "old daemon did not connect", func() bool { panel.mu.Lock(); defer panel.mu.Unlock(); return panel.version == "0.0.0-dev" })
 	return panel, server.URL, stateDirectory
 }
