@@ -517,8 +517,8 @@ function ConfigurationEditor({
                 disabled={busy}
                 description="请输入 JSON 对象。生成预览不会应用配置；修改后需要重新预览。"
               />
-              <div className="mt-8 flex flex-wrap justify-end gap-2">
-                <Button type="submit" loading={busy}>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button type="submit" variant="primary" loading={busy}>
                   生成预览
                 </Button>
               </div>

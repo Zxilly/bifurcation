@@ -1,6 +1,7 @@
 "use client";
 
-import { Empty, Loader } from "@cloudflare/kumo";
+import { Loader } from "@cloudflare/kumo";
+import { InlineEmpty } from "./inline-empty";
 
 export function ResourceState({
   loading,
@@ -20,11 +21,6 @@ export function ResourceState({
       <span>{title}</span>
     </div>
   ) : (
-    <Empty
-      size="sm"
-      className="rounded-none border-0 bg-transparent"
-      title={title}
-      description={description}
-    />
+    <InlineEmpty title={title} description={description} />
   );
 }

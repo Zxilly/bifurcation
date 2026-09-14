@@ -1,6 +1,7 @@
 "use client";
 
-import { Empty, Collapsible, LayerCard, Table } from "@cloudflare/kumo";
+import { Collapsible, LayerCard, Table } from "@cloudflare/kumo";
+import { InlineEmpty } from "@/components/inline-empty";
 import dynamic from "next/dynamic";
 import type { UsageChartPoint } from "./usage-chart";
 import { formatGiB } from "./format";
@@ -26,9 +27,7 @@ export function Trend({
 }) {
   if (!points.length)
     return (
-      <Empty
-        size="sm"
-        className="rounded-none border-0 bg-transparent"
+      <InlineEmpty
         title="所选期间暂无已上报用量"
         description="请调整时间范围，或检查节点上报。未上报不代表用量为零。"
       />

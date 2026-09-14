@@ -1,6 +1,6 @@
 "use client";
 
-import { Banner, LayerCard, Table, Empty, Button, DropdownMenu, Input, LinkButton, Select, Badge } from "@cloudflare/kumo";
+import { Banner, LayerCard, Table, Button, DropdownMenu, Input, LinkButton, Select, Badge } from "@cloudflare/kumo";
 import { CaretDownIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { useRef, useState } from "react";
 import type { ListSubscriptionProfilesResponse, SubscriptionProfile } from "@bifurcation/rpc/panel/me";
 import { Modal, FormError } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
+import { InlineEmpty } from "@/components/inline-empty";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 import { useServerRefresh } from "@/features/shared/use-refresh";
@@ -103,7 +104,7 @@ export function Subscription({ profiles, context }: Pick<ListSubscriptionProfile
                 </DropdownMenu>
               </div></Table.Cell>
             </Table.Row>)}
-            {!profiles.length && <Table.Row><Table.Cell colSpan={4}><Empty size="sm" className="rounded-none border-0 bg-transparent" title="还没有订阅" description="创建订阅后，客户端可通过链接获取配置。" /></Table.Cell></Table.Row>}
+            {!profiles.length && <Table.Row><Table.Cell colSpan={4}><InlineEmpty title="还没有订阅" description="创建订阅后，客户端可通过链接获取配置。" /></Table.Cell></Table.Row>}
           </Table.Body>
         </Table>
       </LayerCard>
@@ -112,7 +113,7 @@ export function Subscription({ profiles, context }: Pick<ListSubscriptionProfile
         <LayerCard className="min-w-0 overflow-x-auto p-0"><Table>
           <Table.Header><Table.Row><Table.Head>节点</Table.Head><Table.Head>地区 / 标签</Table.Head><Table.Head>接入状态</Table.Head></Table.Row></Table.Header>
           <Table.Body>{context?.nodes.map((node) => <Table.Row key={node.machineId}><Table.Cell>{node.name}</Table.Cell><Table.Cell>{node.region || "未设置地区"}{node.tags.length > 0 && <p className="subtle">{node.tags.join(" · ")}</p>}</Table.Cell><Table.Cell>{node.available ? "可接入" : "未就绪"}</Table.Cell></Table.Row>)}
-            {!context?.nodes.length && <Table.Row><Table.Cell colSpan={3}><Empty size="sm" className="rounded-none border-0 bg-transparent" title="暂无可用节点" description="管理员发布节点配置后，节点会出现在这里。" /></Table.Cell></Table.Row>}
+            {!context?.nodes.length && <Table.Row><Table.Cell colSpan={3}><InlineEmpty title="暂无可用节点" description="管理员发布节点配置后，节点会出现在这里。" /></Table.Cell></Table.Row>}
           </Table.Body>
         </Table></LayerCard>
       </section>

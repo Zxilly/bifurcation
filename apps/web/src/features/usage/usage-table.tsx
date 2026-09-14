@@ -1,6 +1,7 @@
 "use client";
 
-import { Empty, LayerCard, Table } from "@cloudflare/kumo";
+import { LayerCard, Table } from "@cloudflare/kumo";
+import { InlineEmpty } from "@/components/inline-empty";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import type { UsageGroup } from "@bifurcation/rpc/panel/usage";
 import { formatGiB, share } from "./format";
@@ -90,9 +91,7 @@ export function GroupUsageTable({
           {!rows.length && (
             <Table.Row>
               <Table.Cell colSpan={6}>
-                <Empty
-                  size="sm"
-                  className="rounded-none border-0 bg-transparent"
+                <InlineEmpty
                   title="暂无用量数据"
                   description="所选期间没有已上报明细，可调整时间范围后重试。"
                 />
@@ -153,9 +152,7 @@ export function UserMachineTable({ groups }: { groups: UsageGroup[] }) {
           {!groups.length && (
             <Table.Row>
               <Table.Cell colSpan={6}>
-                <Empty
-                  size="sm"
-                  className="rounded-none border-0 bg-transparent"
+                <InlineEmpty
                   title="暂无用量数据"
                   description="所选期间没有已上报明细，可调整时间范围后重试。"
                 />

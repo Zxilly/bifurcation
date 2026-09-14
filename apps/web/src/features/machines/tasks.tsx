@@ -1,4 +1,5 @@
-import { LayerCard, Banner, Empty, Table, Collapsible } from "@cloudflare/kumo";
+import { LayerCard, Banner, Table, Collapsible } from "@cloudflare/kumo";
+import { InlineEmpty } from "@/components/inline-empty";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { TaskKind } from "@bifurcation/rpc";
 import {
@@ -144,10 +145,7 @@ export function TaskHistory({ tasks }: { tasks: Task[] }) {
           {!history.length && (
             <Table.Row>
               <Table.Cell colSpan={4}>
-                <Empty
-                  className="rounded-none border-0 bg-transparent"
-                  title="暂无已完成操作"
-                />
+                <InlineEmpty title="暂无已完成操作" description="任务执行完成后会记录在这里。" />
               </Table.Cell>
             </Table.Row>
           )}
