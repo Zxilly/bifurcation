@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { FormError } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
+import { JsonEditor } from "@/components/json-editor";
 import { Reauthenticate } from "@/features/identity/reauth";
 import { ApiError, errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
@@ -505,13 +506,15 @@ function ConfigurationEditor({
                   </p>
                 </details>
               </div>
-              <InputArea
+              <JsonEditor
                 label="基础配置 JSON"
                 value={baseJson}
-                onChange={(event) => setBaseJson(event.target.value)}
-                rows={8}
-                spellCheck={false}
-                className="font-mono text-xs"
+                onChange={(value) => {
+                  setBaseJson(value);
+                  setPreview(null);
+                }}
+                rows={12}
+                disabled={busy}
                 description="请输入 JSON 对象。生成预览不会应用配置；修改后需要重新预览。"
               />
               <div className="mt-8 flex flex-wrap justify-end gap-2">

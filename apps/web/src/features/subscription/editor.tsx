@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { create } from "@bufbuild/protobuf";
-import { Badge, Banner, Button, Input, InputArea, LayerCard } from "@cloudflare/kumo";
+import { Badge, Banner, Button, Input, LayerCard } from "@cloudflare/kumo";
 import { SubscriptionGroupBindingSchema, type SubscriptionProfile, type PreviewSubscriptionProfileResponse } from "@bifurcation/rpc/panel/me";
 import { FormError } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
+import { JsonEditor } from "@/components/json-editor";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 
@@ -37,6 +38,7 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => { if (preview) heading.current?.focus(); }, [preview]);
   useEffect(() => {
     if (!dirty) return;
@@ -84,8 +86,12 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
       <fieldset disabled={busy} className="stack min-w-0">
         {tab === "template" ? <>
           <p className="subtle">这里保存完整的客户端规则，例如 DNS、TUN、广告过滤和路由。代理出口的地址、TLS 和账号凭据由平台根据节点配置生成；以 bfc_ 开头的 tag 留给平台使用。</p>
-          <div className="actions"><Button type="button" onClick={() => { try { setTemplateJson(JSON.stringify(JSON.parse(templateJson), null, 2)); change(); setError(""); } catch { setError("JSON 格式错误，请修正后再格式化。"); } }}>格式化 JSON</Button><Input type="file" label="导入配置 JSON" accept=".json,application/json" onChange={(e) => void importFile(e.target.files?.[0])} /></div>
-          <InputArea label="客户端基础配置 JSON" value={templateJson} rows={24} spellCheck={false} className="font-mono text-xs" onChange={(e) => { setTemplateJson(e.target.value); change(); }} />
+          <div className="actions">
+            <Button type="button" onClick={() => { try { setTemplateJson(JSON.stringify(JSON.parse(templateJson), null, 2)); change(); setError(""); } catch { setError("JSON 格式错误，请修正后再格式化。"); } }}>格式化 JSON</Button>
+            <Button type="button" onClick={() => fileInput.current?.click()}>导入 JSON 文件</Button>
+            <input ref={fileInput} type="file" accept=".json,application/json" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => { void importFile(e.target.files?.[0]); e.target.value = ""; }} />
+          </div>
+          <JsonEditor label="客户端基础配置 JSON" value={templateJson} rows={24} disabled={busy} onChange={(value) => { setTemplateJson(value); change(); }} />
           <p className="subtle">保存草稿不影响客户端。配置中的本地路径和远程规则集由客户端处理；预览只检查 JSON、节点组及出口引用，不验证客户端系统权限、远程资源可达性或所有核心选项。</p>
         </> : <>
           <p className="subtle">组 tag 对应基础配置中的 selector / urltest。地区匹配任一填写值，标签须全部匹配；留空表示不限制。筛选只从当前账号可用节点中选取，节点改名不会改变绑定。</p>

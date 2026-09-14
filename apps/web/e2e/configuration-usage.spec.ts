@@ -4,6 +4,7 @@ import { UsageBatchSchema } from "@bifurcation/rpc";
 import { test, expect, activate } from "./fixtures";
 import { connectMachine } from "./machine-fixture";
 import { rpc } from "./rpc";
+import { jsonEditor } from "./json-editor";
 
 type SubscriptionBody = {
   subscription: { url: string; credentialGeneration: number };
@@ -68,17 +69,14 @@ test("configuration preview and publish, independent subscription resets, and re
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.getByLabel("TLS 服务器名称", { exact: true }).fill("node.test");
-    await page
-      .getByLabel("基础配置 JSON", { exact: true })
-      .fill('{"log":{"level":"debug"},"inbounds":[]}');
+    const baseJson = jsonEditor(page, "基础配置 JSON");
+    await baseJson.fill('{"log":{"level":"debug"},"inbounds":[]}');
     await page.getByRole("button", { name: "生成预览", exact: true }).click();
     await expect(page.getByRole("main").getByRole("alert")).toContainText("这些字段由平台管理");
     await expect(
       page.getByRole("heading", { name: "最终 sing-box JSON", exact: true }),
     ).toHaveCount(0);
-    await page
-      .getByLabel("基础配置 JSON", { exact: true })
-      .fill('{"log":{"level":"debug"}}');
+    await baseJson.fill('{"log":{"level":"debug"}}');
     await page.getByRole("button", { name: "生成预览", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: "最终 sing-box JSON", exact: true }),

@@ -1,6 +1,7 @@
 import { test, expect, activate } from "./fixtures";
 import { connectMachine } from "./machine-fixture";
 import { rpc } from "./rpc";
+import { jsonEditor } from "./json-editor";
 
 test("phone and PC subscriptions share attributed nodes and keep rules, drafts and links independent", async ({
   page,
@@ -132,8 +133,8 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
       ids.push(
         decodeURIComponent(new URL(page.url()).pathname.split("/").at(-1)!),
       );
-      const input = page.getByLabel("客户端基础配置 JSON", { exact: true });
-      const json = JSON.parse(await input.inputValue());
+      const input = jsonEditor(page, "客户端基础配置 JSON");
+      const json = JSON.parse(await input.value());
       json.log.level = level;
       await input.fill(JSON.stringify(json));
       await page.getByRole("button", { name: "保存草稿", exact: true }).click();
@@ -141,7 +142,7 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
         page.getByText("草稿已保存，客户端仍使用已发布配置。", { exact: true }),
       ).toBeVisible();
       await page.reload();
-      await expect(input).toHaveValue(JSON.stringify(json));
+      expect(await input.value()).toBe(JSON.stringify(json));
       await page
         .getByRole("button", { name: "节点组与属性", exact: true })
         .click();
