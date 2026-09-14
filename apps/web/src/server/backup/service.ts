@@ -48,8 +48,9 @@ function inspectSnapshot(path: string, verifyKey: boolean) {
     if (!tables.has("users") || !tables.has("__drizzle_migrations")) throw new Error("备份不是 Bifurcation 面板数据库");
     if (verifyKey) {
       // Each supported ciphertext column uses the same persistent application key.
-      const encrypted = [["machines", "token_ciphertext"], ["proxy_credentials", "secrets_ciphertext"], ["subscription_tokens", "token_ciphertext"]] as const;
+      const encrypted = [["machines", "token_ciphertext"], ["proxy_credentials", "secrets_ciphertext"], ["subscription_tokens", "token_ciphertext"], ["subscriptions", "token_ciphertext"], ["subscriptions", "draft_ciphertext"], ["subscriptions", "published_ciphertext"]] as const;
       for (const [table, column] of encrypted) {
+        if (!tables.has(table)) continue;
         const sample = database.prepare(`SELECT ${column} AS secret FROM ${table} WHERE ${column} IS NOT NULL LIMIT 1`).get() as { secret: string } | undefined;
         if (sample) {
           try { decryptSecret(sample.secret); }

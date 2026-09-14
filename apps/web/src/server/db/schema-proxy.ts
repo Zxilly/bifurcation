@@ -85,3 +85,34 @@ export const quotaStates = sqliteTable("quota_states", {
   usedBytes: text("used_bytes").notNull(),
   blocked: integer("blocked", { mode: "boolean" }).notNull(),
 }, (table) => [primaryKey({ columns: [table.userId, table.period] })]);
+
+// Named subscriptions share the account proxy identity but own their configuration and URL.
+export const subscriptions = sqliteTable("subscriptions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  preset: text("preset").notNull(),
+  requestKey: text("request_key").notNull(),
+  draftCiphertext: text("draft_ciphertext").notNull(),
+  publishedCiphertext: text("published_ciphertext"),
+  version: integer("version").notNull().default(1),
+  publishedVersion: integer("published_version").notNull().default(0),
+  legacy: integer("legacy", { mode: "boolean" }).notNull().default(false),
+  tokenHash: text("token_hash").notNull().unique(),
+  tokenCiphertext: text("token_ciphertext").notNull(),
+  generation: integer("generation").notNull().default(1),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+  lastFetchedAt: integer("last_fetched_at"),
+  deletedAt: integer("deleted_at"),
+}, (table) => [uniqueIndex("subscription_create_key").on(table.userId, table.requestKey)]);
+
+export const subscriptionPreviews = sqliteTable("subscription_previews", {
+  id: text("id").primaryKey(),
+  subscriptionId: text("subscription_id").notNull().references(() => subscriptions.id),
+  version: integer("version").notNull(),
+  digest: text("digest").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+  published: integer("published", { mode: "boolean" }).notNull().default(false),
+});

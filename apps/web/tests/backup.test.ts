@@ -27,7 +27,7 @@ describe("consistent panel backups", () => {
   it("backs up committed WAL data while the source connection stays open and records only a key fingerprint", async () => {
     const destination = join(directory, "snapshot with spaces");
     const result = await createBackup(destination);
-    expect(result.metadata.migrations).toHaveLength(1);
+    expect(result.metadata.migrations).toEqual(database.sqlite.prepare("SELECT hash, created_at AS createdAt FROM __drizzle_migrations ORDER BY created_at, id").all());
     expect(JSON.stringify(result.metadata)).not.toContain(process.env.BIFURCATION_APP_KEY);
     expect((await inspectBackup(destination)).metadata.databaseSha256).toBe(result.metadata.databaseSha256);
     database.db.insert(users).values({ id: newId(), username: "later", role: "user", status: "pending", createdAt: Date.now() }).run();

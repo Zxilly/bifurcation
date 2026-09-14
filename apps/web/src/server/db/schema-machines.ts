@@ -5,6 +5,7 @@ export const machines = sqliteTable("machines", {
   name: text("name").notNull(),
   address: text("address").notNull(),
   region: text("region").notNull().default(""),
+  tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default([]),
   tokenHash: text("token_hash").notNull().unique(),
   tokenCiphertext: text("token_ciphertext").notNull(),
   tokenGeneration: integer("token_generation").notNull().default(1),
