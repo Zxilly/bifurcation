@@ -42,6 +42,7 @@ export function MachineInformationAction({
               name: String(values.get("name")),
               address: String(values.get("address")),
               region: String(values.get("region") ?? ""),
+              tags: { values: String(values.get("tags") ?? "").split(/[,，\s]+/).filter(Boolean) },
             })
           : await panel.machines.rebindMachine({
               machineId: machine.id,
@@ -115,6 +116,7 @@ export function MachineInformationAction({
                   defaultValue={snapshot.region}
                   maxLength={80}
                 />
+                <Input label="节点标签" name="tags" defaultValue={snapshot.tags.join(", ")} description="用逗号分隔，例如 ai、game。订阅按标签生成节点组；标签不改变账号授权。" />
               </>
             ) : (
               <>

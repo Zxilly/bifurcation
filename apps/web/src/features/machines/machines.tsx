@@ -7,12 +7,24 @@ import {
   Button,
   Input,
   Badge,
+  Tabs,
+  Select,
+  LinkButton,
 } from "@cloudflare/kumo";
 import { ResourceState } from "@/components/resource-state";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { TaskKind } from "@bifurcation/rpc";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CoreHealth, TaskKind } from "@bifurcation/rpc";
+import { ArrowLeftIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
+import { maintenanceInfo } from "@/contracts/maintenance";
+import { formatBytes } from "@/features/usage/format";
+import {
+  ConnectionBadge,
+  coreHealthNames,
+  percent,
+  reportedAt,
+} from "./status";
 import {
   MachineConnection,
   TaskState,
@@ -21,7 +33,7 @@ import {
 import { Modal, FormError } from "@/components/modal";
 import { CopyValue } from "@/components/secret-result";
 import { Reauthenticate } from "@/features/identity/reauth";
-import { ApiError, date, errorMessage } from "@/features/shared/api";
+import { ApiError, errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 import { MachineConfiguration } from "@/features/configuration/machine-configuration";
@@ -36,11 +48,12 @@ const ACTIVE_STATES = new Set<TaskState>([
   TaskState.ACCEPTED,
   TaskState.RUNNING,
 ]);
-const connection: Record<number, string> = {
-  [MachineConnection.WAITING]: "待接入",
-  [MachineConnection.ONLINE]: "在线",
-  [MachineConnection.OFFLINE]: "失联",
-};
+const detailTabs = [
+  { value: "overview", label: "概览" },
+  { value: "usage", label: "用量" },
+  { value: "activity", label: "操作记录" },
+  { value: "maintenance", label: "接入与维护" },
+];
 export function Machines() {
   const router = useRouter();
   const resource = useResource(
@@ -48,6 +61,21 @@ export function Machines() {
     () => panel.machines.listMachines({}),
     { refreshInterval: 10_000 },
   );
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all");
+  const allMachines = resource.data?.machines ?? [];
+  const search = query.trim().toLocaleLowerCase();
+  const filtered = allMachines.filter((machine) => {
+    const status = machine.uninstalled
+      ? "uninstalled"
+      : String(machine.connection);
+    return (
+      (filter === "all" || status === filter) &&
+      [machine.name, machine.address, machine.region, ...machine.tags].some(
+        (value) => value.toLocaleLowerCase().includes(search),
+      )
+    );
+  });
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -62,6 +90,9 @@ export function Machines() {
         name: String(values.get("name")),
         address: String(values.get("address")),
         region: String(values.get("region") ?? ""),
+        tags: String(values.get("tags") ?? "")
+          .split(/[,，\s]+/)
+          .filter(Boolean),
       });
       setOpen(false);
       router.push(`/admin/machines/${machine!.id}`);
@@ -76,7 +107,19 @@ export function Machines() {
   return (
     <>
       <div className="page-heading">
-        <h1>机器</h1>
+        <div>
+          <h1>机器</h1>
+          <p className="subtle mt-2">
+            {allMachines.length} 台机器 ·{" "}
+            {
+              allMachines.filter(
+                (m) =>
+                  !m.uninstalled && m.connection === MachineConnection.ONLINE,
+              ).length
+            }{" "}
+            台在线
+          </p>
+        </div>
         <Button
           variant="primary"
           onClick={() => {
@@ -89,58 +132,187 @@ export function Machines() {
       </div>
       <section className="panel-section stack">
         <FormError message={resource.error} />
-        {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
+        <div className="machine-list-toolbar">
+          <Input
+            aria-label="搜索机器"
+            placeholder="搜索名称、地址、地区或标签"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+          />
+          <Select
+            aria-label="机器状态"
+            value={filter}
+            onValueChange={(value) => setFilter(String(value))}
+            items={{
+              all: "全部状态",
+              [MachineConnection.ONLINE]: "在线",
+              [MachineConnection.OFFLINE]: "失联",
+              [MachineConnection.WAITING]: "待接入",
+              uninstalled: "已卸载",
+            }}
+          />
+          <Button
+            variant="ghost"
+            icon={ArrowClockwiseIcon}
+            onClick={resource.refresh}
+          >
+            刷新
+          </Button>
+          {(query || filter !== "all") && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setQuery("");
+                setFilter("all");
+              }}
+            >
+              清除筛选
+            </Button>
+          )}
+          <span className="subtle text-xs ml-auto">
+            {filtered.length} / {allMachines.length} 台
+          </span>
+        </div>
         <LayerCard className="min-w-0 overflow-x-auto p-0">
-          <Table className="min-w-max tabular-nums">
+          <Table className="tabular-nums md:min-w-[850px]">
             <Table.Header>
               <Table.Row>
-                <Table.Head>机器</Table.Head>
-                <Table.Head>地址</Table.Head>
+                <Table.Head>机器 / 地址</Table.Head>
                 <Table.Head>状态</Table.Head>
-                <Table.Head>内嵌 sing-box</Table.Head>
-                <Table.Head>daemon</Table.Head>
-                <Table.Head>最近连接</Table.Head>
+                <Table.Head className="hidden md:table-cell">
+                  系统 / 版本
+                </Table.Head>
+                <Table.Head className="hidden md:table-cell">资源</Table.Head>
+                <Table.Head className="hidden md:table-cell text-right">
+                  代理连接
+                </Table.Head>
+                <Table.Head className="hidden md:table-cell">
+                  最近上报
+                </Table.Head>
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {resource.data?.machines.map((machine) => (
+              {filtered.map((machine) => (
                 <Table.Row key={machine.id}>
-                  <Table.Cell>
+                  <Table.Cell className="max-w-80">
                     <Link
-                      className="underline"
+                      className="text-kumo-link font-medium hover:underline break-words"
                       href={`/admin/machines/${machine.id}`}
                     >
                       {machine.name}
                     </Link>
-                    {machine.region && (
-                      <span className="subtle block text-xs mt-1">
-                        {machine.region}
-                      </span>
+                    <p className="text-xs mt-1 break-all">{machine.address}</p>
+                    {(machine.region || machine.tags.length > 0) && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        {machine.region && (
+                          <span className="subtle text-xs">
+                            {machine.region}
+                          </span>
+                        )}
+                        {machine.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <dl className="md:hidden grid gap-2 mt-4 text-xs">
+                      <div>
+                        <dt className="subtle">系统</dt>
+                        <dd className="mt-0.5">
+                          {[machine.os, machine.arch]
+                            .filter(Boolean)
+                            .join(" / ") || "未上报"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="subtle">版本</dt>
+                        <dd className="mt-0.5">
+                          daemon {machine.daemonVersion ?? "—"}
+                          <br />
+                          sing-box {machine.coreVersion ?? "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="subtle">资源</dt>
+                        <dd className="mt-0.5">
+                          CPU {percent(machine.resources?.cpuUsagePercent)} ·
+                          内存{" "}
+                          {machine.resources?.memoryUsedBytes == null
+                            ? "未上报"
+                            : formatBytes(machine.resources.memoryUsedBytes)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="subtle">代理连接</dt>
+                        <dd className="mt-0.5">
+                          {machine.resources?.connections?.toLocaleString(
+                            "zh-CN",
+                          ) ?? "未上报"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="subtle">最近上报</dt>
+                        <dd className="mt-0.5">
+                          {machine.lastSeenAt
+                            ? reportedAt(machine.lastSeenAt)
+                            : "尚未连接"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </Table.Cell>
+                  <Table.Cell className="align-top md:align-middle">
+                    <ConnectionBadge
+                      connection={machine.connection}
+                      uninstalled={machine.uninstalled}
+                    />
+                    {!machine.uninstalled && (
+                      <p
+                        className={`text-xs mt-2 ${machine.coreHealth === CoreHealth.UNHEALTHY ? "text-kumo-danger" : "subtle"}`}
+                      >
+                        代理{coreHealthNames[machine.coreHealth] ?? "未上报"}
+                      </p>
+                    )}
+                    {machine.activeTaskCount > 0 && (
+                      <p className="text-xs mt-1">
+                        {machine.activeTaskCount} 项任务进行中
+                      </p>
                     )}
                   </Table.Cell>
-                  <Table.Cell>{machine.address}</Table.Cell>
-                  <Table.Cell>
-                    <Badge
-                      variant={
-                        machine.connection === MachineConnection.OFFLINE &&
-                        !machine.uninstalled
-                          ? "destructive"
-                          : "secondary"
-                      }
-                    >
-                      {machine.uninstalled
-                        ? "已卸载"
-                        : connection[machine.connection]}
-                    </Badge>
+                  <Table.Cell className="hidden md:table-cell">
+                    <p>
+                      {[machine.os, machine.arch].filter(Boolean).join(" / ") ||
+                        "未上报"}
+                    </p>
+                    <p className="subtle text-xs mt-1">
+                      daemon {machine.daemonVersion ?? "—"}
+                    </p>
+                    <p className="subtle text-xs mt-1">
+                      sing-box {machine.coreVersion ?? "—"}
+                    </p>
                   </Table.Cell>
-                  <Table.Cell>{machine.coreVersion ?? "—"}</Table.Cell>
-                  <Table.Cell>{machine.daemonVersion ?? "—"}</Table.Cell>
-                  <Table.Cell>
-                    {machine.lastSeenAt ? date(machine.lastSeenAt) : "尚未连接"}
+                  <Table.Cell className="hidden md:table-cell">
+                    <p>CPU {percent(machine.resources?.cpuUsagePercent)}</p>
+                    <p className="subtle text-xs mt-1">
+                      内存{" "}
+                      {machine.resources?.memoryUsedBytes == null
+                        ? "未上报"
+                        : formatBytes(machine.resources.memoryUsedBytes)}
+                    </p>
+                  </Table.Cell>
+                  <Table.Cell className="hidden md:table-cell text-right">
+                    {machine.resources?.connections?.toLocaleString("zh-CN") ??
+                      "—"}
+                  </Table.Cell>
+                  <Table.Cell className="hidden md:table-cell text-xs">
+                    {machine.lastSeenAt
+                      ? reportedAt(machine.lastSeenAt)
+                      : "尚未连接"}
                   </Table.Cell>
                 </Table.Row>
               ))}
-              {!resource.data?.machines.length && (
+              {filtered.length === 0 && (
                 <Table.Row>
                   <Table.Cell colSpan={6}>
                     <ResourceState
@@ -150,15 +322,27 @@ export function Machines() {
                           ? "正在加载…"
                           : resource.error
                             ? "未能加载机器"
-                            : "尚未添加机器"
+                            : allMachines.length
+                              ? "没有匹配的机器"
+                              : "尚未添加机器"
                       }
                     />
+                    {!resource.loading && !resource.error && (
+                      <p className="subtle text-center pb-6">
+                        {allMachines.length
+                          ? "调整搜索词或清除筛选后重试。"
+                          : "添加机器后，使用安装命令接入节点。"}
+                      </p>
+                    )}
                   </Table.Cell>
                 </Table.Row>
               )}
             </Table.Body>
           </Table>
         </LayerCard>
+        <p className="subtle text-xs">
+          资源数据为节点最近上报值；失联机器的数值不会实时更新。
+        </p>
       </section>
       {open && (
         <Modal
@@ -182,6 +366,12 @@ export function Machines() {
               name="region"
               maxLength={80}
               placeholder="例如：东京"
+            />
+            <Input
+              label="节点标签"
+              name="tags"
+              placeholder="ai, game"
+              description="逗号分隔，订阅按标签生成节点组。"
             />
             <FormError message={error} />
             <div className="mt-8 flex flex-wrap justify-end gap-2">
@@ -214,6 +404,17 @@ export function Machines() {
 
 export function MachineDetailPage({ id }: { id: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const tab = detailTabs.some((item) => item.value === requestedTab)
+    ? requestedTab!
+    : "overview";
+  function selectTab(value: string) {
+    const url = new URL(window.location.href);
+    if (value === "overview") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", value);
+    window.history.pushState(null, "", url);
+  }
   const resource = useResource(
     `machine:${id}`,
     () => panel.machines.getMachine({ machineId: id }).then((r) => r.machine!),
@@ -289,204 +490,390 @@ export function MachineDetailPage({ id }: { id: string }) {
     resource.update(machine);
     setNotice(message);
   }
+  const maintenance = maintenanceInfo(
+    machine.maintenanceStatus,
+    machine.capabilities.includes(TaskKind.UPGRADE_DAEMON),
+  );
+  const uninstallSupport = maintenanceInfo(
+    machine.maintenanceStatus,
+    machine.capabilities.includes(TaskKind.UNINSTALL),
+  );
+  const canInspect =
+    machine.connection !== MachineConnection.WAITING &&
+    !uninstallComplete &&
+    machine.capabilities.includes(TaskKind.INSPECT);
   return (
     <>
-      <div className="mb-5">
-        <Link href="/admin/machines" className="subtle underline">
+      <div className="machine-workspace">
+        <Link
+          href="/admin/machines"
+          className="subtle inline-flex items-center gap-1.5 hover:underline mb-4"
+          aria-label="返回机器列表"
+        >
+          <ArrowLeftIcon size={14} aria-hidden />
           机器
         </Link>
-      </div>
-      <div className="page-heading">
-        <div className="actions">
-          <h1>{machine.name}</h1>
-          <Badge
-            variant={
-              machine.connection === MachineConnection.OFFLINE &&
-              !uninstallComplete
-                ? "destructive"
-                : "secondary"
-            }
-          >
-            {uninstallComplete ? "已卸载" : connection[machine.connection]}
-          </Badge>
-        </div>
-        {uninstallComplete ? (
-          <MachineInformationAction
-            machine={machine}
-            mode="rebind"
-            triggerLabel="重新接入"
-            onChanged={informationChanged}
-          />
-        ) : (
-          <Button
-            onClick={() => {
-              setAction("install");
-              setError("");
-            }}
-          >
-            安装与重装命令
-          </Button>
-        )}
-      </div>
-      <FormError message={resource.error} />
-      {!action && <FormError message={error} />}
-      {notice && (
-        <Banner role="status" variant="secondary" className="mb-6">
-          {notice}
-        </Banner>
-      )}
-      {machine.issue && (
-        <Banner role="alert" variant="error" className="mb-6">
-          {machine.issue}
-        </Banner>
-      )}
-      <ActiveTasks
-        tasks={machine.tasks}
-        streamConnected={machine.streamConnected}
-      />
-      <LayerCard render={<section />} className="panel">
-        <div className="panel-header">
-          <h2>机器信息</h2>
-          <div className="actions">
-            <span className="subtle">{machine.region}</span>
+        <div className="machine-heading">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="break-words min-w-0">{machine.name}</h1>
+              <ConnectionBadge
+                connection={machine.connection}
+                uninstalled={uninstallComplete}
+              />
+              {!uninstallComplete && (
+                <Badge
+                  variant={
+                    machine.coreHealth === CoreHealth.HEALTHY
+                      ? "success"
+                      : machine.coreHealth === CoreHealth.UNHEALTHY
+                        ? "error"
+                        : "secondary"
+                  }
+                >
+                  代理{coreHealthNames[machine.coreHealth] ?? "未上报"}
+                </Badge>
+              )}
+            </div>
+            <div className="machine-identity-line">
+              <span className="break-all">{machine.address}</span>
+              {machine.region && (
+                <span className="subtle">{machine.region}</span>
+              )}
+              {machine.tags.map((tag) => (
+                <Badge variant="secondary" key={tag}>
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div className="actions shrink-0">
             <MachineInformationAction
               machine={machine}
               mode="edit"
               onChanged={informationChanged}
             />
+            {uninstallComplete ? (
+              <MachineInformationAction
+                machine={machine}
+                mode="rebind"
+                triggerLabel="重新接入"
+                onChanged={informationChanged}
+              />
+            ) : (
+              <LinkButton
+                variant="primary"
+                href={`/admin/machines/${id}/configuration`}
+              >
+                发布配置
+              </LinkButton>
+            )}
           </div>
         </div>
-        <dl className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          <div>
-            <dt className="subtle mb-2">地址</dt>
-            <dd>{machine.address}</dd>
-          </div>
-          <div>
-            <dt className="subtle mb-2">daemon 内嵌 sing-box</dt>
-            <dd>{machine.coreVersion ?? "未上报"}</dd>
-          </div>
-          <div>
-            <dt className="subtle mb-2">daemon</dt>
-            <dd>{machine.daemonVersion ?? "未上报"}</dd>
-          </div>
-        </dl>
-      </LayerCard>
-      {machine.connection === MachineConnection.WAITING && (
-        <LayerCard render={<section />} className="panel stack">
-          <h2>首次安装</h2>
-          <CopyValue value={machine.installCommand} />
-        </LayerCard>
-      )}
-      {!uninstallComplete && (
-        <MachineConfiguration
-          machine={machine}
-          onPublished={resource.refresh}
+        <FormError message={resource.error} />
+        {!action && <FormError message={error} />}
+        {notice && (
+          <Banner role="status" variant="secondary">
+            {notice}
+          </Banner>
+        )}
+        {machine.issue && (
+          <Banner role="alert" variant="error">
+            {machine.issue}
+          </Banner>
+        )}
+        <ActiveTasks
+          tasks={machine.tasks}
+          streamConnected={machine.streamConnected}
         />
-      )}
-      {machine.installationId && !uninstallComplete && (
-        <MachineUpgrades machine={machine} onQueued={resource.refresh} />
-      )}
-      {machine.installationId && !uninstallComplete && (
-        <MachineResources machine={machine} />
-      )}
-      {machine.installationId && <MachineUsage machineId={machine.id} />}
-      <LayerCard render={<section />} className="panel stack">
-        <div className="panel-header mb-0">
-          <h2>机器 Token</h2>
-          <Badge variant="secondary">
-            {uninstallComplete ? "仅用于结果确认" : "长期有效"}
-          </Badge>
+        <Tabs
+          variant="underline"
+          value={tab}
+          onValueChange={selectTab}
+          className="machine-tabs"
+          labels={{
+            scrollStart: "向左查看更多标签",
+            scrollEnd: "向右查看更多标签",
+          }}
+          tabs={detailTabs.map((item) => ({
+            ...item,
+            render: (
+              <button
+                id={`machine-tab-${item.value}`}
+                aria-controls={`machine-panel-${item.value}`}
+              />
+            ),
+          }))}
+        />
+        <div
+          id={`machine-panel-${tab}`}
+          role="tabpanel"
+          aria-labelledby={`machine-tab-${tab}`}
+          tabIndex={0}
+          className="machine-tab-content"
+        >
+          {tab === "overview" && (
+            <>
+              {machine.connection === MachineConnection.WAITING && (
+                <LayerCard render={<section />} className="machine-section">
+                  <div className="machine-section-heading">
+                    <h2>首次安装</h2>
+                    <Badge variant="secondary">等待接入</Badge>
+                  </div>
+                  <p className="subtle mb-4">
+                    在 Linux 节点执行安装命令，接入后会自动开始上报运行状态。
+                  </p>
+                  <CopyValue value={machine.installCommand} />
+                </LayerCard>
+              )}
+              {machine.installationId && !uninstallComplete && (
+                <MachineResources machine={machine} />
+              )}
+              <div className="machine-overview-grid">
+                <LayerCard render={<section />} className="machine-section">
+                  <div className="machine-section-heading">
+                    <h2>机器信息</h2>
+                  </div>
+                  <dl className="machine-facts">
+                    <div>
+                      <dt>管理连接</dt>
+                      <dd>
+                        {uninstallComplete
+                          ? "已卸载"
+                          : machine.streamConnected
+                            ? "已连接"
+                            : machine.installationId
+                              ? "连接中断"
+                              : "等待接入"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>操作系统</dt>
+                      <dd>
+                        {[machine.os, machine.arch]
+                          .filter(Boolean)
+                          .join(" / ") || "未上报"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>daemon</dt>
+                      <dd>{machine.daemonVersion ?? "未上报"}</dd>
+                    </div>
+                    <div>
+                      <dt>内嵌 sing-box</dt>
+                      <dd>{machine.coreVersion ?? "未上报"}</dd>
+                    </div>
+                    <div>
+                      <dt>维护方式</dt>
+                      <dd>
+                        {machine.installationId
+                          ? maintenance.label
+                          : "接入后确认"}
+                      </dd>
+                    </div>
+                  </dl>
+                  <Button
+                    variant="ghost"
+                    className="mt-4"
+                    onClick={() => selectTab("maintenance")}
+                  >
+                    管理接入与维护
+                  </Button>
+                </LayerCard>
+                {!uninstallComplete ? (
+                  <MachineConfiguration machine={machine} />
+                ) : (
+                  <LayerCard render={<section />} className="machine-section">
+                    <h2>节点已卸载</h2>
+                    <p className="subtle mt-3">
+                      历史用量与操作记录仍然保留。可重新接入节点，或在接入与维护中移除记录。
+                    </p>
+                    <Button
+                      className="mt-4"
+                      onClick={() => selectTab("maintenance")}
+                    >
+                      管理记录
+                    </Button>
+                  </LayerCard>
+                )}
+              </div>
+            </>
+          )}
+          {tab === "usage" &&
+            (machine.installationId ? (
+              <MachineUsage machineId={machine.id} />
+            ) : (
+              <ResourceState loading={false} title="接入后开始统计代理用量" />
+            ))}
+          {tab === "activity" && (
+            <section className="panel-section stack">
+              <div className="machine-section-heading">
+                <div>
+                  <h2>操作记录与诊断</h2>
+                  <p className="subtle text-xs mt-1">
+                    查看执行结果与节点最近日志。
+                  </p>
+                </div>
+                <Button
+                  loading={busy}
+                  disabled={!canInspect}
+                  title={
+                    !canInspect ? "节点接入并支持诊断后可获取日志" : undefined
+                  }
+                  onClick={() => execute("inspect")}
+                >
+                  获取最近 100 行日志
+                </Button>
+              </div>
+              <TaskHistory tasks={machine.tasks} />
+            </section>
+          )}
+          {tab === "maintenance" && (
+            <>
+              <div className="machine-maintenance-grid">
+                {machine.installationId && !uninstallComplete ? (
+                  <MachineUpgrades
+                    machine={machine}
+                    onQueued={resource.refresh}
+                  />
+                ) : (
+                  <LayerCard render={<section />} className="machine-section">
+                    <h2>{uninstallComplete ? "节点已卸载" : "等待节点接入"}</h2>
+                    <p className="subtle mt-3">
+                      {uninstallComplete
+                        ? "节点已报告卸载完成，可继续移除面板记录。"
+                        : "执行安装命令后，面板将显示节点版本和维护方式。"}
+                    </p>
+                  </LayerCard>
+                )}
+                <LayerCard render={<section />} className="machine-section">
+                  <div className="machine-section-heading">
+                    <h2>机器 Token</h2>
+                    <Badge variant="secondary">
+                      {uninstallComplete ? "仅用于结果确认" : "长期有效"}
+                    </Badge>
+                  </div>
+                  <p className="subtle mb-4">
+                    用于本机连接面板。重置后，需在节点上同步新 Token。
+                  </p>
+                  <CopyValue key={machine.token} value={machine.token} />
+                  <div className="actions mt-4">
+                    <Button
+                      disabled={uninstallActive || uninstallComplete}
+                      onClick={() => {
+                        setAction("token");
+                        setError("");
+                      }}
+                    >
+                      重置 Token
+                    </Button>
+                  </div>
+                </LayerCard>
+              </div>
+              <LayerCard render={<section />} className="machine-section">
+                <div className="machine-section-heading">
+                  <h2>安装与绑定</h2>
+                </div>
+                <div className="machine-operation-row">
+                  <div>
+                    <h3 className="font-medium">安装与重装命令</h3>
+                    <p className="subtle mt-1">
+                      在 Linux 主机安装为 systemd
+                      服务。容器节点通过镜像管理程序。
+                    </p>
+                  </div>
+                  {uninstallComplete ? (
+                    <span className="subtle text-xs">重新接入后生成新命令</span>
+                  ) : (
+                    <Button
+                      onClick={() => {
+                        setAction("install");
+                        setError("");
+                      }}
+                    >
+                      安装与重装命令
+                    </Button>
+                  )}
+                </div>
+                <div className="machine-operation-row">
+                  <div>
+                    <h3 className="font-medium">替换安装实例</h3>
+                    <p className="subtle mt-1">
+                      更换机器或重新绑定；旧实例会失去访问权限，并生成新 Token。
+                    </p>
+                  </div>
+                  <MachineInformationAction
+                    machine={machine}
+                    mode="rebind"
+                    onChanged={informationChanged}
+                  />
+                </div>
+              </LayerCard>
+              <LayerCard render={<section />} className="machine-section">
+                <div className="machine-section-heading">
+                  <h2>卸载与移除</h2>
+                </div>
+                {uninstallActive && (
+                  <Banner role="status" variant="secondary">
+                    正在卸载，请保留机器记录以接收执行结果。
+                  </Banner>
+                )}
+                <div className="machine-operation-row">
+                  <div>
+                    <h3 className="font-medium">卸载节点程序</h3>
+                    <p className="subtle mt-1">
+                      停止代理并清理安装文件，保留面板记录以接收执行结果。
+                    </p>
+                    {!uninstallSupport.available && !uninstallComplete && (
+                      <p className="subtle text-xs mt-2">
+                        {uninstallSupport.description}
+                      </p>
+                    )}
+                    {mutatingTaskActive && (
+                      <p className="text-kumo-warning mt-1">
+                        请等待当前节点任务结束。
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="secondary-destructive"
+                    disabled={
+                      !uninstallSupport.available ||
+                      mutatingTaskActive ||
+                      uninstallComplete
+                    }
+                    onClick={() => {
+                      setUninstallRequestKey(crypto.randomUUID());
+                      setAction("uninstall");
+                      setError("");
+                    }}
+                  >
+                    卸载节点程序
+                  </Button>
+                </div>
+                <div className="machine-operation-row">
+                  <div>
+                    <h3 className="font-medium">移除面板记录</h3>
+                    <p className="subtle mt-1">
+                      移除面板中的机器记录；节点上的程序不会被卸载。
+                    </p>
+                  </div>
+                  <Button
+                    variant="secondary-destructive"
+                    disabled={uninstallActive}
+                    onClick={() => {
+                      setAction("remove");
+                      setError("");
+                    }}
+                  >
+                    移除记录
+                  </Button>
+                </div>
+              </LayerCard>
+            </>
+          )}
         </div>
-        <CopyValue key={machine.token} value={machine.token} />
-        <div>
-          <Button
-            disabled={uninstallActive || uninstallComplete}
-            onClick={() => {
-              setAction("token");
-              setError("");
-            }}
-          >
-            重置 Token
-          </Button>
-          <MachineInformationAction
-            machine={machine}
-            mode="rebind"
-            onChanged={informationChanged}
-          />
-        </div>
-      </LayerCard>
-      <section className="panel-section stack">
-        <div className="panel-header">
-          <h2>操作记录与诊断</h2>
-          <Button
-            loading={busy}
-            disabled={
-              machine.connection === MachineConnection.WAITING ||
-              uninstallComplete ||
-              !machine.capabilities.includes(TaskKind.INSPECT)
-            }
-            title={
-              machine.connection === MachineConnection.WAITING
-                ? "机器接入后可获取诊断"
-                : uninstallComplete
-                  ? "节点程序已卸载"
-                  : !machine.capabilities.includes(TaskKind.INSPECT)
-                    ? "当前 daemon 不支持诊断"
-                    : undefined
-            }
-            onClick={() => execute("inspect")}
-          >
-            获取最近 100 行日志
-          </Button>
-        </div>
-        <TaskHistory tasks={machine.tasks} />
-      </section>
-      <LayerCard render={<section />} className="panel">
-        {uninstallComplete && (
-          <Banner role="status" variant="secondary" className="mb-5">
-            节点已报告卸载完成，可继续移除面板记录。
-          </Banner>
-        )}
-        {uninstallActive && (
-          <Banner role="status" variant="secondary" className="mb-5">
-            正在卸载，请保留机器记录以接收执行结果。
-          </Banner>
-        )}
-        <div className="actions">
-          <Button
-            variant="secondary-destructive"
-            disabled={
-              !machine.capabilities.includes(TaskKind.UNINSTALL) ||
-              mutatingTaskActive ||
-              uninstallComplete
-            }
-            title={
-              !machine.capabilities.includes(TaskKind.UNINSTALL)
-                ? "当前 daemon 未声明卸载能力"
-                : mutatingTaskActive
-                  ? "请等待当前任务结束"
-                  : undefined
-            }
-            onClick={() => {
-              setUninstallRequestKey(crypto.randomUUID());
-              setAction("uninstall");
-              setError("");
-            }}
-          >
-            卸载节点程序
-          </Button>
-          <Button
-            variant="secondary-destructive"
-            disabled={uninstallActive}
-            onClick={() => {
-              setAction("remove");
-              setError("");
-            }}
-          >
-            移除记录
-          </Button>
-        </div>
-      </LayerCard>
+      </div>
       {action && (
         <Modal
           title={
@@ -541,7 +928,9 @@ export function MachineDetailPage({ id }: { id: string }) {
                     loading={busy}
                     disabled={
                       action === "uninstall"
-                        ? mutatingTaskActive || uninstallComplete
+                        ? mutatingTaskActive ||
+                          uninstallComplete ||
+                          !uninstallSupport.available
                         : uninstallActive
                     }
                     onClick={() => execute(action)}

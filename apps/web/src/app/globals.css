@@ -201,3 +201,157 @@ a {
     padding: 24px;
   }
 }
+
+/* Machine workspace: scoped layout around native Kumo components. */
+.machine-workspace {
+  max-width: 1480px;
+  margin-inline: auto;
+}
+.machine-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.machine-identity-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+.machine-workspace > .panel {
+  margin: 16px 0;
+  padding: 20px;
+}
+.machine-workspace > [role="status"],
+.machine-workspace > [role="alert"] {
+  margin-bottom: 16px;
+}
+.machine-tabs {
+  margin-bottom: 20px;
+}
+.machine-tab-content {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.machine-tab-content:focus-visible {
+  outline: 2px solid var(--color-kumo-brand);
+  outline-offset: 4px;
+}
+.machine-overview-grid,
+.machine-maintenance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.machine-section,
+.machine-resources,
+.machine-configuration,
+.machine-upgrades {
+  min-width: 0;
+  padding: 20px;
+}
+.machine-section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.machine-resource-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr 0.8fr 0.8fr;
+  gap: 24px;
+  font-variant-numeric: tabular-nums;
+}
+.machine-resource-grid > * {
+  min-width: 0;
+}
+.machine-network-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  border-top: 1px solid var(--color-kumo-line);
+  padding-top: 14px;
+  margin-top: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.machine-facts > div {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.65fr) minmax(0, 1fr);
+  gap: 16px;
+  padding-block: 10px;
+  border-bottom: 1px solid var(--color-kumo-line);
+}
+.machine-facts dt {
+  color: var(--text-color-kumo-subtle);
+}
+.machine-facts dd {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.machine-operation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block: 14px;
+}
+.machine-operation-row + .machine-operation-row {
+  border-top: 1px solid var(--color-kumo-line);
+}
+.machine-operation-row > :first-child {
+  min-width: 0;
+  max-width: 75ch;
+}
+.machine-operation-row > :last-child {
+  flex-shrink: 0;
+}
+.machine-list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.machine-list-toolbar > :first-child {
+  width: min(100%, 380px);
+}
+@media (max-width: 1200px) {
+  .machine-resource-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+@media (max-width: 960px) {
+  .machine-overview-grid,
+  .machine-maintenance-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .machine-heading {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 600px) {
+  .machine-section,
+  .machine-resources,
+  .machine-configuration,
+  .machine-upgrades {
+    padding: 16px;
+  }
+  .machine-resource-grid {
+    gap: 20px 16px;
+  }
+  .machine-operation-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .machine-section-heading {
+    align-items: flex-start;
+  }
+}

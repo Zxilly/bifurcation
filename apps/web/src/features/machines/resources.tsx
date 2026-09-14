@@ -1,87 +1,100 @@
-import { LayerCard } from "@cloudflare/kumo";
-import { create } from "@bufbuild/protobuf";
-import { CoreHealth } from "@bifurcation/rpc";
-import {
-  MachineResourcesSchema,
-  type MachineDetail,
-} from "@bifurcation/rpc/panel/machines";
+import { LayerCard, Meter } from "@cloudflare/kumo";
+import type { MachineDetail } from "@bifurcation/rpc/panel/machines";
 import { formatBytes } from "@/features/usage/format";
-
-const health: Record<number, string> = {
-  [CoreHealth.UNSPECIFIED]: "尚未上报",
-  [CoreHealth.NOT_CONFIGURED]: "未配置",
-  [CoreHealth.STOPPED]: "已停止",
-  [CoreHealth.HEALTHY]: "运行中",
-  [CoreHealth.UNHEALTHY]: "运行异常",
-};
-const time = new Intl.DateTimeFormat("zh-CN", {
-  dateStyle: "short",
-  timeStyle: "medium",
-  timeZone: "Asia/Shanghai",
-});
+import { percent, reportedAt } from "./status";
 
 export function MachineResources({ machine }: { machine: MachineDetail }) {
-  const resource = machine.resources ?? create(MachineResourcesSchema, {});
-  const networkInterface = resource.networkInterface
-    ? `（${resource.networkInterface}）`
-    : "";
-  const fields = [
-    ["管理连接", machine.streamConnected ? "已连接" : "连接中断"],
-    [
-      "操作系统",
-      [machine.os, machine.arch].filter(Boolean).join(" / ") || "尚未上报",
-    ],
-    ["内嵌核心状态", health[machine.coreHealth] ?? "尚未上报"],
-    [
-      "CPU 使用率",
-      resource.cpuUsagePercent == null
-        ? "尚未上报"
-        : `${resource.cpuUsagePercent.toLocaleString("zh-CN", { maximumFractionDigits: 1 })}%`,
-    ],
-    [
-      "内存",
-      resource.memoryUsedBytes == null
-        ? "尚未上报"
-        : `${formatBytes(resource.memoryUsedBytes)}${resource.memoryTotalBytes == null ? "" : ` / ${formatBytes(resource.memoryTotalBytes)}`}`,
-    ],
-    [
-      "磁盘剩余",
-      resource.diskFreeBytes == null
-        ? "尚未上报"
-        : formatBytes(resource.diskFreeBytes),
-    ],
-    ["代理连接数", resource.connections ?? "尚未上报"],
-    [
-      `网卡累计接收${networkInterface}`,
-      resource.networkRxBytes == null
-        ? "尚未上报"
-        : formatBytes(resource.networkRxBytes),
-    ],
-    [
-      `网卡累计发送${networkInterface}`,
-      resource.networkTxBytes == null
-        ? "尚未上报"
-        : formatBytes(resource.networkTxBytes),
-    ],
-  ];
+  const resources = machine.resources;
+  const cpu = resources?.cpuUsagePercent;
+  const used = resources?.memoryUsedBytes;
+  const total = resources?.memoryTotalBytes;
+  const memory =
+    used == null
+      ? "未上报"
+      : `${formatBytes(used)}${total == null ? "" : ` / ${formatBytes(total)}`}`;
+  const memoryPercent =
+    used != null && total != null && total > 0n
+      ? Math.min(100, Math.max(0, (Number(used) / Number(total)) * 100))
+      : null;
   return (
-    <LayerCard render={<section />} className="panel">
-      <div className="panel-header flex-wrap">
-        <h2>运行信息</h2>
+    <LayerCard
+      render={<section aria-labelledby="machine-resources-title" />}
+      className="machine-resources"
+    >
+      <div className="machine-section-heading">
+        <h2 id="machine-resources-title">运行信息</h2>
         <span className="subtle text-xs">
           {machine.lastSeenAt == null
-            ? "尚未连接"
-            : `最近上报 ${time.format(Number(machine.lastSeenAt))}`}
+            ? "等待节点上报"
+            : `最近上报 ${reportedAt(machine.lastSeenAt)}`}
         </span>
       </div>
-      <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
-        {fields.map(([label, value]) => (
-          <div key={label}>
-            <dt className="subtle mb-2">{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
+      {!machine.streamConnected && (
+        <p className="text-kumo-warning mb-4">
+          管理连接已中断，以下为最近上报值。
+        </p>
+      )}
+      <div className="machine-resource-grid">
+        <div>
+          {cpu == null ? (
+            <dl>
+              <dt className="subtle">CPU 使用率</dt>
+              <dd className="mt-2">未上报</dd>
+            </dl>
+          ) : (
+            <Meter
+              label="CPU 使用率"
+              value={Math.min(100, Math.max(0, cpu))}
+              customValue={percent(cpu)}
+            />
+          )}
+        </div>
+        <div>
+          {memoryPercent == null ? (
+            <dl>
+              <dt className="subtle">内存</dt>
+              <dd className="mt-2">{memory}</dd>
+            </dl>
+          ) : (
+            <Meter label="内存" value={memoryPercent} customValue={memory} />
+          )}
+        </div>
+        <dl>
+          <dt className="subtle">磁盘剩余</dt>
+          <dd className="mt-2 font-medium">
+            {resources?.diskFreeBytes == null
+              ? "未上报"
+              : formatBytes(resources.diskFreeBytes)}
+          </dd>
+        </dl>
+        <dl>
+          <dt className="subtle">代理连接数</dt>
+          <dd className="mt-2 font-medium">
+            {resources?.connections?.toLocaleString("zh-CN") ?? "未上报"}
+          </dd>
+        </dl>
+      </div>
+      <div className="machine-network-summary">
+        <span className="subtle">
+          网卡累计
+          {resources?.networkInterface
+            ? ` · ${resources.networkInterface}`
+            : ""}
+        </span>
+        <span>
+          接收{" "}
+          {resources?.networkRxBytes == null
+            ? "未上报"
+            : formatBytes(resources.networkRxBytes)}
+        </span>
+        <span>
+          发送{" "}
+          {resources?.networkTxBytes == null
+            ? "未上报"
+            : formatBytes(resources.networkTxBytes)}
+        </span>
+        <span className="subtle text-xs">主机流量，不计入代理用量</span>
+      </div>
     </LayerCard>
   );
 }

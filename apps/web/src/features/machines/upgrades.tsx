@@ -1,6 +1,8 @@
 "use client";
 
-import { LayerCard, Banner } from "@cloudflare/kumo";
+import { TaskKind } from "@bifurcation/rpc";
+import { maintenanceInfo } from "@/contracts/maintenance";
+import { LayerCard, Banner, Table } from "@cloudflare/kumo";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Badge } from "@cloudflare/kumo/components/badge";
@@ -41,7 +43,7 @@ export function MachineUpgrades({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [reauth, setReauth] = useState(false);
-  const machineState = `${machine.coreVersion}/${machine.daemonVersion}/${machine.activeTaskCount}`;
+  const machineState = `${machine.coreVersion}/${machine.daemonVersion}/${machine.activeTaskCount}/${machine.maintenanceStatus}/${machine.capabilities.join(",")}`;
   const previousState = useRef(machineState);
   const refresh = resource.refresh;
   useEffect(() => {
@@ -109,13 +111,21 @@ export function MachineUpgrades({
     }
   }
 
+  const maintenance = maintenanceInfo(
+    machine.maintenanceStatus,
+    machine.capabilities.includes(TaskKind.UPGRADE_DAEMON),
+  );
   const candidate = resource.data?.daemon;
   const target = confirmation?.candidate;
   return (
-    <LayerCard render={<section />} className="panel">
-      <div className="panel-header">
-        <h2>daemon 更新</h2>
-        <Button variant="ghost" onClick={resource.refresh}>
+    <LayerCard render={<section />} className="machine-upgrades">
+      <div className="machine-section-heading">
+        <h2>版本与更新</h2>
+        <Button
+          variant="ghost"
+          disabled={resource.loading}
+          onClick={resource.refresh}
+        >
           检查可用版本
         </Button>
       </div>
@@ -130,46 +140,66 @@ export function MachineUpgrades({
           正在检查制品…
         </p>
       )}
+      <div className="mb-4">
+        <Badge variant={maintenance.available ? "success" : "secondary"}>
+          {maintenance.label}
+        </Badge>
+        <p className="subtle mt-2 leading-relaxed">{maintenance.description}</p>
+      </div>
       {candidate && (
-        <div className="upgrade-row">
-          <div className="stack gap-2 min-w-0 break-words">
-            <p>
-              <span className="subtle">当前 daemon </span>
-              {machine.daemonVersion ?? "未上报"}
-            </p>
-            <p>
-              <span className="subtle">内嵌 sing-box </span>
-              {resource.data?.bundledCoreVersion || "未上报"}
-            </p>
-            {candidate.availableVersion && (
-              <>
-                <p>
-                  <span className="subtle">可用 daemon </span>
-                  {candidate.availableVersion}
-                  {candidate.sameVersion && (
-                    <Badge className="ml-2" variant="secondary">
-                      同版本
-                    </Badge>
-                  )}
+        <>
+          <Table className="tabular-nums table-fixed">
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>组件</Table.Head>
+                <Table.Head>当前版本</Table.Head>
+                <Table.Head>可用版本</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              <Table.Row>
+                <Table.Cell>daemon</Table.Cell>
+                <Table.Cell className="break-all">
+                  {machine.daemonVersion ?? "未上报"}
+                </Table.Cell>
+                <Table.Cell className="break-all">
+                  {candidate.availableVersion ?? "未提供"}
+                </Table.Cell>
+              </Table.Row>
+              <Table.Row>
+                <Table.Cell>sing-box</Table.Cell>
+                <Table.Cell className="break-all">
+                  {resource.data?.bundledCoreVersion || "未上报"}
+                </Table.Cell>
+                <Table.Cell className="break-all">
+                  {resource.data?.availableBundledCoreVersion || "未提供"}
+                </Table.Cell>
+              </Table.Row>
+            </Table.Body>
+          </Table>
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-5">
+            <div className="min-w-0 flex-1">
+              {candidate.disabledReason &&
+                candidate.disabledReason !== maintenance.description && (
+                  <p className="subtle text-xs">{candidate.disabledReason}</p>
+                )}
+              {candidate.executable && (
+                <p className="subtle text-xs">
+                  升级前需确认目标版本与文件摘要。
                 </p>
-                <p>
-                  <span className="subtle">携带 sing-box </span>
-                  {resource.data?.availableBundledCoreVersion || "未提供版本"}
-                </p>
-              </>
-            )}
-            {candidate.disabledReason && (
-              <p className="subtle text-xs">{candidate.disabledReason}</p>
-            )}
+              )}
+            </div>
+            <Button
+              disabled={
+                !candidate.executable || !maintenance.available || checking
+              }
+              loading={checking}
+              onClick={open}
+            >
+              升级 daemon
+            </Button>
           </div>
-          <Button
-            disabled={!candidate.executable || checking}
-            loading={checking}
-            onClick={open}
-          >
-            升级 daemon
-          </Button>
-        </div>
+        </>
       )}
       {confirmation && target && (
         <Modal
@@ -188,13 +218,11 @@ export function MachineUpgrades({
               内嵌 sing-box {confirmation.bundledCoreVersion || "未知"} →{" "}
               {confirmation.availableBundledCoreVersion || "未提供版本"}
             </p>
-            <Banner variant="alert">
-              <p className="font-medium">代理连接会中断</p>
-              <p className="mt-1">
-                daemon 重启会同时重启内嵌
-                sing-box，代理连接与管理连接都会暂时中断。
-              </p>
-            </Banner>
+            <Banner
+              variant="alert"
+              title="代理连接会中断"
+              description="daemon 重启会同时重启内嵌 sing-box，代理连接与管理连接都会暂时中断。"
+            />
             <p className="subtle">
               重新连接并收到新版本状态后，才确认升级完成。启动失败时会尝试恢复上一版本。
             </p>

@@ -255,6 +255,9 @@ func (c *Client) session(parent context.Context) error {
 }
 func (c *Client) status(ctx context.Context) *v1.MachineStatus {
 	result := &v1.MachineStatus{ObservedAtUnixMs: time.Now().UnixMilli(), DaemonVersion: c.version, CoreHealth: v1.CoreHealth_CORE_HEALTH_UNSPECIFIED, UsageIncomplete: true, Issue: "Proxy core status is not available"}
+	if c.maintenance != nil {
+		result.MaintenanceStatus = c.maintenance.MaintenanceStatus()
+	}
 	if c.metrics != nil {
 		snapshot := c.metrics.Read(c.directory)
 		result.CpuUsagePercent = snapshot.CPUUsagePercent

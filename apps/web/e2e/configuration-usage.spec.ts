@@ -23,6 +23,9 @@ test("configuration preview and publish, independent subscription resets, and re
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error" && /hydration|cannot be a descendant/i.test(message.text())) errors.push(message.text());
+  });
   await activate(page, app);
   const me = (
     await rpc<{ user: { id: string } }>(
@@ -56,13 +59,20 @@ test("configuration preview and publish, independent subscription resets, and re
       },
     });
     await page.goto(`${app.origin}/admin/machines/${machine.id}`);
-    await page.getByRole("button", { name: "发布配置", exact: true }).click();
+    await page.getByRole("link", { name: "发布配置", exact: true }).click();
+    await expect(page).toHaveURL(`${app.origin}/admin/machines/${machine.id}/configuration`);
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "发布节点配置", exact: true })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.getByLabel("TLS 服务器名称", { exact: true }).fill("node.test");
     await page
       .getByLabel("基础配置 JSON", { exact: true })
       .fill('{"log":{"level":"debug"},"inbounds":[]}');
     await page.getByRole("button", { name: "生成预览", exact: true }).click();
-    await expect(page.getByRole("dialog").getByRole("alert")).toBeVisible();
+    await expect(page.getByRole("main").getByRole("alert")).toContainText("这些字段由平台管理");
     await expect(
       page.getByRole("heading", { name: "最终 sing-box JSON", exact: true }),
     ).toHaveCount(0);
@@ -76,6 +86,8 @@ test("configuration preview and publish, independent subscription resets, and re
     await expect(
       page.getByRole("heading", { name: "最终 sing-box JSON", exact: true }),
     ).toBeFocused();
+    await expect(page.getByText("发布可能短暂中断连接", { exact: true })).toBeVisible();
+    await expect(page.locator("p p")).toHaveCount(0);
     const preview = JSON.parse(
       await page.getByLabel("sing-box JSON", { exact: true }).innerText(),
     ) as {
@@ -171,8 +183,9 @@ test("configuration preview and publish, independent subscription resets, and re
         appliedConfigSha256: config.configSha256,
       },
     });
-    await page.reload();
+    await page.getByRole("link", { name: "返回机器详情查看应用状态", exact: true }).click();
     await expect(page.getByText("已同步", { exact: true })).toBeVisible();
+    await page.getByRole("tab", { name: "操作记录", exact: true }).click();
     const diagnosticResponse = page.waitForResponse(
       (response) =>
         response
@@ -236,6 +249,7 @@ test("configuration preview and publish, independent subscription resets, and re
     await expect(
       page.getByRole("cell", { name: "Traffic fixture", exact: true }),
     ).toBeVisible();
+    await page.getByText("更多", { exact: true }).click();
     const subscriptionBefore = (await getSubscription(page.request, app.origin))
       .body.subscription;
     await page

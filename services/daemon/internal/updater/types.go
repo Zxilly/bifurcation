@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	v1 "github.com/Zxilly/bifurcation/services/daemon/gen/bifurcation/v1"
 	"github.com/Zxilly/bifurcation/services/daemon/gen/bifurcation/v1/bifurcationv1connect"
 	"github.com/Zxilly/bifurcation/services/daemon/internal/identity"
 	"github.com/Zxilly/bifurcation/services/daemon/internal/state"
@@ -156,40 +157,60 @@ func (c *Controller) ensureIdle(ctx context.Context) error {
 	return nil
 }
 func (c *Controller) validateInstallation() error {
+	_, err := c.checkInstallation()
+	return err
+}
+
+func (c *Controller) checkInstallation() (v1.MaintenanceStatus, error) {
 	if runtime.GOOS != "linux" {
-		return errors.New("maintenance requires a systemd installation")
+		return v1.MaintenanceStatus_MAINTENANCE_STATUS_UNSUPPORTED_OS, errors.New("maintenance requires a systemd installation")
 	}
 	executable, err := os.Executable()
 	if err != nil {
-		return err
+		return v1.MaintenanceStatus_MAINTENANCE_STATUS_INVALID_PATHS, err
 	}
 	executable, err = filepath.EvalSymlinks(executable)
 	if err != nil {
-		return err
+		return v1.MaintenanceStatus_MAINTENANCE_STATUS_INVALID_PATHS, err
 	}
 	if executable != InstalledBinary {
-		return errors.New("maintenance requires the standard installed daemon path")
+		return v1.MaintenanceStatus_MAINTENANCE_STATUS_NONSTANDARD_BINARY, errors.New("maintenance requires the standard installed daemon path")
 	}
 	if !filepath.IsAbs(c.config.StateDirectory) || filepath.Clean(c.config.StateDirectory) == "/" {
-		return errors.New("maintenance requires a dedicated absolute state directory")
+		return v1.MaintenanceStatus_MAINTENANCE_STATUS_INVALID_STATE_DIRECTORY, errors.New("maintenance requires a dedicated absolute state directory")
 	}
 	for _, path := range []string{InstalledBinary, c.configPath, c.config.StateDirectory} {
 		info, err := os.Lstat(path)
 		if err != nil {
-			return err
+			return v1.MaintenanceStatus_MAINTENANCE_STATUS_INVALID_PATHS, err
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("maintenance refuses symbolic link %s", path)
+			return v1.MaintenanceStatus_MAINTENANCE_STATUS_INVALID_PATHS, fmt.Errorf("maintenance refuses symbolic link %s", path)
 		}
 	}
 	unit, err := os.ReadFile(filepath.Join(unitDirectory, DaemonUnit))
 	if err != nil {
-		return err
+		return v1.MaintenanceStatus_MAINTENANCE_STATUS_UNMANAGED_SERVICE, err
 	}
 	if !strings.Contains(string(unit), "# Managed by Bifurcation installer v1") || !strings.Contains(string(unit), "ExecStart="+InstalledBinary) {
-		return errors.New("daemon service is not owned by the Bifurcation installer")
+		return v1.MaintenanceStatus_MAINTENANCE_STATUS_UNMANAGED_SERVICE, errors.New("daemon service is not owned by the Bifurcation installer")
 	}
-	return nil
+	return v1.MaintenanceStatus_MAINTENANCE_STATUS_AVAILABLE, nil
+}
+
+// MaintenanceStatus explains the same installation check that gates task
+// support. Container detection is advisory: a correctly managed systemd
+// installation inside a container still passes the check above.
+func (c *Controller) MaintenanceStatus() v1.MaintenanceStatus {
+	status, _ := c.checkInstallation()
+	if status == v1.MaintenanceStatus_MAINTENANCE_STATUS_NONSTANDARD_BINARY || status == v1.MaintenanceStatus_MAINTENANCE_STATUS_UNMANAGED_SERVICE {
+		for _, marker := range []string{"/.dockerenv", "/run/.containerenv", "/run/systemd/container"} {
+			if _, err := os.Stat(marker); err == nil {
+				return v1.MaintenanceStatus_MAINTENANCE_STATUS_CONTAINER
+			}
+		}
+	}
+	return status
 }
 func helperActive(ctx context.Context, unit string) bool {
 	output, err := system.Command(ctx, "systemctl", "show", unit, "--property=ActiveState", "--value")

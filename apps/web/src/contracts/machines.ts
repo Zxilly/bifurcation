@@ -1,3 +1,5 @@
+import type { MaintenanceStatus } from "@bifurcation/rpc";
+
 export type MachineConnection = "waiting" | "online" | "offline";
 export type TaskStatus = "queued" | "accepted" | "running" | "succeeded" | "failed" | "canceled" | "superseded";
 export type MachineTaskKind = "inspect" | "apply_config" | "upgrade_daemon" | "uninstall";
@@ -7,6 +9,7 @@ export interface MachineDto {
   name: string;
   address: string;
   region: string;
+  tags: string[];
   connection: MachineConnection;
   streamConnected: boolean;
   uninstalled: boolean;
@@ -21,6 +24,7 @@ export interface MachineDto {
   os: string | null;
   arch: string | null;
   capabilities: MachineTaskKind[];
+  maintenanceStatus: MaintenanceStatus;
   appliedRevisionId: string | null;
   appliedPolicyRevision: string;
   appliedConfigSha256: string | null;

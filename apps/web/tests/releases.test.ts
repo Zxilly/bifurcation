@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { create, fromBinary } from "@bufbuild/protobuf";
-import { CoreHealth, InstallationSchema, MachineStatusSchema, TaskKind, TaskSpecSchema } from "@bifurcation/rpc";
+import { CoreHealth, InstallationSchema, MachineStatusSchema, MaintenanceStatus, TaskKind, TaskSpecSchema } from "@bifurcation/rpc";
 import { openDatabase, type DatabaseHandle } from "@/server/db";
 import { tasks } from "@/server/db/schema-machines";
 import { MachineStore } from "@/server/modules/machines/store";
@@ -77,5 +77,47 @@ describe("daemon releases with a bundled proxy core", () => {
     expect(result.daemon.disabledReason).toContain("制品尚未就绪");
     expect(result.daemon.currentVersion).toBe("0.0.1");
     expect(result.bundledCoreVersion).toBe("1.14.0");
+  });
+  it("reports container maintenance guidance and refuses to queue a self-upgrade", () => {
+    const current = machines.get(machineId);
+    const bound = machines.bind(machineId, create(InstallationSchema, {
+      installationId: current.installationId!, bindingEpoch: BigInt(current.bindingEpoch),
+    }), { daemonVersion: "0.0.1", os: "linux", arch: "amd64", supportedTasks: [TaskKind.INSPECT, TaskKind.APPLY_CONFIG] });
+    machines.reportStatus(bound, BigInt(bound.sessionEpoch), 1n, create(MachineStatusSchema, {
+      daemonVersion: "0.0.1", maintenanceStatus: MaintenanceStatus.CONTAINER,
+    }));
+    const candidate = releases.get(machineId).daemon;
+    expect(candidate.executable).toBe(false);
+    expect(candidate.disabledReason).toContain("更新镜像并重建容器");
+    expect(() => releases.enqueue(machineId, { expectedSha256: candidate.sha256, requestKey: newId() })).toThrow("更新镜像并重建容器");
+    expect(() => releases.uninstall(machineId, { requestKey: newId() })).toThrow("更新镜像并重建容器");
+    // A status report alone cannot grant an unadvertised maintenance task.
+    machines.reportStatus(bound, BigInt(bound.sessionEpoch), 2n, create(MachineStatusSchema, {
+      daemonVersion: "0.0.1", maintenanceStatus: MaintenanceStatus.AVAILABLE,
+    }));
+    expect(releases.get(machineId).daemon.executable).toBe(false);
+    expect(() => releases.uninstall(machineId, { requestKey: newId() })).toThrow();
+    // Conversely, a later installation failure is restrictive even when the
+    // connection previously advertised both maintenance tasks.
+    const capable = machines.bind(machineId, create(InstallationSchema, {
+      installationId: bound.installationId!, bindingEpoch: BigInt(bound.bindingEpoch),
+    }), { daemonVersion: "0.0.1", os: "linux", arch: "amd64", supportedTasks: [TaskKind.UPGRADE_DAEMON, TaskKind.UNINSTALL] });
+    machines.reportStatus(capable, BigInt(capable.sessionEpoch), 1n, create(MachineStatusSchema, {
+      daemonVersion: "0.0.1", maintenanceStatus: MaintenanceStatus.CONTAINER,
+    }));
+    expect(releases.get(machineId).daemon.executable).toBe(false);
+    expect(() => releases.uninstall(machineId, { requestKey: newId() })).toThrow("更新镜像并重建容器");
+    expect(database.db.select().from(tasks).all()).toHaveLength(0);
+  });
+  it("does not interpret missing maintenance reports as a specific installation mode", () => {
+    const current = machines.get(machineId);
+    const bound = machines.bind(machineId, create(InstallationSchema, {
+      installationId: current.installationId!, bindingEpoch: BigInt(current.bindingEpoch),
+    }), { daemonVersion: "legacy", os: "linux", arch: "amd64", supportedTasks: [TaskKind.INSPECT] });
+    machines.reportStatus(bound, BigInt(bound.sessionEpoch), 1n, create(MachineStatusSchema, { daemonVersion: "legacy" }));
+    const candidate = releases.get(machineId).daemon;
+    expect(candidate.executable).toBe(false);
+    expect(candidate.disabledReason).toContain("未上报维护原因");
+    expect(candidate.disabledReason).not.toContain("容器");
   });
 });

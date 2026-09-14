@@ -100,6 +100,8 @@ message Machine {
   int64 applied_policy_revision = 20;
   optional string applied_config_sha256 = 21;
   MachineResources resources = 22;
+  repeated string tags = 27;
+  bifurcation.v1.MaintenanceStatus maintenance_status = 28;
 }
 
 // MachineDetail carries the permanent token and install command; both stay
@@ -131,6 +133,8 @@ message MachineDetail {
   string install_command = 24;
   repeated Task tasks = 25;
   optional string issue = 26;
+  repeated string tags = 27;
+  bifurcation.v1.MaintenanceStatus maintenance_status = 28;
 }
 
 message UpgradeCandidate {
@@ -161,6 +165,7 @@ message CreateMachineRequest {
   string name = 1;
   string address = 2;
   string region = 3;
+  repeated string tags = 10;
 }
 
 message CreateMachineResponse {
@@ -181,6 +186,8 @@ message UpdateMachineRequest {
   optional string name = 3;
   optional string address = 4;
   optional string region = 5;
+  // Absent preserves tags; present with no values clears them.
+  optional MachineTags tags = 10;
 }
 
 message UpdateMachineResponse {
@@ -259,3 +266,5 @@ message EnqueueUpgradeRequest {
 message EnqueueUpgradeResponse {
   Task task = 1;
 }
+
+message MachineTags { repeated string values = 1; }

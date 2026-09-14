@@ -7,6 +7,7 @@ import {
   type Installation, type MachineStatus, type ReportTaskRequest, type TaskSpec,
 } from "@bifurcation/rpc";
 import type { MachineDto, MachineDetailDto, MachineTaskKind, TaskDto } from "@/contracts/machines";
+import { maintenanceInfo } from "@/contracts/maintenance";
 import { getDatabase, type DatabaseHandle } from "@/server/db";
 import { machines, tasks } from "@/server/db/schema-machines";
 import { decryptSecret, encryptSecret, newId, newToken, sha256, tokenHash } from "@/server/crypto";
@@ -89,7 +90,7 @@ export class MachineStore {
     });
   }
 
-  create(input: { name: string; address: string; region: string }): MachineDetailDto {
+  create(input: { name: string; address: string; region: string; tags?: string[] }): MachineDetailDto {
     const token = newToken("bm_");
     const row = this.handle.db.insert(machines).values({
       id: newId(), ...input, tokenHash: tokenHash(token), tokenCiphertext: encryptSecret(token), createdAt: Date.now(),
@@ -104,11 +105,11 @@ export class MachineStore {
     )).get();
   }
 
-  update(id: string, input: { expectedVersion: number; name?: string; address?: string; region?: string }): MachineDetailDto {
+  update(id: string, input: { expectedVersion: number; name?: string; address?: string; region?: string; tags?: string[] }): MachineDetailDto {
     const row = this.get(id);
     if (row.version !== input.expectedVersion) throw new AppError("VERSION_CONFLICT", "机器信息已变化，请刷新后重试", 409);
     this.handle.db.update(machines).set({
-      name: input.name ?? row.name, address: input.address ?? row.address, region: input.region ?? row.region,
+      name: input.name ?? row.name, address: input.address ?? row.address, region: input.region ?? row.region, tags: input.tags ?? row.tags,
       version: row.version + 1,
     }).where(and(eq(machines.id, id), eq(machines.version, input.expectedVersion))).run();
     return this.detail(id);
@@ -141,7 +142,7 @@ export class MachineStore {
       [CoreHealth.STOPPED]: "stopped", [CoreHealth.HEALTHY]: "healthy", [CoreHealth.UNHEALTHY]: "unhealthy",
     } as const;
     return {
-      id: row.id, name: row.name, address: row.address, region: row.region,
+      id: row.id, name: row.name, address: row.address, region: row.region, tags: row.tags,
       connection: uninstalled ? "offline" : !row.installationId ? "waiting" : row.lastSeenAt && Date.now() - row.lastSeenAt < 60_000 ? "online" : "offline",
       uninstalled,
       streamConnected: !uninstalled && taskHub.connected(row.id),
@@ -150,6 +151,7 @@ export class MachineStore {
       installationId: row.installationId, createdAt: row.createdAt, version: row.version,
       os: row.os, arch: row.arch,
       capabilities: (JSON.parse(row.supportedTasks) as number[]).map((kind) => kindNames[kind]).filter(Boolean),
+      maintenanceStatus: status?.maintenanceStatus ?? 0,
       appliedRevisionId: status?.appliedRevisionId || null,
       appliedPolicyRevision: String(status?.appliedPolicyRevision ?? 0n),
       appliedConfigSha256: status?.appliedConfigSha256 || null,
@@ -239,7 +241,13 @@ export class MachineStore {
       }
       if (this.isUninstalled(id, machine.bindingEpoch)) throw new AppError("MACHINE_UNINSTALLED", "节点程序已卸载，需要重新绑定实例后接入", 409);
       if (!machine.installationId) throw new AppError("MACHINE_NOT_ENROLLED", "机器尚未接入", 409);
-      if (!(JSON.parse(machine.supportedTasks) as number[]).includes(kind)) {
+      const supported = (JSON.parse(machine.supportedTasks) as number[]).includes(kind);
+      if (kind === TaskKind.UPGRADE_DAEMON || kind === TaskKind.UNINSTALL) {
+        const status = machine.statusJson ? fromJsonString(MachineStatusSchema, machine.statusJson) : undefined;
+        const maintenance = maintenanceInfo(status?.maintenanceStatus ?? 0, supported);
+        if (!maintenance.available) throw new AppError("TASK_UNSUPPORTED", maintenance.description, 409);
+      }
+      if (!supported) {
         throw new AppError("TASK_UNSUPPORTED", "此 daemon 尚不支持该任务", 409);
       }
       const now = Date.now();

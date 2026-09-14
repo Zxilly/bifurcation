@@ -145,6 +145,19 @@ enum CoreHealth {
   CORE_HEALTH_UNHEALTHY = 4;
 }
 
+// Why this installation can or cannot use the panel's upgrade/uninstall helper.
+// UNSPECIFIED is retained for older daemons; it must not imply support.
+enum MaintenanceStatus {
+  MAINTENANCE_STATUS_UNSPECIFIED = 0;
+  MAINTENANCE_STATUS_AVAILABLE = 1;
+  MAINTENANCE_STATUS_CONTAINER = 2;
+  MAINTENANCE_STATUS_UNSUPPORTED_OS = 3;
+  MAINTENANCE_STATUS_NONSTANDARD_BINARY = 4;
+  MAINTENANCE_STATUS_INVALID_STATE_DIRECTORY = 5;
+  MAINTENANCE_STATUS_INVALID_PATHS = 6;
+  MAINTENANCE_STATUS_UNMANAGED_SERVICE = 7;
+}
+
 message MachineStatus {
   int64 observed_at_unix_ms = 1;
   string daemon_version = 2;
@@ -165,6 +178,7 @@ message MachineStatus {
   string issue = 16;
   string network_interface = 17;
   string applied_config_sha256 = 18;
+  MaintenanceStatus maintenance_status = 19;
 }
 
 message ReportStatusRequest {

@@ -10,7 +10,10 @@ import { panelCall } from "./common";
 import { taskHub } from "../task-hub";
 import { toProtoMachine, toProtoMachineDetail, toProtoMachineUpgrades, toProtoTask } from "./mappers";
 
+const tagsInput = z.array(z.string().trim().min(1).max(32)).max(20).transform((tags) => [...new Set(tags)]);
+
 const createInput = z.object({
+  tags: tagsInput.default([]),
   name: z.string().trim().min(1).max(80),
   address: z
     .string()
@@ -22,6 +25,7 @@ const createInput = z.object({
 });
 
 const updateInput = z.object({
+  tags: tagsInput.optional(),
   expectedVersion: z.number().int().positive(),
   name: z.string().trim().min(1).max(80).optional(),
   address: z
@@ -65,6 +69,7 @@ export const machinesImplementation: ServiceImpl<typeof AdminMachineService> = {
         name: request.name,
         address: request.address,
         region: request.region,
+        tags: request.tags?.values,
       });
       return { machine: toProtoMachineDetail(new MachineStore().update(request.machineId, input)) };
     });

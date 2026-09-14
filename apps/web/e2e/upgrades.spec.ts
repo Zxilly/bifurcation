@@ -9,6 +9,9 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error" && /hydration|cannot be a descendant/i.test(message.text())) errors.push(message.text());
+  });
   await activate(page, app);
   const created = await rpc<{ machine: { id: string; token: string } }>(
     page.request,
@@ -101,14 +104,14 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
       sequence: "2",
       status: appliedStatus,
     });
-    await page.goto(`${app.origin}/admin/machines/${machine.id}`);
+    await page.goto(`${app.origin}/admin/machines/${machine.id}?tab=maintenance`);
     await expect(
       page.getByRole("button", {
         name: /升级核心|重新安装核心|配置并安装核心/,
       }),
     ).toHaveCount(0);
     await expect(
-      page.getByText("携带 sing-box", { exact: true }),
+      page.getByRole("columnheader", { name: "可用版本", exact: true }),
     ).toBeVisible();
 
     await page
@@ -117,6 +120,7 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
     await expect(
       page.getByText("代理连接会中断", { exact: true }),
     ).toBeVisible();
+    await expect(page.getByRole("dialog").locator("p p")).toHaveCount(0);
     await expect(
       page.getByText(
         "daemon 重启会同时重启内嵌 sing-box，代理连接与管理连接都会暂时中断。",
@@ -161,6 +165,7 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
     await expect(
       page.getByRole("heading", { name: "进行中的任务", exact: true }),
     ).toHaveCount(0);
+    await page.getByRole("tab", { name: "操作记录", exact: true }).click();
     const failedHistory = page
       .getByRole("row")
       .filter({
@@ -172,6 +177,7 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
       failedHistory.getByText("机器已报告回滚成功。", { exact: true }),
     ).toBeVisible();
 
+    await page.getByRole("tab", { name: "接入与维护", exact: true }).click();
     await page
       .getByRole("button", { name: "升级 daemon", exact: true })
       .click();
@@ -222,6 +228,7 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
     await expect(
       page.getByText("更新器已接手，等待执行结果。", { exact: true }),
     ).toBeVisible();
+    await page.getByRole("tab", { name: "概览", exact: true }).click();
     const information = page.locator("section").filter({
       has: page.getByRole("heading", { name: "机器信息", exact: true }),
     });
@@ -273,10 +280,10 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
     await expect(
       page.getByText("更新器已接手，等待执行结果。", { exact: true }),
     ).toHaveCount(0);
-    await expect(
-      page.getByRole("button", { name: "升级 daemon", exact: true }),
-    ).toBeDisabled();
     await expect(information.getByText("0.2.0", { exact: true })).toBeVisible();
+    await page.getByRole("tab", { name: "接入与维护", exact: true }).click();
+    await expect(page.getByRole("button", { name: "升级 daemon", exact: true })).toBeDisabled();
+    await page.getByRole("tab", { name: "操作记录", exact: true }).click();
     const daemonHistory = page
       .getByRole("row")
       .filter({
@@ -294,6 +301,7 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
       await page.evaluate(() => document.body.scrollWidth <= innerWidth),
     ).toBe(true);
 
+    await page.getByRole("tab", { name: "接入与维护", exact: true }).click();
     await page
       .getByRole("button", { name: "卸载节点程序", exact: true })
       .click();

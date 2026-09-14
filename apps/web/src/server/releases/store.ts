@@ -9,6 +9,7 @@ import { machines, tasks } from "@/server/db/schema-machines";
 import { MachineStore } from "@/server/modules/machines/store";
 import { AppError } from "@/server/http/errors";
 import { taskHub } from "@/server/rpc/task-hub";
+import { maintenanceInfo } from "@/contracts/maintenance";
 import { getDaemonRelease, type DaemonRelease } from "./artifacts";
 
 const upgradeInput = z.object({ expectedSha256: z.string().regex(/^[a-f0-9]{64}$/), requestKey: z.uuid() }).strict();
@@ -24,10 +25,12 @@ export class ReleaseStore {
     const currentVersion = machine.daemonVersion;
     const artifact = release?.artifact;
     let disabledReason = unavailableReason;
+    const status = machine.statusJson ? fromJsonString(MachineStatusSchema, machine.statusJson) : undefined;
+    const maintenance = maintenanceInfo(status?.maintenanceStatus ?? 0, (JSON.parse(machine.supportedTasks) as number[]).includes(TaskKind.UPGRADE_DAEMON));
     if (new MachineStore(this.handle).isUninstalled(machine.id, machine.bindingEpoch)) disabledReason = "节点已卸载；保留记录用于结果确认，之后可单独移除记录";
     else if (!machine.installationId) disabledReason = "机器尚未接入";
     else if (machine.os !== "linux") disabledReason = "升级仅支持 Linux 节点";
-    else if (!(JSON.parse(machine.supportedTasks) as number[]).includes(TaskKind.UPGRADE_DAEMON)) disabledReason = "当前 daemon 未声明升级能力";
+    else if (!maintenance.available) disabledReason = maintenance.description;
     else if (active) disabledReason = "已有升级任务正在进行";
     else if (artifact?.version === currentVersion) disabledReason = "daemon 已是当前可用版本";
     return { currentVersion, availableVersion: artifact?.version ?? null, sha256: artifact?.sha256 ?? null, sizeBytes: artifact?.sizeBytes.toString() ?? null, executable: !!artifact && disabledReason === null, disabledReason, sameVersion: !!artifact && artifact.version === currentVersion };

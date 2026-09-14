@@ -131,6 +131,72 @@ func (CoreHealth) EnumDescriptor() ([]byte, []int) {
 	return file_bifurcation_v1_machine_proto_rawDescGZIP(), []int{1}
 }
 
+// Why this installation can or cannot use the panel's upgrade/uninstall helper.
+// UNSPECIFIED is retained for older daemons; it must not imply support.
+type MaintenanceStatus int32
+
+const (
+	MaintenanceStatus_MAINTENANCE_STATUS_UNSPECIFIED             MaintenanceStatus = 0
+	MaintenanceStatus_MAINTENANCE_STATUS_AVAILABLE               MaintenanceStatus = 1
+	MaintenanceStatus_MAINTENANCE_STATUS_CONTAINER               MaintenanceStatus = 2
+	MaintenanceStatus_MAINTENANCE_STATUS_UNSUPPORTED_OS          MaintenanceStatus = 3
+	MaintenanceStatus_MAINTENANCE_STATUS_NONSTANDARD_BINARY      MaintenanceStatus = 4
+	MaintenanceStatus_MAINTENANCE_STATUS_INVALID_STATE_DIRECTORY MaintenanceStatus = 5
+	MaintenanceStatus_MAINTENANCE_STATUS_INVALID_PATHS           MaintenanceStatus = 6
+	MaintenanceStatus_MAINTENANCE_STATUS_UNMANAGED_SERVICE       MaintenanceStatus = 7
+)
+
+// Enum value maps for MaintenanceStatus.
+var (
+	MaintenanceStatus_name = map[int32]string{
+		0: "MAINTENANCE_STATUS_UNSPECIFIED",
+		1: "MAINTENANCE_STATUS_AVAILABLE",
+		2: "MAINTENANCE_STATUS_CONTAINER",
+		3: "MAINTENANCE_STATUS_UNSUPPORTED_OS",
+		4: "MAINTENANCE_STATUS_NONSTANDARD_BINARY",
+		5: "MAINTENANCE_STATUS_INVALID_STATE_DIRECTORY",
+		6: "MAINTENANCE_STATUS_INVALID_PATHS",
+		7: "MAINTENANCE_STATUS_UNMANAGED_SERVICE",
+	}
+	MaintenanceStatus_value = map[string]int32{
+		"MAINTENANCE_STATUS_UNSPECIFIED":             0,
+		"MAINTENANCE_STATUS_AVAILABLE":               1,
+		"MAINTENANCE_STATUS_CONTAINER":               2,
+		"MAINTENANCE_STATUS_UNSUPPORTED_OS":          3,
+		"MAINTENANCE_STATUS_NONSTANDARD_BINARY":      4,
+		"MAINTENANCE_STATUS_INVALID_STATE_DIRECTORY": 5,
+		"MAINTENANCE_STATUS_INVALID_PATHS":           6,
+		"MAINTENANCE_STATUS_UNMANAGED_SERVICE":       7,
+	}
+)
+
+func (x MaintenanceStatus) Enum() *MaintenanceStatus {
+	p := new(MaintenanceStatus)
+	*p = x
+	return p
+}
+
+func (x MaintenanceStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MaintenanceStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_bifurcation_v1_machine_proto_enumTypes[2].Descriptor()
+}
+
+func (MaintenanceStatus) Type() protoreflect.EnumType {
+	return &file_bifurcation_v1_machine_proto_enumTypes[2]
+}
+
+func (x MaintenanceStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MaintenanceStatus.Descriptor instead.
+func (MaintenanceStatus) EnumDescriptor() ([]byte, []int) {
+	return file_bifurcation_v1_machine_proto_rawDescGZIP(), []int{2}
+}
+
 type TaskState int32
 
 const (
@@ -167,11 +233,11 @@ func (x TaskState) String() string {
 }
 
 func (TaskState) Descriptor() protoreflect.EnumDescriptor {
-	return file_bifurcation_v1_machine_proto_enumTypes[2].Descriptor()
+	return file_bifurcation_v1_machine_proto_enumTypes[3].Descriptor()
 }
 
 func (TaskState) Type() protoreflect.EnumType {
-	return &file_bifurcation_v1_machine_proto_enumTypes[2]
+	return &file_bifurcation_v1_machine_proto_enumTypes[3]
 }
 
 func (x TaskState) Number() protoreflect.EnumNumber {
@@ -180,7 +246,7 @@ func (x TaskState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TaskState.Descriptor instead.
 func (TaskState) EnumDescriptor() ([]byte, []int) {
-	return file_bifurcation_v1_machine_proto_rawDescGZIP(), []int{2}
+	return file_bifurcation_v1_machine_proto_rawDescGZIP(), []int{3}
 }
 
 type RollbackState int32
@@ -219,11 +285,11 @@ func (x RollbackState) String() string {
 }
 
 func (RollbackState) Descriptor() protoreflect.EnumDescriptor {
-	return file_bifurcation_v1_machine_proto_enumTypes[3].Descriptor()
+	return file_bifurcation_v1_machine_proto_enumTypes[4].Descriptor()
 }
 
 func (RollbackState) Type() protoreflect.EnumType {
-	return &file_bifurcation_v1_machine_proto_enumTypes[3]
+	return &file_bifurcation_v1_machine_proto_enumTypes[4]
 }
 
 func (x RollbackState) Number() protoreflect.EnumNumber {
@@ -232,7 +298,7 @@ func (x RollbackState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RollbackState.Descriptor instead.
 func (RollbackState) EnumDescriptor() ([]byte, []int) {
-	return file_bifurcation_v1_machine_proto_rawDescGZIP(), []int{3}
+	return file_bifurcation_v1_machine_proto_rawDescGZIP(), []int{4}
 }
 
 type Installation struct {
@@ -1356,17 +1422,18 @@ type MachineStatus struct {
 	AppliedRevisionId     string                 `protobuf:"bytes,6,opt,name=applied_revision_id,json=appliedRevisionId,proto3" json:"applied_revision_id,omitempty"`
 	AppliedPolicyRevision int64                  `protobuf:"varint,7,opt,name=applied_policy_revision,json=appliedPolicyRevision,proto3" json:"applied_policy_revision,omitempty"`
 	// Optional fields distinguish unknown from a measured zero.
-	CpuUsagePercent     *float64 `protobuf:"fixed64,8,opt,name=cpu_usage_percent,json=cpuUsagePercent,proto3,oneof" json:"cpu_usage_percent,omitempty"`
-	MemoryUsedBytes     *int64   `protobuf:"varint,9,opt,name=memory_used_bytes,json=memoryUsedBytes,proto3,oneof" json:"memory_used_bytes,omitempty"`
-	MemoryTotalBytes    *int64   `protobuf:"varint,10,opt,name=memory_total_bytes,json=memoryTotalBytes,proto3,oneof" json:"memory_total_bytes,omitempty"`
-	DiskFreeBytes       *int64   `protobuf:"varint,11,opt,name=disk_free_bytes,json=diskFreeBytes,proto3,oneof" json:"disk_free_bytes,omitempty"`
-	Connections         *int64   `protobuf:"varint,12,opt,name=connections,proto3,oneof" json:"connections,omitempty"`
-	NetworkRxBytes      *int64   `protobuf:"varint,13,opt,name=network_rx_bytes,json=networkRxBytes,proto3,oneof" json:"network_rx_bytes,omitempty"`
-	NetworkTxBytes      *int64   `protobuf:"varint,14,opt,name=network_tx_bytes,json=networkTxBytes,proto3,oneof" json:"network_tx_bytes,omitempty"`
-	UsageIncomplete     bool     `protobuf:"varint,15,opt,name=usage_incomplete,json=usageIncomplete,proto3" json:"usage_incomplete,omitempty"`
-	Issue               string   `protobuf:"bytes,16,opt,name=issue,proto3" json:"issue,omitempty"`
-	NetworkInterface    string   `protobuf:"bytes,17,opt,name=network_interface,json=networkInterface,proto3" json:"network_interface,omitempty"`
-	AppliedConfigSha256 string   `protobuf:"bytes,18,opt,name=applied_config_sha256,json=appliedConfigSha256,proto3" json:"applied_config_sha256,omitempty"`
+	CpuUsagePercent     *float64          `protobuf:"fixed64,8,opt,name=cpu_usage_percent,json=cpuUsagePercent,proto3,oneof" json:"cpu_usage_percent,omitempty"`
+	MemoryUsedBytes     *int64            `protobuf:"varint,9,opt,name=memory_used_bytes,json=memoryUsedBytes,proto3,oneof" json:"memory_used_bytes,omitempty"`
+	MemoryTotalBytes    *int64            `protobuf:"varint,10,opt,name=memory_total_bytes,json=memoryTotalBytes,proto3,oneof" json:"memory_total_bytes,omitempty"`
+	DiskFreeBytes       *int64            `protobuf:"varint,11,opt,name=disk_free_bytes,json=diskFreeBytes,proto3,oneof" json:"disk_free_bytes,omitempty"`
+	Connections         *int64            `protobuf:"varint,12,opt,name=connections,proto3,oneof" json:"connections,omitempty"`
+	NetworkRxBytes      *int64            `protobuf:"varint,13,opt,name=network_rx_bytes,json=networkRxBytes,proto3,oneof" json:"network_rx_bytes,omitempty"`
+	NetworkTxBytes      *int64            `protobuf:"varint,14,opt,name=network_tx_bytes,json=networkTxBytes,proto3,oneof" json:"network_tx_bytes,omitempty"`
+	UsageIncomplete     bool              `protobuf:"varint,15,opt,name=usage_incomplete,json=usageIncomplete,proto3" json:"usage_incomplete,omitempty"`
+	Issue               string            `protobuf:"bytes,16,opt,name=issue,proto3" json:"issue,omitempty"`
+	NetworkInterface    string            `protobuf:"bytes,17,opt,name=network_interface,json=networkInterface,proto3" json:"network_interface,omitempty"`
+	AppliedConfigSha256 string            `protobuf:"bytes,18,opt,name=applied_config_sha256,json=appliedConfigSha256,proto3" json:"applied_config_sha256,omitempty"`
+	MaintenanceStatus   MaintenanceStatus `protobuf:"varint,19,opt,name=maintenance_status,json=maintenanceStatus,proto3,enum=bifurcation.v1.MaintenanceStatus" json:"maintenance_status,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -1525,6 +1592,13 @@ func (x *MachineStatus) GetAppliedConfigSha256() string {
 		return x.AppliedConfigSha256
 	}
 	return ""
+}
+
+func (x *MachineStatus) GetMaintenanceStatus() MaintenanceStatus {
+	if x != nil {
+		return x.MaintenanceStatus
+	}
+	return MaintenanceStatus_MAINTENANCE_STATUS_UNSPECIFIED
 }
 
 type ReportStatusRequest struct {
@@ -2181,7 +2255,7 @@ const file_bifurcation_v1_machine_proto_rawDesc = "" +
 	"\x0fpolicy_revision\x18\x04 \x01(\x03R\x0epolicyRevision\x12:\n" +
 	"\x19latest_authorization_json\x18\x05 \x01(\fR\x17latestAuthorizationJson\x124\n" +
 	"\x16latest_policy_revision\x18\x06 \x01(\x03R\x14latestPolicyRevision\x12.\n" +
-	"\x05files\x18\a \x03(\v2\x18.bifurcation.v1.ArtifactR\x05files\"\xcf\a\n" +
+	"\x05files\x18\a \x03(\v2\x18.bifurcation.v1.ArtifactR\x05files\"\xa1\b\n" +
 	"\rMachineStatus\x12-\n" +
 	"\x13observed_at_unix_ms\x18\x01 \x01(\x03R\x10observedAtUnixMs\x12%\n" +
 	"\x0edaemon_version\x18\x02 \x01(\tR\rdaemonVersion\x12!\n" +
@@ -2202,7 +2276,8 @@ const file_bifurcation_v1_machine_proto_rawDesc = "" +
 	"\x10usage_incomplete\x18\x0f \x01(\bR\x0fusageIncomplete\x12\x14\n" +
 	"\x05issue\x18\x10 \x01(\tR\x05issue\x12+\n" +
 	"\x11network_interface\x18\x11 \x01(\tR\x10networkInterface\x122\n" +
-	"\x15applied_config_sha256\x18\x12 \x01(\tR\x13appliedConfigSha256B\x14\n" +
+	"\x15applied_config_sha256\x18\x12 \x01(\tR\x13appliedConfigSha256\x12P\n" +
+	"\x12maintenance_status\x18\x13 \x01(\x0e2!.bifurcation.v1.MaintenanceStatusR\x11maintenanceStatusB\x14\n" +
 	"\x12_cpu_usage_percentB\x14\n" +
 	"\x12_memory_used_bytesB\x15\n" +
 	"\x13_memory_total_bytesB\x12\n" +
@@ -2272,7 +2347,16 @@ const file_bifurcation_v1_machine_proto_rawDesc = "" +
 	"\x1aCORE_HEALTH_NOT_CONFIGURED\x10\x01\x12\x17\n" +
 	"\x13CORE_HEALTH_STOPPED\x10\x02\x12\x17\n" +
 	"\x13CORE_HEALTH_HEALTHY\x10\x03\x12\x19\n" +
-	"\x15CORE_HEALTH_UNHEALTHY\x10\x04*p\n" +
+	"\x15CORE_HEALTH_UNHEALTHY\x10\x04*\xcd\x02\n" +
+	"\x11MaintenanceStatus\x12\"\n" +
+	"\x1eMAINTENANCE_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cMAINTENANCE_STATUS_AVAILABLE\x10\x01\x12 \n" +
+	"\x1cMAINTENANCE_STATUS_CONTAINER\x10\x02\x12%\n" +
+	"!MAINTENANCE_STATUS_UNSUPPORTED_OS\x10\x03\x12)\n" +
+	"%MAINTENANCE_STATUS_NONSTANDARD_BINARY\x10\x04\x12.\n" +
+	"*MAINTENANCE_STATUS_INVALID_STATE_DIRECTORY\x10\x05\x12$\n" +
+	" MAINTENANCE_STATUS_INVALID_PATHS\x10\x06\x12(\n" +
+	"$MAINTENANCE_STATUS_UNMANAGED_SERVICE\x10\a*p\n" +
 	"\tTaskState\x12\x1a\n" +
 	"\x16TASK_STATE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12TASK_STATE_RUNNING\x10\x01\x12\x18\n" +
@@ -2306,81 +2390,83 @@ func file_bifurcation_v1_machine_proto_rawDescGZIP() []byte {
 	return file_bifurcation_v1_machine_proto_rawDescData
 }
 
-var file_bifurcation_v1_machine_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_bifurcation_v1_machine_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_bifurcation_v1_machine_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_bifurcation_v1_machine_proto_goTypes = []any{
 	(TaskKind)(0),                // 0: bifurcation.v1.TaskKind
 	(CoreHealth)(0),              // 1: bifurcation.v1.CoreHealth
-	(TaskState)(0),               // 2: bifurcation.v1.TaskState
-	(RollbackState)(0),           // 3: bifurcation.v1.RollbackState
-	(*Installation)(nil),         // 4: bifurcation.v1.Installation
-	(*WatchTasksRequest)(nil),    // 5: bifurcation.v1.WatchTasksRequest
-	(*WatchTasksResponse)(nil),   // 6: bifurcation.v1.WatchTasksResponse
-	(*SessionOpened)(nil),        // 7: bifurcation.v1.SessionOpened
-	(*TaskAvailable)(nil),        // 8: bifurcation.v1.TaskAvailable
-	(*Heartbeat)(nil),            // 9: bifurcation.v1.Heartbeat
-	(*AcceptTaskRequest)(nil),    // 10: bifurcation.v1.AcceptTaskRequest
-	(*AcceptTaskResponse)(nil),   // 11: bifurcation.v1.AcceptTaskResponse
-	(*TaskSpec)(nil),             // 12: bifurcation.v1.TaskSpec
-	(*InspectTask)(nil),          // 13: bifurcation.v1.InspectTask
-	(*Artifact)(nil),             // 14: bifurcation.v1.Artifact
-	(*ApplyConfigTask)(nil),      // 15: bifurcation.v1.ApplyConfigTask
-	(*UpgradeDaemonTask)(nil),    // 16: bifurcation.v1.UpgradeDaemonTask
-	(*UninstallTask)(nil),        // 17: bifurcation.v1.UninstallTask
-	(*GetConfigRequest)(nil),     // 18: bifurcation.v1.GetConfigRequest
-	(*GetConfigResponse)(nil),    // 19: bifurcation.v1.GetConfigResponse
-	(*MachineStatus)(nil),        // 20: bifurcation.v1.MachineStatus
-	(*ReportStatusRequest)(nil),  // 21: bifurcation.v1.ReportStatusRequest
-	(*ReportStatusResponse)(nil), // 22: bifurcation.v1.ReportStatusResponse
-	(*UsageDelta)(nil),           // 23: bifurcation.v1.UsageDelta
-	(*UsageBatch)(nil),           // 24: bifurcation.v1.UsageBatch
-	(*ReportUsageRequest)(nil),   // 25: bifurcation.v1.ReportUsageRequest
-	(*ReportUsageResponse)(nil),  // 26: bifurcation.v1.ReportUsageResponse
-	(*ReportTaskRequest)(nil),    // 27: bifurcation.v1.ReportTaskRequest
-	(*ReportTaskResponse)(nil),   // 28: bifurcation.v1.ReportTaskResponse
+	(MaintenanceStatus)(0),       // 2: bifurcation.v1.MaintenanceStatus
+	(TaskState)(0),               // 3: bifurcation.v1.TaskState
+	(RollbackState)(0),           // 4: bifurcation.v1.RollbackState
+	(*Installation)(nil),         // 5: bifurcation.v1.Installation
+	(*WatchTasksRequest)(nil),    // 6: bifurcation.v1.WatchTasksRequest
+	(*WatchTasksResponse)(nil),   // 7: bifurcation.v1.WatchTasksResponse
+	(*SessionOpened)(nil),        // 8: bifurcation.v1.SessionOpened
+	(*TaskAvailable)(nil),        // 9: bifurcation.v1.TaskAvailable
+	(*Heartbeat)(nil),            // 10: bifurcation.v1.Heartbeat
+	(*AcceptTaskRequest)(nil),    // 11: bifurcation.v1.AcceptTaskRequest
+	(*AcceptTaskResponse)(nil),   // 12: bifurcation.v1.AcceptTaskResponse
+	(*TaskSpec)(nil),             // 13: bifurcation.v1.TaskSpec
+	(*InspectTask)(nil),          // 14: bifurcation.v1.InspectTask
+	(*Artifact)(nil),             // 15: bifurcation.v1.Artifact
+	(*ApplyConfigTask)(nil),      // 16: bifurcation.v1.ApplyConfigTask
+	(*UpgradeDaemonTask)(nil),    // 17: bifurcation.v1.UpgradeDaemonTask
+	(*UninstallTask)(nil),        // 18: bifurcation.v1.UninstallTask
+	(*GetConfigRequest)(nil),     // 19: bifurcation.v1.GetConfigRequest
+	(*GetConfigResponse)(nil),    // 20: bifurcation.v1.GetConfigResponse
+	(*MachineStatus)(nil),        // 21: bifurcation.v1.MachineStatus
+	(*ReportStatusRequest)(nil),  // 22: bifurcation.v1.ReportStatusRequest
+	(*ReportStatusResponse)(nil), // 23: bifurcation.v1.ReportStatusResponse
+	(*UsageDelta)(nil),           // 24: bifurcation.v1.UsageDelta
+	(*UsageBatch)(nil),           // 25: bifurcation.v1.UsageBatch
+	(*ReportUsageRequest)(nil),   // 26: bifurcation.v1.ReportUsageRequest
+	(*ReportUsageResponse)(nil),  // 27: bifurcation.v1.ReportUsageResponse
+	(*ReportTaskRequest)(nil),    // 28: bifurcation.v1.ReportTaskRequest
+	(*ReportTaskResponse)(nil),   // 29: bifurcation.v1.ReportTaskResponse
 }
 var file_bifurcation_v1_machine_proto_depIdxs = []int32{
-	4,  // 0: bifurcation.v1.WatchTasksRequest.installation:type_name -> bifurcation.v1.Installation
+	5,  // 0: bifurcation.v1.WatchTasksRequest.installation:type_name -> bifurcation.v1.Installation
 	0,  // 1: bifurcation.v1.WatchTasksRequest.supported_tasks:type_name -> bifurcation.v1.TaskKind
-	7,  // 2: bifurcation.v1.WatchTasksResponse.session:type_name -> bifurcation.v1.SessionOpened
-	8,  // 3: bifurcation.v1.WatchTasksResponse.task:type_name -> bifurcation.v1.TaskAvailable
-	9,  // 4: bifurcation.v1.WatchTasksResponse.heartbeat:type_name -> bifurcation.v1.Heartbeat
+	8,  // 2: bifurcation.v1.WatchTasksResponse.session:type_name -> bifurcation.v1.SessionOpened
+	9,  // 3: bifurcation.v1.WatchTasksResponse.task:type_name -> bifurcation.v1.TaskAvailable
+	10, // 4: bifurcation.v1.WatchTasksResponse.heartbeat:type_name -> bifurcation.v1.Heartbeat
 	0,  // 5: bifurcation.v1.TaskAvailable.kind:type_name -> bifurcation.v1.TaskKind
-	4,  // 6: bifurcation.v1.AcceptTaskRequest.installation:type_name -> bifurcation.v1.Installation
+	5,  // 6: bifurcation.v1.AcceptTaskRequest.installation:type_name -> bifurcation.v1.Installation
 	0,  // 7: bifurcation.v1.AcceptTaskResponse.kind:type_name -> bifurcation.v1.TaskKind
-	13, // 8: bifurcation.v1.TaskSpec.inspect:type_name -> bifurcation.v1.InspectTask
-	15, // 9: bifurcation.v1.TaskSpec.apply_config:type_name -> bifurcation.v1.ApplyConfigTask
-	16, // 10: bifurcation.v1.TaskSpec.upgrade_daemon:type_name -> bifurcation.v1.UpgradeDaemonTask
-	17, // 11: bifurcation.v1.TaskSpec.uninstall:type_name -> bifurcation.v1.UninstallTask
-	14, // 12: bifurcation.v1.UpgradeDaemonTask.artifact:type_name -> bifurcation.v1.Artifact
-	4,  // 13: bifurcation.v1.GetConfigRequest.installation:type_name -> bifurcation.v1.Installation
-	14, // 14: bifurcation.v1.GetConfigResponse.files:type_name -> bifurcation.v1.Artifact
+	14, // 8: bifurcation.v1.TaskSpec.inspect:type_name -> bifurcation.v1.InspectTask
+	16, // 9: bifurcation.v1.TaskSpec.apply_config:type_name -> bifurcation.v1.ApplyConfigTask
+	17, // 10: bifurcation.v1.TaskSpec.upgrade_daemon:type_name -> bifurcation.v1.UpgradeDaemonTask
+	18, // 11: bifurcation.v1.TaskSpec.uninstall:type_name -> bifurcation.v1.UninstallTask
+	15, // 12: bifurcation.v1.UpgradeDaemonTask.artifact:type_name -> bifurcation.v1.Artifact
+	5,  // 13: bifurcation.v1.GetConfigRequest.installation:type_name -> bifurcation.v1.Installation
+	15, // 14: bifurcation.v1.GetConfigResponse.files:type_name -> bifurcation.v1.Artifact
 	1,  // 15: bifurcation.v1.MachineStatus.core_health:type_name -> bifurcation.v1.CoreHealth
-	4,  // 16: bifurcation.v1.ReportStatusRequest.installation:type_name -> bifurcation.v1.Installation
-	20, // 17: bifurcation.v1.ReportStatusRequest.status:type_name -> bifurcation.v1.MachineStatus
-	23, // 18: bifurcation.v1.UsageBatch.deltas:type_name -> bifurcation.v1.UsageDelta
-	4,  // 19: bifurcation.v1.ReportUsageRequest.installation:type_name -> bifurcation.v1.Installation
-	4,  // 20: bifurcation.v1.ReportTaskRequest.installation:type_name -> bifurcation.v1.Installation
-	2,  // 21: bifurcation.v1.ReportTaskRequest.state:type_name -> bifurcation.v1.TaskState
-	3,  // 22: bifurcation.v1.ReportTaskRequest.rollback:type_name -> bifurcation.v1.RollbackState
-	20, // 23: bifurcation.v1.ReportTaskRequest.actual_status:type_name -> bifurcation.v1.MachineStatus
-	5,  // 24: bifurcation.v1.MachineService.WatchTasks:input_type -> bifurcation.v1.WatchTasksRequest
-	10, // 25: bifurcation.v1.MachineService.AcceptTask:input_type -> bifurcation.v1.AcceptTaskRequest
-	18, // 26: bifurcation.v1.MachineService.GetConfig:input_type -> bifurcation.v1.GetConfigRequest
-	21, // 27: bifurcation.v1.MachineService.ReportStatus:input_type -> bifurcation.v1.ReportStatusRequest
-	25, // 28: bifurcation.v1.MachineService.ReportUsage:input_type -> bifurcation.v1.ReportUsageRequest
-	27, // 29: bifurcation.v1.MachineService.ReportTask:input_type -> bifurcation.v1.ReportTaskRequest
-	6,  // 30: bifurcation.v1.MachineService.WatchTasks:output_type -> bifurcation.v1.WatchTasksResponse
-	11, // 31: bifurcation.v1.MachineService.AcceptTask:output_type -> bifurcation.v1.AcceptTaskResponse
-	19, // 32: bifurcation.v1.MachineService.GetConfig:output_type -> bifurcation.v1.GetConfigResponse
-	22, // 33: bifurcation.v1.MachineService.ReportStatus:output_type -> bifurcation.v1.ReportStatusResponse
-	26, // 34: bifurcation.v1.MachineService.ReportUsage:output_type -> bifurcation.v1.ReportUsageResponse
-	28, // 35: bifurcation.v1.MachineService.ReportTask:output_type -> bifurcation.v1.ReportTaskResponse
-	30, // [30:36] is the sub-list for method output_type
-	24, // [24:30] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	2,  // 16: bifurcation.v1.MachineStatus.maintenance_status:type_name -> bifurcation.v1.MaintenanceStatus
+	5,  // 17: bifurcation.v1.ReportStatusRequest.installation:type_name -> bifurcation.v1.Installation
+	21, // 18: bifurcation.v1.ReportStatusRequest.status:type_name -> bifurcation.v1.MachineStatus
+	24, // 19: bifurcation.v1.UsageBatch.deltas:type_name -> bifurcation.v1.UsageDelta
+	5,  // 20: bifurcation.v1.ReportUsageRequest.installation:type_name -> bifurcation.v1.Installation
+	5,  // 21: bifurcation.v1.ReportTaskRequest.installation:type_name -> bifurcation.v1.Installation
+	3,  // 22: bifurcation.v1.ReportTaskRequest.state:type_name -> bifurcation.v1.TaskState
+	4,  // 23: bifurcation.v1.ReportTaskRequest.rollback:type_name -> bifurcation.v1.RollbackState
+	21, // 24: bifurcation.v1.ReportTaskRequest.actual_status:type_name -> bifurcation.v1.MachineStatus
+	6,  // 25: bifurcation.v1.MachineService.WatchTasks:input_type -> bifurcation.v1.WatchTasksRequest
+	11, // 26: bifurcation.v1.MachineService.AcceptTask:input_type -> bifurcation.v1.AcceptTaskRequest
+	19, // 27: bifurcation.v1.MachineService.GetConfig:input_type -> bifurcation.v1.GetConfigRequest
+	22, // 28: bifurcation.v1.MachineService.ReportStatus:input_type -> bifurcation.v1.ReportStatusRequest
+	26, // 29: bifurcation.v1.MachineService.ReportUsage:input_type -> bifurcation.v1.ReportUsageRequest
+	28, // 30: bifurcation.v1.MachineService.ReportTask:input_type -> bifurcation.v1.ReportTaskRequest
+	7,  // 31: bifurcation.v1.MachineService.WatchTasks:output_type -> bifurcation.v1.WatchTasksResponse
+	12, // 32: bifurcation.v1.MachineService.AcceptTask:output_type -> bifurcation.v1.AcceptTaskResponse
+	20, // 33: bifurcation.v1.MachineService.GetConfig:output_type -> bifurcation.v1.GetConfigResponse
+	23, // 34: bifurcation.v1.MachineService.ReportStatus:output_type -> bifurcation.v1.ReportStatusResponse
+	27, // 35: bifurcation.v1.MachineService.ReportUsage:output_type -> bifurcation.v1.ReportUsageResponse
+	29, // 36: bifurcation.v1.MachineService.ReportTask:output_type -> bifurcation.v1.ReportTaskResponse
+	31, // [31:37] is the sub-list for method output_type
+	25, // [25:31] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_bifurcation_v1_machine_proto_init() }
@@ -2406,7 +2492,7 @@ func file_bifurcation_v1_machine_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_bifurcation_v1_machine_proto_rawDesc), len(file_bifurcation_v1_machine_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
