@@ -26,7 +26,7 @@ Bifurcation 由单实例 Next.js 控制平面和各节点的 Go daemon 构成。
 | `server/rpc`、`runtime` | Connect 适配、任务流和进程生命周期 |
 | `server/db`、`crypto`、`backup` | 持久化、密钥处理和恢复 |
 
-Server Components 直接调用经过鉴权的查询，不经 HTTP 请求自身。每个领域的 `queries.ts` 是页面与 Connect 处理器共用的读用例：以 `React.cache` 按请求去重，自带授权下限，返回物化的 protobuf 消息。首屏纯读的页面把结果作为 props 传入；需要持续轮询的视图由页面在 `<SWRConfig fallback>` 下按 `features/shared/keys.ts` 的键提供首个快照，SWR 只负责 hydration 后的刷新。Client Components 处理表单、Passkey、复制、图表与局部刷新，不能导入服务端数据库或解密工具。浏览器变更通过 Connect 入口复用服务端用例，成功后调用 `router.refresh()` 让服务端重新渲染。
+面板 layout 与 page 保持同步：静态壳先流出，读取 `headers()` 的身份区块、页面鉴权与数据读取都放在各自的 `<Suspense>` 内流入；未登录或越权在流内 `redirect()`，资源缺失走 `notFound()`。Server Components 直接调用经过鉴权的查询，不经 HTTP 请求自身。每个领域的 `queries.ts` 是页面与 Connect 处理器共用的读用例：以 `React.cache` 按请求去重，自带授权下限，返回物化的 protobuf 消息。首屏纯读的页面把结果作为 props 传入；需要持续轮询的视图由页面在 `<SWRConfig fallback>` 下按 `features/shared/keys.ts` 的键提供首个快照，SWR 只负责 hydration 后的刷新。Client Components 处理表单、Passkey、复制、图表与局部刷新，不能导入服务端数据库或解密工具。浏览器变更通过 Connect 入口复用服务端用例，成功后调用 `router.refresh()` 让服务端重新渲染。
 
 UI 使用 Kumo 语义样式。用户可见的升级进度来自持久任务回报；提交成功不代表执行成功。账号激活、创建确认和首次密钥展示是临时流程，机器 Token 则长期可见。
 
