@@ -34,7 +34,8 @@ test("the subscription editor validates and completes against the sing-box schem
     instance.setPosition({ lineNumber: 1, column: 2 });
     instance.trigger("e2e", "editor.action.triggerSuggest", {});
   });
-  await expect(page.getByRole("listbox", { name: "Suggest" }).getByRole("listitem", { name: /^dns, Property/ })).toBeVisible();
+  // Monaco exposes suggestion rows as listitem or option depending on the browser.
+  await expect(page.getByRole("listbox", { name: "Suggest" }).locator('[aria-label^="dns, Property"]')).toBeVisible();
   await page.keyboard.press("Escape");
   expect(errors).toEqual([]);
 });

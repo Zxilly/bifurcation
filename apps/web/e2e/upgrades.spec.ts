@@ -181,6 +181,11 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
     await page
       .getByRole("button", { name: "升级 daemon", exact: true })
       .click();
+    // The confirmation must capture the current candidate before the
+    // artifact changes underneath it; otherwise the upgrade is accepted.
+    await expect(
+      page.getByRole("button", { name: "开始升级", exact: true }),
+    ).toBeVisible();
     await app.replaceDaemonArtifact();
     await page.getByRole("button", { name: "开始升级", exact: true }).click();
     await expect(
