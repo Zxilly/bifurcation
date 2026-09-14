@@ -1,8 +1,10 @@
 "use client";
+
+import { Button, Banner, Sidebar } from "@cloudflare/kumo";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@cloudflare/kumo";
+import { useSidebar } from "@cloudflare/kumo/components/sidebar";
 import { ListIcon, SignOutIcon } from "@phosphor-icons/react";
 import { Role, type User } from "@bifurcation/rpc/panel/types";
 import { errorMessage } from "@/features/shared/api";
@@ -14,24 +16,52 @@ export function AppShell({
   user: Pick<User, "username" | "role">;
   children: React.ReactNode;
 }) {
+  return (
+    <Sidebar.Provider
+      defaultOpen
+      collapsible="offcanvas"
+      mobileBreakpoint={760}
+      defaultWidth={224}
+      className="flex-col"
+    >
+      <ShellContent user={user}>{children}</ShellContent>
+    </Sidebar.Provider>
+  );
+}
+
+function ShellContent({
+  user,
+  children,
+}: {
+  user: Pick<User, "username" | "role">;
+  children: React.ReactNode;
+}) {
   const path = usePathname();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const { openMobile, setOpenMobile } = useSidebar();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const link = (href: string, label: string) => (
-    <Link
-      className="nav-link"
+    <Sidebar.MenuButton
       href={href}
+      active={
+        path === href || (href !== "/admin" && path.startsWith(href + "/"))
+      }
       aria-current={
         path === href || (href !== "/admin" && path.startsWith(href + "/"))
           ? "page"
           : undefined
       }
-      onClick={() => setOpen(false)}
+      onClick={(event) => {
+        if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
+          return;
+        event.preventDefault();
+        setOpenMobile(false);
+        router.push(href);
+      }}
     >
       {label}
-    </Link>
+    </Sidebar.MenuButton>
   );
   async function logout() {
     setBusy(true);
@@ -55,8 +85,8 @@ export function AppShell({
             variant="ghost"
             shape="square"
             aria-label="打开导航"
-            aria-expanded={open}
-            onClick={() => setOpen(!open)}
+            aria-expanded={openMobile}
+            onClick={() => setOpenMobile(!openMobile)}
             icon={<ListIcon size={20} />}
           />
           <Link href="/" className="brand">
@@ -81,27 +111,37 @@ export function AppShell({
         </div>
       </header>
       {error && (
-        <p role="alert" className="form-error p-3">
+        <Banner role="alert" variant="error">
           {error}
-        </p>
+        </Banner>
       )}
       <div className="shell-body">
-        <nav className="sidebar" data-open={open} aria-label="主导航">
-          {user.role === Role.ADMIN && (
-            <div className="nav-group">
-              <p className="nav-label">管理</p>
-              {link("/admin", "管理概览")}
-              {link("/admin/machines", "机器")}
-              {link("/admin/users", "用户")}
-            </div>
-          )}
-          <div className="nav-group">
-            <p className="nav-label">我的空间</p>
-            {link("/overview", "我的概览")}
-            {link("/subscription", "接入与订阅")}
-            {link("/account", "账号设置")}
-          </div>
-        </nav>
+        <Sidebar aria-label="主导航">
+          <Sidebar.Header className="mobile-toggle items-center justify-between">
+            <span>主导航</span>
+            <Sidebar.Close aria-label="关闭导航" />
+          </Sidebar.Header>
+          <Sidebar.Content>
+            {user.role === Role.ADMIN && (
+              <Sidebar.Group>
+                <Sidebar.GroupLabel>管理</Sidebar.GroupLabel>
+                <Sidebar.Menu>
+                  {link("/admin", "管理概览")}
+                  {link("/admin/machines", "机器")}
+                  {link("/admin/users", "用户")}
+                </Sidebar.Menu>
+              </Sidebar.Group>
+            )}
+            <Sidebar.Group>
+              <Sidebar.GroupLabel>我的空间</Sidebar.GroupLabel>
+              <Sidebar.Menu>
+                {link("/overview", "我的概览")}
+                {link("/subscription", "接入与订阅")}
+                {link("/account", "账号设置")}
+              </Sidebar.Menu>
+            </Sidebar.Group>
+          </Sidebar.Content>
+        </Sidebar>
         <main className="page-content" id="main-content">
           {children}
         </main>

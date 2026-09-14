@@ -14,6 +14,8 @@ Each test independently creates an operating-system temporary directory, a SQLit
 
 The tests cover activation, Passkey and password login, wrong-password errors, account recovery and session revocation, password-change logout, one-time API Key display and real API authentication, user and machine creation, persistent machine Token display, pending-machine operation gating, mobile navigation and 390 px overflow.
 
+Kumo regressions cover select labels and form submission, dialog typography, manual copying after clipboard denial, and mobile navigation dismissal, focus restoration and route changes. Configuration tests also verify the usage chart and expanded table stay within the mobile viewport.
+
 Account recovery invalidates old login credentials and sessions while preserving long-lived API Keys. The identity test verifies the old Key still authenticates after recovery; revoking a Key remains an explicit account operation.
 
 Configuration and usage tests connect a protocol peer to the real Connect endpoints, publish a configuration through the browser, report a deterministic task result and byte counters, and verify accounting replay protection, independent subscription/credential resets and the rendered ECharts view. This exercises the panel's actual database and API path without introducing test endpoints. The peer does not start the embedded sing-box engine; in-process traffic accounting and actual daemon restarts remain separate Go integration checks.

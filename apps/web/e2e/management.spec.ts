@@ -156,6 +156,12 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
     await page.evaluate(() => document.body.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.getByRole("button", { name: "打开导航", exact: true }).click();
+  await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("button", { name: "打开导航", exact: true }),
+  ).toBeFocused();
+  await page.getByRole("button", { name: "打开导航", exact: true }).click();
   await page.getByRole("link", { name: "账号设置", exact: true }).click();
   await expect(page).toHaveURL(`${app.origin}/account`);
   await expect(
