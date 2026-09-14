@@ -75,7 +75,7 @@ export function MachineInformationAction({
   return (
     <>
       <Button
-        variant={triggerLabel ? "primary" : "ghost"}
+        variant={triggerLabel ? "primary" : mode === "edit" ? "ghost" : "secondary"}
         disabled={replacementBlocked}
         title={replacementBlocked ? "请等待执行中的任务结束" : undefined}
         onClick={() => {

@@ -53,7 +53,9 @@ function UsageTrend({ usage }: { usage: Usage }) {
   return (
     <>
       {!!usage.points.length && <UsageMetadata usage={usage} />}
-      {(usage.estimated || usage.incomplete) && (
+      {/* Quality flags qualify reported numbers; the empty state already
+          says that nothing was reported. */}
+      {!!usage.points.length && (usage.estimated || usage.incomplete) && (
         <div className="actions">
           <DataQuality
             estimated={usage.estimated}
@@ -61,7 +63,7 @@ function UsageTrend({ usage }: { usage: Usage }) {
           />
         </div>
       )}
-      {usage.incomplete && (
+      {!!usage.points.length && usage.incomplete && (
         <p className="subtle">部分统计存在缺口，显示值可能低于实际用量。</p>
       )}
       <Trend
@@ -117,7 +119,7 @@ export function PersonalOverview() {
         <p className="subtle">
           统计按上海时区计算，上下行合计；额度按自然月重置。
         </p>
-        <LinkButton href="/subscription">管理我的订阅</LinkButton>
+        <LinkButton variant="secondary" href="/subscription">管理我的订阅</LinkButton>
         <ResourceFeedback {...resource} onRetry={resource.refresh} />
         <ResourceFeedback {...todayUsage} onRetry={todayUsage.refresh} />
       </div>
@@ -242,7 +244,7 @@ export function AdminUsageOverview() {
               <p>
                 有机器失联，当前运行状态无法确认；面板失联不代表代理已停止。
               </p>
-              <LinkButton href="/admin/machines">查看节点状态</LinkButton>
+              <LinkButton variant="secondary" href="/admin/machines">查看节点状态</LinkButton>
             </div>
           </Banner>
         )}
@@ -332,12 +334,14 @@ export function UserNodeUsage() {
       <ResourceFeedback {...resource} onRetry={resource.refresh} />
       {resource.data ? (
         <>
-          <div className="actions">
-            <DataQuality
-              estimated={resource.data.estimated}
-              incomplete={resource.data.incomplete}
-            />
-          </div>
+          {!!resource.data.groups.length && (
+            <div className="actions">
+              <DataQuality
+                estimated={resource.data.estimated}
+                incomplete={resource.data.incomplete}
+              />
+            </div>
+          )}
           <UserMachineTable groups={resource.data.groups} />
           {!!resource.data.points.length && (
             <UsageMetadata usage={resource.data} />
