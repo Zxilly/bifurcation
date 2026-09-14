@@ -93,7 +93,7 @@ test("configuration preview and publish, independent subscription resets, and re
     ).toBeVisible();
     const publishedResponse = page.waitForResponse(
       (response) =>
-        response.url().endsWith(`/machines/${machine.id}/config/publish`) &&
+        response.url().endsWith("/bifurcation.panel.v1.AdminConfigurationService/PublishConfiguration") &&
         response.request().method() === "POST",
     );
     await page.getByRole("button", { name: "检查并发布", exact: true }).click();
@@ -166,7 +166,7 @@ test("configuration preview and publish, independent subscription resets, and re
     await expect(page.getByText("已同步", { exact: true })).toBeVisible();
     const diagnosticResponse = page.waitForResponse(
       (response) =>
-        response.url().endsWith(`/machines/${machine.id}/tasks`) &&
+        response.url().endsWith("/bifurcation.panel.v1.AdminMachineService/EnqueueInspectTask") &&
         response.request().method() === "POST",
     );
     await page
@@ -174,7 +174,7 @@ test("configuration preview and publish, independent subscription resets, and re
       .click();
     const diagnosticRequest = await diagnosticResponse;
     expect(diagnosticRequest.request().postDataJSON()).toMatchObject({
-      kind: "inspect",
+      machineId: machine.id,
       includeLogs: true,
       maxLogLines: 100,
       maxBytes: 65_536,

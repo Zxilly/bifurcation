@@ -137,9 +137,9 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
       )
     ).body;
     expect(detail.machine).toMatchObject({
-      uninstalled: false,
       name: "Renamed node",
     });
+    expect(detail.machine.uninstalled ?? false).toBe(false);
     expect(detail.machine.installationId ?? null).toBe(null);
   } finally {
     await peer.close();
