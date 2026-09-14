@@ -15,7 +15,7 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file bifurcation/panel/v1/me.proto.
  */
 export const file_bifurcation_panel_v1_me: GenFile = /*@__PURE__*/
-  fileDesc("Ch1iaWZ1cmNhdGlvbi9wYW5lbC92MS9tZS5wcm90bxIUYmlmdXJjYXRpb24ucGFuZWwudjEi0gEKEFN1YnNjcmlwdGlvbk5vZGUSEgoKbWFjaGluZV9pZBgBIAEoCRIMCgRuYW1lGAIgASgJEg8KB2FkZHJlc3MYAyABKAkSMQoJcHJvdG9jb2xzGAQgAygOMh4uYmlmdXJjYXRpb24ucGFuZWwudjEuUHJvdG9jb2wSRQoTY29uZmlndXJhdGlvbl9zdGF0ZRgFIAEoDjIoLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkNvbmZpZ3VyYXRpb25TdGF0ZRIRCglhdmFpbGFibGUYBiABKAgimQIKDFN1YnNjcmlwdGlvbhILCgN1cmwYASABKAkSEgoKZ2VuZXJhdGlvbhgCIAEoBRIdChVjcmVkZW50aWFsX2dlbmVyYXRpb24YAyABKAUSHQoVY29uZmlnX2Zvcm1hdF92ZXJzaW9uGAQgASgJEg8KB2Jsb2NrZWQYBSABKAgSPAoMYmxvY2tfcmVhc29uGAYgASgOMiEuYmlmdXJjYXRpb24ucGFuZWwudjEuQmxvY2tSZWFzb25IAIgBARI1CgVub2RlcxgHIAMoCzImLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvbk5vZGUSEwoLY29uZmlnX2pzb24YCCABKAlCDwoNX2Jsb2NrX3JlYXNvbiIOCgxHZXRNZVJlcXVlc3QilgEKDUdldE1lUmVzcG9uc2USKAoEdXNlchgBIAEoCzIaLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlVzZXISPAoOYXV0aGVudGljYXRpb24YAiABKA4yJC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5BdXRoZW50aWNhdGlvbhIdChVyZWNlbnRfYXV0aGVudGljYXRpb24YAyABKAginwEKEUdldE15VXNhZ2VSZXF1ZXN0EhIKBXN0YXJ0GAEgASgDSACIAQESEAoDZW5kGAIgASgDSAGIAQESKgoFZ3JhaW4YAyABKA4yGy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5HcmFpbhIXCgptYWNoaW5lX2lkGAQgASgJSAKIAQFCCAoGX3N0YXJ0QgYKBF9lbmRCDQoLX21hY2hpbmVfaWQiQAoSR2V0TXlVc2FnZVJlc3BvbnNlEioKBXVzYWdlGAEgASgLMhsuYmlmdXJjYXRpb24ucGFuZWwudjEuVXNhZ2UiGAoWR2V0U3Vic2NyaXB0aW9uUmVxdWVzdCJTChdHZXRTdWJzY3JpcHRpb25SZXNwb25zZRI4CgxzdWJzY3JpcHRpb24YASABKAsyIi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5TdWJzY3JpcHRpb24iHwodUmVzZXRTdWJzY3JpcHRpb25Ub2tlblJlcXVlc3QiWgoeUmVzZXRTdWJzY3JpcHRpb25Ub2tlblJlc3BvbnNlEjgKDHN1YnNjcmlwdGlvbhgBIAEoCzIiLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvbiIeChxSZXNldFByb3h5Q3JlZGVudGlhbHNSZXF1ZXN0IlkKHVJlc2V0UHJveHlDcmVkZW50aWFsc1Jlc3BvbnNlEjgKDHN1YnNjcmlwdGlvbhgBIAEoCzIiLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvbiIpChVDaGFuZ2VQYXNzd29yZFJlcXVlc3QSEAoIcGFzc3dvcmQYASABKAkiGAoWQ2hhbmdlUGFzc3dvcmRSZXNwb25zZSIUChJMaXN0QXBpS2V5c1JlcXVlc3QiRQoTTGlzdEFwaUtleXNSZXNwb25zZRIuCghhcGlfa2V5cxgBIAMoCzIcLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkFwaUtleSIjChNDcmVhdGVBcGlLZXlSZXF1ZXN0EgwKBG5hbWUYASABKAkiVAoUQ3JlYXRlQXBpS2V5UmVzcG9uc2USLQoHYXBpX2tleRgBIAEoCzIcLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkFwaUtleRINCgV0b2tlbhgCIAEoCSIhChNSZXZva2VBcGlLZXlSZXF1ZXN0EgoKAmlkGAEgASgJIhYKFFJldm9rZUFwaUtleVJlc3BvbnNlIhUKE0xpc3RQYXNza2V5c1JlcXVlc3QiRwoUTGlzdFBhc3NrZXlzUmVzcG9uc2USLwoIcGFzc2tleXMYASADKAsyHS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QYXNza2V5IhoKGE5ld1Bhc3NrZXlPcHRpb25zUmVxdWVzdCJWChlOZXdQYXNza2V5T3B0aW9uc1Jlc3BvbnNlEg8KB2Zsb3dfaWQYASABKAkSKAoHb3B0aW9ucxgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiYwoXTmV3UGFzc2tleVZlcmlmeVJlcXVlc3QSDwoHZmxvd19pZBgBIAEoCRIpCghyZXNwb25zZRgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSDAoEbmFtZRgDIAEoCSJKChhOZXdQYXNza2V5VmVyaWZ5UmVzcG9uc2USLgoHcGFzc2tleRgBIAEoCzIdLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlBhc3NrZXkiIgoURGVsZXRlUGFzc2tleVJlcXVlc3QSCgoCaWQYASABKAkiFwoVRGVsZXRlUGFzc2tleVJlc3BvbnNlKmgKDkF1dGhlbnRpY2F0aW9uEh4KGkFVVEhFTlRJQ0FUSU9OX1VOU1BFQ0lGSUVEEAASGgoWQVVUSEVOVElDQVRJT05fU0VTU0lPThABEhoKFkFVVEhFTlRJQ0FUSU9OX0FQSV9LRVkQAipRCghQcm90b2NvbBIYChRQUk9UT0NPTF9VTlNQRUNJRklFRBAAEhMKD1BST1RPQ09MX1RST0pBThABEhYKElBST1RPQ09MX0hZU1RFUklBMhACKnsKEkNvbmZpZ3VyYXRpb25TdGF0ZRIjCh9DT05GSUdVUkFUSU9OX1NUQVRFX1VOU1BFQ0lGSUVEEAASHwobQ09ORklHVVJBVElPTl9TVEFURV9QRU5ESU5HEAESHwobQ09ORklHVVJBVElPTl9TVEFURV9BUFBMSUVEEAIqXgoLQmxvY2tSZWFzb24SHAoYQkxPQ0tfUkVBU09OX1VOU1BFQ0lGSUVEEAASGQoVQkxPQ0tfUkVBU09OX0RJU0FCTEVEEAESFgoSQkxPQ0tfUkVBU09OX1FVT1RBEAIykAsKCU1lU2VydmljZRJQCgVHZXRNZRIiLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkdldE1lUmVxdWVzdBojLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkdldE1lUmVzcG9uc2USXwoKR2V0TXlVc2FnZRInLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkdldE15VXNhZ2VSZXF1ZXN0GiguYmlmdXJjYXRpb24ucGFuZWwudjEuR2V0TXlVc2FnZVJlc3BvbnNlEm4KD0dldFN1YnNjcmlwdGlvbhIsLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkdldFN1YnNjcmlwdGlvblJlcXVlc3QaLS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5HZXRTdWJzY3JpcHRpb25SZXNwb25zZRKDAQoWUmVzZXRTdWJzY3JpcHRpb25Ub2tlbhIzLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlJlc2V0U3Vic2NyaXB0aW9uVG9rZW5SZXF1ZXN0GjQuYmlmdXJjYXRpb24ucGFuZWwudjEuUmVzZXRTdWJzY3JpcHRpb25Ub2tlblJlc3BvbnNlEoABChVSZXNldFByb3h5Q3JlZGVudGlhbHMSMi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5SZXNldFByb3h5Q3JlZGVudGlhbHNSZXF1ZXN0GjMuYmlmdXJjYXRpb24ucGFuZWwudjEuUmVzZXRQcm94eUNyZWRlbnRpYWxzUmVzcG9uc2USawoOQ2hhbmdlUGFzc3dvcmQSKy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5DaGFuZ2VQYXNzd29yZFJlcXVlc3QaLC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5DaGFuZ2VQYXNzd29yZFJlc3BvbnNlEmIKC0xpc3RBcGlLZXlzEiguYmlmdXJjYXRpb24ucGFuZWwudjEuTGlzdEFwaUtleXNSZXF1ZXN0GikuYmlmdXJjYXRpb24ucGFuZWwudjEuTGlzdEFwaUtleXNSZXNwb25zZRJlCgxDcmVhdGVBcGlLZXkSKS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5DcmVhdGVBcGlLZXlSZXF1ZXN0GiouYmlmdXJjYXRpb24ucGFuZWwudjEuQ3JlYXRlQXBpS2V5UmVzcG9uc2USZQoMUmV2b2tlQXBpS2V5EikuYmlmdXJjYXRpb24ucGFuZWwudjEuUmV2b2tlQXBpS2V5UmVxdWVzdBoqLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlJldm9rZUFwaUtleVJlc3BvbnNlEmUKDExpc3RQYXNza2V5cxIpLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkxpc3RQYXNza2V5c1JlcXVlc3QaKi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5MaXN0UGFzc2tleXNSZXNwb25zZRJ0ChFOZXdQYXNza2V5T3B0aW9ucxIuLmJpZnVyY2F0aW9uLnBhbmVsLnYxLk5ld1Bhc3NrZXlPcHRpb25zUmVxdWVzdBovLmJpZnVyY2F0aW9uLnBhbmVsLnYxLk5ld1Bhc3NrZXlPcHRpb25zUmVzcG9uc2UScQoQTmV3UGFzc2tleVZlcmlmeRItLmJpZnVyY2F0aW9uLnBhbmVsLnYxLk5ld1Bhc3NrZXlWZXJpZnlSZXF1ZXN0Gi4uYmlmdXJjYXRpb24ucGFuZWwudjEuTmV3UGFzc2tleVZlcmlmeVJlc3BvbnNlEmgKDURlbGV0ZVBhc3NrZXkSKi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5EZWxldGVQYXNza2V5UmVxdWVzdBorLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkRlbGV0ZVBhc3NrZXlSZXNwb25zZWIGcHJvdG8z", [file_bifurcation_panel_v1_types, file_bifurcation_panel_v1_usage, file_google_protobuf_struct]);
+  fileDesc("Ch1iaWZ1cmNhdGlvbi9wYW5lbC92MS9tZS5wcm90bxIUYmlmdXJjYXRpb24ucGFuZWwudjEi8AEKEFN1YnNjcmlwdGlvbk5vZGUSEgoKbWFjaGluZV9pZBgBIAEoCRIMCgRuYW1lGAIgASgJEg8KB2FkZHJlc3MYAyABKAkSMQoJcHJvdG9jb2xzGAQgAygOMh4uYmlmdXJjYXRpb24ucGFuZWwudjEuUHJvdG9jb2wSRQoTY29uZmlndXJhdGlvbl9zdGF0ZRgFIAEoDjIoLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkNvbmZpZ3VyYXRpb25TdGF0ZRIRCglhdmFpbGFibGUYBiABKAgSDgoGcmVnaW9uGAcgASgJEgwKBHRhZ3MYCCADKAkimQIKDFN1YnNjcmlwdGlvbhILCgN1cmwYASABKAkSEgoKZ2VuZXJhdGlvbhgCIAEoBRIdChVjcmVkZW50aWFsX2dlbmVyYXRpb24YAyABKAUSHQoVY29uZmlnX2Zvcm1hdF92ZXJzaW9uGAQgASgJEg8KB2Jsb2NrZWQYBSABKAgSPAoMYmxvY2tfcmVhc29uGAYgASgOMiEuYmlmdXJjYXRpb24ucGFuZWwudjEuQmxvY2tSZWFzb25IAIgBARI1CgVub2RlcxgHIAMoCzImLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvbk5vZGUSEwoLY29uZmlnX2pzb24YCCABKAlCDwoNX2Jsb2NrX3JlYXNvbiIOCgxHZXRNZVJlcXVlc3QilgEKDUdldE1lUmVzcG9uc2USKAoEdXNlchgBIAEoCzIaLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlVzZXISPAoOYXV0aGVudGljYXRpb24YAiABKA4yJC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5BdXRoZW50aWNhdGlvbhIdChVyZWNlbnRfYXV0aGVudGljYXRpb24YAyABKAginwEKEUdldE15VXNhZ2VSZXF1ZXN0EhIKBXN0YXJ0GAEgASgDSACIAQESEAoDZW5kGAIgASgDSAGIAQESKgoFZ3JhaW4YAyABKA4yGy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5HcmFpbhIXCgptYWNoaW5lX2lkGAQgASgJSAKIAQFCCAoGX3N0YXJ0QgYKBF9lbmRCDQoLX21hY2hpbmVfaWQiQAoSR2V0TXlVc2FnZVJlc3BvbnNlEioKBXVzYWdlGAEgASgLMhsuYmlmdXJjYXRpb24ucGFuZWwudjEuVXNhZ2UiGAoWR2V0U3Vic2NyaXB0aW9uUmVxdWVzdCJTChdHZXRTdWJzY3JpcHRpb25SZXNwb25zZRI4CgxzdWJzY3JpcHRpb24YASABKAsyIi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5TdWJzY3JpcHRpb24iHwodUmVzZXRTdWJzY3JpcHRpb25Ub2tlblJlcXVlc3QiWgoeUmVzZXRTdWJzY3JpcHRpb25Ub2tlblJlc3BvbnNlEjgKDHN1YnNjcmlwdGlvbhgBIAEoCzIiLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvbiIeChxSZXNldFByb3h5Q3JlZGVudGlhbHNSZXF1ZXN0IlkKHVJlc2V0UHJveHlDcmVkZW50aWFsc1Jlc3BvbnNlEjgKDHN1YnNjcmlwdGlvbhgBIAEoCzIiLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvbiIpChVDaGFuZ2VQYXNzd29yZFJlcXVlc3QSEAoIcGFzc3dvcmQYASABKAkiGAoWQ2hhbmdlUGFzc3dvcmRSZXNwb25zZSIUChJMaXN0QXBpS2V5c1JlcXVlc3QiRQoTTGlzdEFwaUtleXNSZXNwb25zZRIuCghhcGlfa2V5cxgBIAMoCzIcLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkFwaUtleSIjChNDcmVhdGVBcGlLZXlSZXF1ZXN0EgwKBG5hbWUYASABKAkiVAoUQ3JlYXRlQXBpS2V5UmVzcG9uc2USLQoHYXBpX2tleRgBIAEoCzIcLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkFwaUtleRINCgV0b2tlbhgCIAEoCSIhChNSZXZva2VBcGlLZXlSZXF1ZXN0EgoKAmlkGAEgASgJIhYKFFJldm9rZUFwaUtleVJlc3BvbnNlIhUKE0xpc3RQYXNza2V5c1JlcXVlc3QiRwoUTGlzdFBhc3NrZXlzUmVzcG9uc2USLwoIcGFzc2tleXMYASADKAsyHS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QYXNza2V5IhoKGE5ld1Bhc3NrZXlPcHRpb25zUmVxdWVzdCJWChlOZXdQYXNza2V5T3B0aW9uc1Jlc3BvbnNlEg8KB2Zsb3dfaWQYASABKAkSKAoHb3B0aW9ucxgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiYwoXTmV3UGFzc2tleVZlcmlmeVJlcXVlc3QSDwoHZmxvd19pZBgBIAEoCRIpCghyZXNwb25zZRgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSDAoEbmFtZRgDIAEoCSJKChhOZXdQYXNza2V5VmVyaWZ5UmVzcG9uc2USLgoHcGFzc2tleRgBIAEoCzIdLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlBhc3NrZXkiIgoURGVsZXRlUGFzc2tleVJlcXVlc3QSCgoCaWQYASABKAkiFwoVRGVsZXRlUGFzc2tleVJlc3BvbnNlIqkBChhTdWJzY3JpcHRpb25Hcm91cEJpbmRpbmcSEQoJZ3JvdXBfdGFnGAEgASgJEg8KB3JlZ2lvbnMYAiADKAkSDAoEdGFncxgDIAMoCRIRCglwcm90b2NvbHMYBCADKAkSEwoLbWFjaGluZV9pZHMYBSADKAkSGwoTZXhjbHVkZV9tYWNoaW5lX2lkcxgGIAMoCRIWCg5zdGF0aWNfbWVtYmVycxgHIAMoCSJsChFTdWJzY3JpcHRpb25EcmFmdBIVCg10ZW1wbGF0ZV9qc29uGAEgASgJEkAKCGJpbmRpbmdzGAIgAygLMi4uYmlmdXJjYXRpb24ucGFuZWwudjEuU3Vic2NyaXB0aW9uR3JvdXBCaW5kaW5nItoCChNTdWJzY3JpcHRpb25Qcm9maWxlEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSDgoGcHJlc2V0GAMgASgJEg8KB3ZlcnNpb24YBCABKAUSGQoRcHVibGlzaGVkX3ZlcnNpb24YBSABKAUSDwoHZW5hYmxlZBgGIAEoCBIOCgZsZWdhY3kYByABKAgSCwoDdXJsGAggASgJEhIKCmdlbmVyYXRpb24YCSABKAUSNgoFZHJhZnQYCiABKAsyJy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5TdWJzY3JpcHRpb25EcmFmdBITCgtjb25maWdfanNvbhgLIAEoCRIYChBnZW5lcmF0aW9uX2Vycm9yGAwgASgJEhIKCm5vZGVfY291bnQYDSABKAUSHAoPbGFzdF9mZXRjaGVkX2F0GA4gASgDSACIAQFCEgoQX2xhc3RfZmV0Y2hlZF9hdCIhCh9MaXN0U3Vic2NyaXB0aW9uUHJvZmlsZXNSZXF1ZXN0IpQBCiBMaXN0U3Vic2NyaXB0aW9uUHJvZmlsZXNSZXNwb25zZRI7Cghwcm9maWxlcxgBIAMoCzIpLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvblByb2ZpbGUSMwoHY29udGV4dBgCIAEoCzIiLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvbiIrCh1HZXRTdWJzY3JpcHRpb25Qcm9maWxlUmVxdWVzdBIKCgJpZBgBIAEoCSJcCh5HZXRTdWJzY3JpcHRpb25Qcm9maWxlUmVzcG9uc2USOgoHcHJvZmlsZRgBIAEoCzIpLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvblByb2ZpbGUigQEKIENyZWF0ZVN1YnNjcmlwdGlvblByb2ZpbGVSZXF1ZXN0EgwKBG5hbWUYASABKAkSDgoGcHJlc2V0GAIgASgJEhMKC3JlcXVlc3Rfa2V5GAMgASgJEhkKDGNvcHlfZnJvbV9pZBgEIAEoCUgAiAEBQg8KDV9jb3B5X2Zyb21faWQiigEKHFNhdmVTdWJzY3JpcHRpb25EcmFmdFJlcXVlc3QSCgoCaWQYASABKAkSGAoQZXhwZWN0ZWRfdmVyc2lvbhgCIAEoBRIMCgRuYW1lGAMgASgJEjYKBWRyYWZ0GAQgASgLMicuYmlmdXJjYXRpb24ucGFuZWwudjEuU3Vic2NyaXB0aW9uRHJhZnQiXwohQ3JlYXRlU3Vic2NyaXB0aW9uUHJvZmlsZVJlc3BvbnNlEjoKB3Byb2ZpbGUYASABKAsyKS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5TdWJzY3JpcHRpb25Qcm9maWxlIlsKHVNhdmVTdWJzY3JpcHRpb25EcmFmdFJlc3BvbnNlEjoKB3Byb2ZpbGUYASABKAsyKS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5TdWJzY3JpcHRpb25Qcm9maWxlIkkKIVByZXZpZXdTdWJzY3JpcHRpb25Qcm9maWxlUmVxdWVzdBIKCgJpZBgBIAEoCRIYChBleHBlY3RlZF92ZXJzaW9uGAIgASgFIoUBCiJQcmV2aWV3U3Vic2NyaXB0aW9uUHJvZmlsZVJlc3BvbnNlEhIKCnByZXZpZXdfaWQYASABKAkSEwoLY29uZmlnX2pzb24YAiABKAkSDgoGZGlnZXN0GAMgASgJEhIKCmV4cGlyZXNfYXQYBCABKAMSEgoKbm9kZV9jb3VudBgFIAEoBSJdCiFQdWJsaXNoU3Vic2NyaXB0aW9uUHJvZmlsZVJlcXVlc3QSCgoCaWQYASABKAkSEgoKcHJldmlld19pZBgCIAEoCRIYChBleHBlY3RlZF92ZXJzaW9uGAMgASgFIlgKIFVwZGF0ZVN1YnNjcmlwdGlvblByb2ZpbGVSZXF1ZXN0EgoKAmlkGAEgASgJEhgKEGV4cGVjdGVkX3ZlcnNpb24YAiABKAUSDgoGYWN0aW9uGAMgASgJImAKIlB1Ymxpc2hTdWJzY3JpcHRpb25Qcm9maWxlUmVzcG9uc2USOgoHcHJvZmlsZRgBIAEoCzIpLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlN1YnNjcmlwdGlvblByb2ZpbGUiXwohVXBkYXRlU3Vic2NyaXB0aW9uUHJvZmlsZVJlc3BvbnNlEjoKB3Byb2ZpbGUYASABKAsyKS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5TdWJzY3JpcHRpb25Qcm9maWxlKmgKDkF1dGhlbnRpY2F0aW9uEh4KGkFVVEhFTlRJQ0FUSU9OX1VOU1BFQ0lGSUVEEAASGgoWQVVUSEVOVElDQVRJT05fU0VTU0lPThABEhoKFkFVVEhFTlRJQ0FUSU9OX0FQSV9LRVkQAipRCghQcm90b2NvbBIYChRQUk9UT0NPTF9VTlNQRUNJRklFRBAAEhMKD1BST1RPQ09MX1RST0pBThABEhYKElBST1RPQ09MX0hZU1RFUklBMhACKnsKEkNvbmZpZ3VyYXRpb25TdGF0ZRIjCh9DT05GSUdVUkFUSU9OX1NUQVRFX1VOU1BFQ0lGSUVEEAASHwobQ09ORklHVVJBVElPTl9TVEFURV9QRU5ESU5HEAESHwobQ09ORklHVVJBVElPTl9TVEFURV9BUFBMSUVEEAIqXgoLQmxvY2tSZWFzb24SHAoYQkxPQ0tfUkVBU09OX1VOU1BFQ0lGSUVEEAASGQoVQkxPQ0tfUkVBU09OX0RJU0FCTEVEEAESFgoSQkxPQ0tfUkVBU09OX1FVT1RBEAIy5xIKCU1lU2VydmljZRJQCgVHZXRNZRIiLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkdldE1lUmVxdWVzdBojLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkdldE1lUmVzcG9uc2USXwoKR2V0TXlVc2FnZRInLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkdldE15VXNhZ2VSZXF1ZXN0GiguYmlmdXJjYXRpb24ucGFuZWwudjEuR2V0TXlVc2FnZVJlc3BvbnNlEokBChhMaXN0U3Vic2NyaXB0aW9uUHJvZmlsZXMSNS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5MaXN0U3Vic2NyaXB0aW9uUHJvZmlsZXNSZXF1ZXN0GjYuYmlmdXJjYXRpb24ucGFuZWwudjEuTGlzdFN1YnNjcmlwdGlvblByb2ZpbGVzUmVzcG9uc2USgwEKFkdldFN1YnNjcmlwdGlvblByb2ZpbGUSMy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5HZXRTdWJzY3JpcHRpb25Qcm9maWxlUmVxdWVzdBo0LmJpZnVyY2F0aW9uLnBhbmVsLnYxLkdldFN1YnNjcmlwdGlvblByb2ZpbGVSZXNwb25zZRKMAQoZQ3JlYXRlU3Vic2NyaXB0aW9uUHJvZmlsZRI2LmJpZnVyY2F0aW9uLnBhbmVsLnYxLkNyZWF0ZVN1YnNjcmlwdGlvblByb2ZpbGVSZXF1ZXN0GjcuYmlmdXJjYXRpb24ucGFuZWwudjEuQ3JlYXRlU3Vic2NyaXB0aW9uUHJvZmlsZVJlc3BvbnNlEoABChVTYXZlU3Vic2NyaXB0aW9uRHJhZnQSMi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5TYXZlU3Vic2NyaXB0aW9uRHJhZnRSZXF1ZXN0GjMuYmlmdXJjYXRpb24ucGFuZWwudjEuU2F2ZVN1YnNjcmlwdGlvbkRyYWZ0UmVzcG9uc2USjwEKGlByZXZpZXdTdWJzY3JpcHRpb25Qcm9maWxlEjcuYmlmdXJjYXRpb24ucGFuZWwudjEuUHJldmlld1N1YnNjcmlwdGlvblByb2ZpbGVSZXF1ZXN0GjguYmlmdXJjYXRpb24ucGFuZWwudjEuUHJldmlld1N1YnNjcmlwdGlvblByb2ZpbGVSZXNwb25zZRKPAQoaUHVibGlzaFN1YnNjcmlwdGlvblByb2ZpbGUSNy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QdWJsaXNoU3Vic2NyaXB0aW9uUHJvZmlsZVJlcXVlc3QaOC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5QdWJsaXNoU3Vic2NyaXB0aW9uUHJvZmlsZVJlc3BvbnNlEowBChlVcGRhdGVTdWJzY3JpcHRpb25Qcm9maWxlEjYuYmlmdXJjYXRpb24ucGFuZWwudjEuVXBkYXRlU3Vic2NyaXB0aW9uUHJvZmlsZVJlcXVlc3QaNy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5VcGRhdGVTdWJzY3JpcHRpb25Qcm9maWxlUmVzcG9uc2USbgoPR2V0U3Vic2NyaXB0aW9uEiwuYmlmdXJjYXRpb24ucGFuZWwudjEuR2V0U3Vic2NyaXB0aW9uUmVxdWVzdBotLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkdldFN1YnNjcmlwdGlvblJlc3BvbnNlEoMBChZSZXNldFN1YnNjcmlwdGlvblRva2VuEjMuYmlmdXJjYXRpb24ucGFuZWwudjEuUmVzZXRTdWJzY3JpcHRpb25Ub2tlblJlcXVlc3QaNC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5SZXNldFN1YnNjcmlwdGlvblRva2VuUmVzcG9uc2USgAEKFVJlc2V0UHJveHlDcmVkZW50aWFscxIyLmJpZnVyY2F0aW9uLnBhbmVsLnYxLlJlc2V0UHJveHlDcmVkZW50aWFsc1JlcXVlc3QaMy5iaWZ1cmNhdGlvbi5wYW5lbC52MS5SZXNldFByb3h5Q3JlZGVudGlhbHNSZXNwb25zZRJrCg5DaGFuZ2VQYXNzd29yZBIrLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkNoYW5nZVBhc3N3b3JkUmVxdWVzdBosLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkNoYW5nZVBhc3N3b3JkUmVzcG9uc2USYgoLTGlzdEFwaUtleXMSKC5iaWZ1cmNhdGlvbi5wYW5lbC52MS5MaXN0QXBpS2V5c1JlcXVlc3QaKS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5MaXN0QXBpS2V5c1Jlc3BvbnNlEmUKDENyZWF0ZUFwaUtleRIpLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkNyZWF0ZUFwaUtleVJlcXVlc3QaKi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5DcmVhdGVBcGlLZXlSZXNwb25zZRJlCgxSZXZva2VBcGlLZXkSKS5iaWZ1cmNhdGlvbi5wYW5lbC52MS5SZXZva2VBcGlLZXlSZXF1ZXN0GiouYmlmdXJjYXRpb24ucGFuZWwudjEuUmV2b2tlQXBpS2V5UmVzcG9uc2USZQoMTGlzdFBhc3NrZXlzEikuYmlmdXJjYXRpb24ucGFuZWwudjEuTGlzdFBhc3NrZXlzUmVxdWVzdBoqLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkxpc3RQYXNza2V5c1Jlc3BvbnNlEnQKEU5ld1Bhc3NrZXlPcHRpb25zEi4uYmlmdXJjYXRpb24ucGFuZWwudjEuTmV3UGFzc2tleU9wdGlvbnNSZXF1ZXN0Gi8uYmlmdXJjYXRpb24ucGFuZWwudjEuTmV3UGFzc2tleU9wdGlvbnNSZXNwb25zZRJxChBOZXdQYXNza2V5VmVyaWZ5Ei0uYmlmdXJjYXRpb24ucGFuZWwudjEuTmV3UGFzc2tleVZlcmlmeVJlcXVlc3QaLi5iaWZ1cmNhdGlvbi5wYW5lbC52MS5OZXdQYXNza2V5VmVyaWZ5UmVzcG9uc2USaAoNRGVsZXRlUGFzc2tleRIqLmJpZnVyY2F0aW9uLnBhbmVsLnYxLkRlbGV0ZVBhc3NrZXlSZXF1ZXN0GisuYmlmdXJjYXRpb24ucGFuZWwudjEuRGVsZXRlUGFzc2tleVJlc3BvbnNlYgZwcm90bzM", [file_bifurcation_panel_v1_types, file_bifurcation_panel_v1_usage, file_google_protobuf_struct]);
 
 /**
  * @generated from message bifurcation.panel.v1.SubscriptionNode
@@ -50,6 +50,16 @@ export type SubscriptionNode = Message<"bifurcation.panel.v1.SubscriptionNode"> 
    * @generated from field: bool available = 6;
    */
   available: boolean;
+
+  /**
+   * @generated from field: string region = 7;
+   */
+  region: string;
+
+  /**
+   * @generated from field: repeated string tags = 8;
+   */
+  tags: string[];
 };
 
 /**
@@ -577,6 +587,475 @@ export const DeletePasskeyResponseSchema: GenMessage<DeletePasskeyResponse> = /*
   messageDesc(file_bifurcation_panel_v1_me, 27);
 
 /**
+ * Node attributes select members from the current account-authorized snapshot.
+ *
+ * @generated from message bifurcation.panel.v1.SubscriptionGroupBinding
+ */
+export type SubscriptionGroupBinding = Message<"bifurcation.panel.v1.SubscriptionGroupBinding"> & {
+  /**
+   * @generated from field: string group_tag = 1;
+   */
+  groupTag: string;
+
+  /**
+   * @generated from field: repeated string regions = 2;
+   */
+  regions: string[];
+
+  /**
+   * @generated from field: repeated string tags = 3;
+   */
+  tags: string[];
+
+  /**
+   * @generated from field: repeated string protocols = 4;
+   */
+  protocols: string[];
+
+  /**
+   * @generated from field: repeated string machine_ids = 5;
+   */
+  machineIds: string[];
+
+  /**
+   * @generated from field: repeated string exclude_machine_ids = 6;
+   */
+  excludeMachineIds: string[];
+
+  /**
+   * @generated from field: repeated string static_members = 7;
+   */
+  staticMembers: string[];
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.SubscriptionGroupBinding.
+ * Use `create(SubscriptionGroupBindingSchema)` to create a new message.
+ */
+export const SubscriptionGroupBindingSchema: GenMessage<SubscriptionGroupBinding> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 28);
+
+/**
+ * @generated from message bifurcation.panel.v1.SubscriptionDraft
+ */
+export type SubscriptionDraft = Message<"bifurcation.panel.v1.SubscriptionDraft"> & {
+  /**
+   * @generated from field: string template_json = 1;
+   */
+  templateJson: string;
+
+  /**
+   * @generated from field: repeated bifurcation.panel.v1.SubscriptionGroupBinding bindings = 2;
+   */
+  bindings: SubscriptionGroupBinding[];
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.SubscriptionDraft.
+ * Use `create(SubscriptionDraftSchema)` to create a new message.
+ */
+export const SubscriptionDraftSchema: GenMessage<SubscriptionDraft> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 29);
+
+/**
+ * @generated from message bifurcation.panel.v1.SubscriptionProfile
+ */
+export type SubscriptionProfile = Message<"bifurcation.panel.v1.SubscriptionProfile"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string preset = 3;
+   */
+  preset: string;
+
+  /**
+   * @generated from field: int32 version = 4;
+   */
+  version: number;
+
+  /**
+   * @generated from field: int32 published_version = 5;
+   */
+  publishedVersion: number;
+
+  /**
+   * @generated from field: bool enabled = 6;
+   */
+  enabled: boolean;
+
+  /**
+   * @generated from field: bool legacy = 7;
+   */
+  legacy: boolean;
+
+  /**
+   * @generated from field: string url = 8;
+   */
+  url: string;
+
+  /**
+   * @generated from field: int32 generation = 9;
+   */
+  generation: number;
+
+  /**
+   * @generated from field: bifurcation.panel.v1.SubscriptionDraft draft = 10;
+   */
+  draft?: SubscriptionDraft | undefined;
+
+  /**
+   * @generated from field: string config_json = 11;
+   */
+  configJson: string;
+
+  /**
+   * @generated from field: string generation_error = 12;
+   */
+  generationError: string;
+
+  /**
+   * @generated from field: int32 node_count = 13;
+   */
+  nodeCount: number;
+
+  /**
+   * @generated from field: optional int64 last_fetched_at = 14;
+   */
+  lastFetchedAt?: bigint | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.SubscriptionProfile.
+ * Use `create(SubscriptionProfileSchema)` to create a new message.
+ */
+export const SubscriptionProfileSchema: GenMessage<SubscriptionProfile> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 30);
+
+/**
+ * @generated from message bifurcation.panel.v1.ListSubscriptionProfilesRequest
+ */
+export type ListSubscriptionProfilesRequest = Message<"bifurcation.panel.v1.ListSubscriptionProfilesRequest"> & {
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.ListSubscriptionProfilesRequest.
+ * Use `create(ListSubscriptionProfilesRequestSchema)` to create a new message.
+ */
+export const ListSubscriptionProfilesRequestSchema: GenMessage<ListSubscriptionProfilesRequest> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 31);
+
+/**
+ * @generated from message bifurcation.panel.v1.ListSubscriptionProfilesResponse
+ */
+export type ListSubscriptionProfilesResponse = Message<"bifurcation.panel.v1.ListSubscriptionProfilesResponse"> & {
+  /**
+   * @generated from field: repeated bifurcation.panel.v1.SubscriptionProfile profiles = 1;
+   */
+  profiles: SubscriptionProfile[];
+
+  /**
+   * @generated from field: bifurcation.panel.v1.Subscription context = 2;
+   */
+  context?: Subscription | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.ListSubscriptionProfilesResponse.
+ * Use `create(ListSubscriptionProfilesResponseSchema)` to create a new message.
+ */
+export const ListSubscriptionProfilesResponseSchema: GenMessage<ListSubscriptionProfilesResponse> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 32);
+
+/**
+ * @generated from message bifurcation.panel.v1.GetSubscriptionProfileRequest
+ */
+export type GetSubscriptionProfileRequest = Message<"bifurcation.panel.v1.GetSubscriptionProfileRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.GetSubscriptionProfileRequest.
+ * Use `create(GetSubscriptionProfileRequestSchema)` to create a new message.
+ */
+export const GetSubscriptionProfileRequestSchema: GenMessage<GetSubscriptionProfileRequest> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 33);
+
+/**
+ * @generated from message bifurcation.panel.v1.GetSubscriptionProfileResponse
+ */
+export type GetSubscriptionProfileResponse = Message<"bifurcation.panel.v1.GetSubscriptionProfileResponse"> & {
+  /**
+   * @generated from field: bifurcation.panel.v1.SubscriptionProfile profile = 1;
+   */
+  profile?: SubscriptionProfile | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.GetSubscriptionProfileResponse.
+ * Use `create(GetSubscriptionProfileResponseSchema)` to create a new message.
+ */
+export const GetSubscriptionProfileResponseSchema: GenMessage<GetSubscriptionProfileResponse> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 34);
+
+/**
+ * @generated from message bifurcation.panel.v1.CreateSubscriptionProfileRequest
+ */
+export type CreateSubscriptionProfileRequest = Message<"bifurcation.panel.v1.CreateSubscriptionProfileRequest"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string preset = 2;
+   */
+  preset: string;
+
+  /**
+   * @generated from field: string request_key = 3;
+   */
+  requestKey: string;
+
+  /**
+   * @generated from field: optional string copy_from_id = 4;
+   */
+  copyFromId?: string | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.CreateSubscriptionProfileRequest.
+ * Use `create(CreateSubscriptionProfileRequestSchema)` to create a new message.
+ */
+export const CreateSubscriptionProfileRequestSchema: GenMessage<CreateSubscriptionProfileRequest> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 35);
+
+/**
+ * @generated from message bifurcation.panel.v1.SaveSubscriptionDraftRequest
+ */
+export type SaveSubscriptionDraftRequest = Message<"bifurcation.panel.v1.SaveSubscriptionDraftRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: int32 expected_version = 2;
+   */
+  expectedVersion: number;
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name: string;
+
+  /**
+   * @generated from field: bifurcation.panel.v1.SubscriptionDraft draft = 4;
+   */
+  draft?: SubscriptionDraft | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.SaveSubscriptionDraftRequest.
+ * Use `create(SaveSubscriptionDraftRequestSchema)` to create a new message.
+ */
+export const SaveSubscriptionDraftRequestSchema: GenMessage<SaveSubscriptionDraftRequest> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 36);
+
+/**
+ * @generated from message bifurcation.panel.v1.CreateSubscriptionProfileResponse
+ */
+export type CreateSubscriptionProfileResponse = Message<"bifurcation.panel.v1.CreateSubscriptionProfileResponse"> & {
+  /**
+   * @generated from field: bifurcation.panel.v1.SubscriptionProfile profile = 1;
+   */
+  profile?: SubscriptionProfile | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.CreateSubscriptionProfileResponse.
+ * Use `create(CreateSubscriptionProfileResponseSchema)` to create a new message.
+ */
+export const CreateSubscriptionProfileResponseSchema: GenMessage<CreateSubscriptionProfileResponse> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 37);
+
+/**
+ * @generated from message bifurcation.panel.v1.SaveSubscriptionDraftResponse
+ */
+export type SaveSubscriptionDraftResponse = Message<"bifurcation.panel.v1.SaveSubscriptionDraftResponse"> & {
+  /**
+   * @generated from field: bifurcation.panel.v1.SubscriptionProfile profile = 1;
+   */
+  profile?: SubscriptionProfile | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.SaveSubscriptionDraftResponse.
+ * Use `create(SaveSubscriptionDraftResponseSchema)` to create a new message.
+ */
+export const SaveSubscriptionDraftResponseSchema: GenMessage<SaveSubscriptionDraftResponse> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 38);
+
+/**
+ * @generated from message bifurcation.panel.v1.PreviewSubscriptionProfileRequest
+ */
+export type PreviewSubscriptionProfileRequest = Message<"bifurcation.panel.v1.PreviewSubscriptionProfileRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: int32 expected_version = 2;
+   */
+  expectedVersion: number;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.PreviewSubscriptionProfileRequest.
+ * Use `create(PreviewSubscriptionProfileRequestSchema)` to create a new message.
+ */
+export const PreviewSubscriptionProfileRequestSchema: GenMessage<PreviewSubscriptionProfileRequest> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 39);
+
+/**
+ * @generated from message bifurcation.panel.v1.PreviewSubscriptionProfileResponse
+ */
+export type PreviewSubscriptionProfileResponse = Message<"bifurcation.panel.v1.PreviewSubscriptionProfileResponse"> & {
+  /**
+   * @generated from field: string preview_id = 1;
+   */
+  previewId: string;
+
+  /**
+   * @generated from field: string config_json = 2;
+   */
+  configJson: string;
+
+  /**
+   * @generated from field: string digest = 3;
+   */
+  digest: string;
+
+  /**
+   * @generated from field: int64 expires_at = 4;
+   */
+  expiresAt: bigint;
+
+  /**
+   * @generated from field: int32 node_count = 5;
+   */
+  nodeCount: number;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.PreviewSubscriptionProfileResponse.
+ * Use `create(PreviewSubscriptionProfileResponseSchema)` to create a new message.
+ */
+export const PreviewSubscriptionProfileResponseSchema: GenMessage<PreviewSubscriptionProfileResponse> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 40);
+
+/**
+ * @generated from message bifurcation.panel.v1.PublishSubscriptionProfileRequest
+ */
+export type PublishSubscriptionProfileRequest = Message<"bifurcation.panel.v1.PublishSubscriptionProfileRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string preview_id = 2;
+   */
+  previewId: string;
+
+  /**
+   * @generated from field: int32 expected_version = 3;
+   */
+  expectedVersion: number;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.PublishSubscriptionProfileRequest.
+ * Use `create(PublishSubscriptionProfileRequestSchema)` to create a new message.
+ */
+export const PublishSubscriptionProfileRequestSchema: GenMessage<PublishSubscriptionProfileRequest> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 41);
+
+/**
+ * @generated from message bifurcation.panel.v1.UpdateSubscriptionProfileRequest
+ */
+export type UpdateSubscriptionProfileRequest = Message<"bifurcation.panel.v1.UpdateSubscriptionProfileRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: int32 expected_version = 2;
+   */
+  expectedVersion: number;
+
+  /**
+   * pause, resume, rotate, delete
+   *
+   * @generated from field: string action = 3;
+   */
+  action: string;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.UpdateSubscriptionProfileRequest.
+ * Use `create(UpdateSubscriptionProfileRequestSchema)` to create a new message.
+ */
+export const UpdateSubscriptionProfileRequestSchema: GenMessage<UpdateSubscriptionProfileRequest> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 42);
+
+/**
+ * @generated from message bifurcation.panel.v1.PublishSubscriptionProfileResponse
+ */
+export type PublishSubscriptionProfileResponse = Message<"bifurcation.panel.v1.PublishSubscriptionProfileResponse"> & {
+  /**
+   * @generated from field: bifurcation.panel.v1.SubscriptionProfile profile = 1;
+   */
+  profile?: SubscriptionProfile | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.PublishSubscriptionProfileResponse.
+ * Use `create(PublishSubscriptionProfileResponseSchema)` to create a new message.
+ */
+export const PublishSubscriptionProfileResponseSchema: GenMessage<PublishSubscriptionProfileResponse> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 43);
+
+/**
+ * @generated from message bifurcation.panel.v1.UpdateSubscriptionProfileResponse
+ */
+export type UpdateSubscriptionProfileResponse = Message<"bifurcation.panel.v1.UpdateSubscriptionProfileResponse"> & {
+  /**
+   * @generated from field: bifurcation.panel.v1.SubscriptionProfile profile = 1;
+   */
+  profile?: SubscriptionProfile | undefined;
+};
+
+/**
+ * Describes the message bifurcation.panel.v1.UpdateSubscriptionProfileResponse.
+ * Use `create(UpdateSubscriptionProfileResponseSchema)` to create a new message.
+ */
+export const UpdateSubscriptionProfileResponseSchema: GenMessage<UpdateSubscriptionProfileResponse> = /*@__PURE__*/
+  messageDesc(file_bifurcation_panel_v1_me, 44);
+
+/**
  * @generated from enum bifurcation.panel.v1.Authentication
  */
 export enum Authentication {
@@ -703,6 +1182,62 @@ export const MeService: GenService<{
     methodKind: "unary";
     input: typeof GetMyUsageRequestSchema;
     output: typeof GetMyUsageResponseSchema;
+  },
+  /**
+   * @generated from rpc bifurcation.panel.v1.MeService.ListSubscriptionProfiles
+   */
+  listSubscriptionProfiles: {
+    methodKind: "unary";
+    input: typeof ListSubscriptionProfilesRequestSchema;
+    output: typeof ListSubscriptionProfilesResponseSchema;
+  },
+  /**
+   * @generated from rpc bifurcation.panel.v1.MeService.GetSubscriptionProfile
+   */
+  getSubscriptionProfile: {
+    methodKind: "unary";
+    input: typeof GetSubscriptionProfileRequestSchema;
+    output: typeof GetSubscriptionProfileResponseSchema;
+  },
+  /**
+   * @generated from rpc bifurcation.panel.v1.MeService.CreateSubscriptionProfile
+   */
+  createSubscriptionProfile: {
+    methodKind: "unary";
+    input: typeof CreateSubscriptionProfileRequestSchema;
+    output: typeof CreateSubscriptionProfileResponseSchema;
+  },
+  /**
+   * @generated from rpc bifurcation.panel.v1.MeService.SaveSubscriptionDraft
+   */
+  saveSubscriptionDraft: {
+    methodKind: "unary";
+    input: typeof SaveSubscriptionDraftRequestSchema;
+    output: typeof SaveSubscriptionDraftResponseSchema;
+  },
+  /**
+   * @generated from rpc bifurcation.panel.v1.MeService.PreviewSubscriptionProfile
+   */
+  previewSubscriptionProfile: {
+    methodKind: "unary";
+    input: typeof PreviewSubscriptionProfileRequestSchema;
+    output: typeof PreviewSubscriptionProfileResponseSchema;
+  },
+  /**
+   * @generated from rpc bifurcation.panel.v1.MeService.PublishSubscriptionProfile
+   */
+  publishSubscriptionProfile: {
+    methodKind: "unary";
+    input: typeof PublishSubscriptionProfileRequestSchema;
+    output: typeof PublishSubscriptionProfileResponseSchema;
+  },
+  /**
+   * @generated from rpc bifurcation.panel.v1.MeService.UpdateSubscriptionProfile
+   */
+  updateSubscriptionProfile: {
+    methodKind: "unary";
+    input: typeof UpdateSubscriptionProfileRequestSchema;
+    output: typeof UpdateSubscriptionProfileResponseSchema;
   },
   /**
    * @generated from rpc bifurcation.panel.v1.MeService.GetSubscription

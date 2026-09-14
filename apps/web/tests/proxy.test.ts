@@ -11,6 +11,8 @@ import { configRevisions, machineConfigs, machineUserHistory, policyState, usage
 import { MachineStore } from "@/server/modules/machines/store";
 import { ConfigurationStore } from "@/server/configuration/store";
 import { PolicyStore } from "@/server/configuration/policy";
+import { SubscriptionProfileStore } from "@/server/subscription/profiles";
+import { draftSchema } from "@/server/subscription/template";
 import { SubscriptionStore } from "@/server/subscription/store";
 import { UsageStore } from "@/server/usage/store";
 import { ReleaseStore } from "@/server/releases/store";
@@ -63,6 +65,113 @@ describe("configuration, subscription and exact usage accounting", () => {
     const payload = toBinary(UsageBatchSchema, create(UsageBatchSchema, { coreRuntimeId: "core-1", deltas }));
     return create(ReportUsageRequestSchema, { installation: { installationId: "test-installation-0001", bindingEpoch: 1n }, streamId: "usage-test-installation-0001", sequence, payload, payloadSha256: sha256(payload) });
   }
+
+  it("preserves the old subscription URL while named subscriptions publish independent rules over the same attributed nodes", () => {
+    publish(true);
+    const legacy = new SubscriptionStore(database).get(memberId);
+    const profiles = new SubscriptionProfileStore(database);
+    const migrated = profiles.list(memberId)[0];
+    expect(profiles.get(memberId, migrated.id).url).toBe(legacy.url);
+    expect(profiles.byToken(legacy.url.split("/").at(-1)!)).toBe(legacy.configJson);
+    const current = machineStore.get(machineId);
+    machineStore.update(machineId, { expectedVersion: current.version, tags: ["ai", "game"] });
+    const request = { name: "Phone", preset: "mobile", requestKey: newId() };
+    const phone = profiles.create(memberId, request);
+    expect(profiles.create(memberId, request).id).toBe(phone.id);
+    const pc = profiles.create(memberId, { name: "PC", preset: "desktop", requestKey: newId() });
+    const published = [phone, pc].map((profile, index) => {
+      const draft = draftSchema.parse(profile.draft);
+      const json = JSON.parse(draft.templateJson);
+      json.log.level = index ? "debug" : "warn";
+      json.route.rules.unshift(index ? { process_name: "example.exe", outbound: "direct" } : { package_name: "example.app", outbound: "direct" });
+      draft.templateJson = JSON.stringify(json);
+      const saved = profiles.save(memberId, profile.id, profile.version, profile.name, draft);
+      const preview = profiles.preview(memberId, profile.id, saved.version);
+      const result = profiles.publish(memberId, profile.id, saved.version, preview.previewId);
+      expect(profiles.publish(memberId, profile.id, saved.version, preview.previewId).publishedVersion).toBe(result.publishedVersion);
+      expect(profiles.byToken(result.url.split("/").at(-1)!)).toBe(preview.configJson);
+      return result;
+    });
+    expect(published[0].url).not.toBe(published[1].url);
+    const configs = published.map((profile) => JSON.parse(profile.configJson));
+    expect(configs[0].log.level).toBe("warn"); expect(configs[1].log.level).toBe("debug");
+    const managed = (config: { outbounds: { tag: string }[] }) => config.outbounds.filter((entry) => entry.tag.startsWith("bfc_"));
+    expect(managed(configs[0])).toEqual(managed(configs[1]));
+    expect(configs[0].route.rules[0].package_name).toBe("example.app");
+    expect(configs[1].route.rules[0].process_name).toBe("example.exe");
+    expect(() => profiles.get(adminId, phone.id)).toThrow("订阅不存在");
+    expect(() => profiles.save(adminId, phone.id, published[0].version, "Stolen", draftSchema.parse(phone.draft))).toThrow("订阅不存在");
+    expect(profiles.byToken(legacy.url.split("/").at(-1)!)).toBe(legacy.configJson);
+  });
+
+  it("keeps invalid drafts separate and rejects empty attribute groups and stale previews", () => {
+    publish(true);
+    const profiles = new SubscriptionProfileStore(database);
+    let profile = profiles.create(memberId, { name: "Rules", preset: "desktop", requestKey: newId() });
+    expect(() => profiles.preview(memberId, profile.id, profile.version)).toThrow("没有匹配节点");
+    machineStore.update(machineId, { expectedVersion: machineStore.get(machineId).version, tags: ["ai", "game"] });
+    const candidate = profiles.preview(memberId, profile.id, profile.version);
+    machineStore.update(machineId, { expectedVersion: machineStore.get(machineId).version, address: "new-node.test" });
+    expect(() => profiles.publish(memberId, profile.id, profile.version, candidate.previewId)).toThrow("节点属性、配置或授权已变化");
+    const fresh = profiles.preview(memberId, profile.id, profile.version);
+    profile = profiles.publish(memberId, profile.id, profile.version, fresh.previewId);
+    const urlToken = profile.url.split("/").at(-1)!;
+    const working = profiles.byToken(urlToken);
+    const broken = { ...draftSchema.parse(profile.draft), templateJson: "{broken" };
+    const saved = profiles.save(memberId, profile.id, profile.version, profile.name, broken);
+    expect(profiles.get(memberId, profile.id).draft?.templateJson).toBe("{broken");
+    expect(() => profiles.preview(memberId, profile.id, saved.version)).toThrow("不是有效 JSON");
+    expect(profiles.byToken(urlToken)).toBe(working);
+    expect(() => profiles.save(memberId, profile.id, profile.version, profile.name, broken)).toThrow("订阅已变化");
+    machineStore.update(machineId, { expectedVersion: machineStore.get(machineId).version, tags: ["game"] });
+    expect(() => profiles.byToken(urlToken)).toThrow("没有匹配节点");
+  });
+
+  it("isolates per-link rotation, pause, deletion and copies without changing account proxy secrets", () => {
+    publish(true);
+    const profiles = new SubscriptionProfileStore(database);
+    profiles.list(memberId);
+    const original = profiles.get(memberId, `default:${memberId}`);
+    let copy = profiles.create(memberId, { name: "Copy", preset: "desktop", copyFromId: original.id, requestKey: newId() });
+    expect(copy.url).not.toBe(original.url);
+    expect(copy.publishedVersion).toBe(0);
+    const preview = profiles.preview(memberId, copy.id, copy.version);
+    copy = profiles.publish(memberId, copy.id, copy.version, preview.previewId);
+    const oldToken = copy.url.split("/").at(-1)!;
+    const secrets = readProxyCredentials(memberId, database).secrets;
+    copy = profiles.update(memberId, copy.id, copy.version, "rotate");
+    expect(() => profiles.byToken(oldToken)).toThrow("订阅不存在");
+    const token = copy.url.split("/").at(-1)!;
+    expect(profiles.byToken(token)).toBe(copy.configJson);
+    copy = profiles.update(memberId, copy.id, copy.version, "pause");
+    expect(() => profiles.byToken(token)).toThrow("订阅已暂停");
+    expect(profiles.byToken(original.url.split("/").at(-1)!)).toBe(original.configJson);
+    copy = profiles.update(memberId, copy.id, copy.version, "resume");
+    expect(copy.url.split("/").at(-1)).toBe(token);
+    profiles.update(memberId, copy.id, copy.version, "delete");
+    expect(() => profiles.byToken(token)).toThrow("订阅不存在");
+    expect(readProxyCredentials(memberId, database).secrets).toEqual(secrets);
+    expect(profiles.list(memberId).map((profile) => profile.id)).toEqual([original.id]);
+  });
+
+  it("validates managed namespaces, references, cycles and filtered automatic group scope", () => {
+    publish(true);
+    machineStore.update(machineId, { expectedVersion: machineStore.get(machineId).version, tags: ["ai", "game"] });
+    const profiles = new SubscriptionProfileStore(database);
+    let profile = profiles.create(memberId, { name: "Validation", preset: "desktop", requestKey: newId() });
+    const original = draftSchema.parse(profile.draft);
+    function check(edit: (draft: typeof original, json: { outbounds: { type: string; tag: string; default?: string }[]; route: { final: string } }) => void, message: string) {
+      const draft = structuredClone(original); const json = JSON.parse(draft.templateJson);
+      edit(draft, json); draft.templateJson = JSON.stringify(json);
+      profile = profiles.save(memberId, profile.id, profile.version, profile.name, draft);
+      expect(() => profiles.preview(memberId, profile.id, profile.version)).toThrow(message);
+    }
+    check((_draft, json) => { json.outbounds.push({ type: "direct", tag: "bfc_fake" }); }, "前缀由平台保留");
+    check((_draft, json) => { json.route.final = "missing"; }, "引用的出口不存在");
+    check((draft) => { draft.bindings[0].staticMembers.push("select"); }, "出口引用形成循环");
+    check((_draft, json) => { json.outbounds[0].default = "missing"; }, "默认成员不在此组中");
+    check((draft) => { draft.bindings[0].protocols = ["hysteria2"]; }, "筛选范围之外的节点");
+  });
 
   it("publishes the exact preview atomically, retries the same task and isolates client credentials", () => {
     const { preview, input, result } = publish(true);

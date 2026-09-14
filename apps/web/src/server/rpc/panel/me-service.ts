@@ -12,6 +12,8 @@ import {
   sessionCookie,
 } from "@/server/identity/service";
 import { newPasskeyOptions, newPasskeyVerify } from "@/server/identity/webauthn";
+import { SubscriptionProfileStore } from "@/server/subscription/profiles";
+import { draftSchema } from "@/server/subscription/template";
 import { SubscriptionStore } from "@/server/subscription/store";
 import { UsageStore } from "@/server/usage/store";
 import { panelCall, requirePrincipal } from "./common";
@@ -41,6 +43,31 @@ export const meImplementation: ServiceImpl<typeof MeService> = {
       });
       return { usage: toProtoUsage(usage) };
     });
+  },
+
+  listSubscriptionProfiles(_request, context) {
+    return panelCall(() => {
+      const userId = requirePrincipal(context).user.id;
+      return { profiles: new SubscriptionProfileStore().list(userId), context: toProtoSubscription({ ...new SubscriptionStore().get(userId), url: "", configJson: "" }) };
+    });
+  },
+  getSubscriptionProfile(request, context) {
+    return panelCall(() => ({ profile: new SubscriptionProfileStore().get(requirePrincipal(context).user.id, request.id) }));
+  },
+  createSubscriptionProfile(request, context) {
+    return panelCall(() => ({ profile: new SubscriptionProfileStore().create(requirePrincipal(context).user.id, request) }));
+  },
+  saveSubscriptionDraft(request, context) {
+    return panelCall(() => ({ profile: new SubscriptionProfileStore().save(requirePrincipal(context).user.id, request.id, request.expectedVersion, request.name, draftSchema.parse(request.draft)) }));
+  },
+  previewSubscriptionProfile(request, context) {
+    return panelCall(() => new SubscriptionProfileStore().preview(requirePrincipal(context).user.id, request.id, request.expectedVersion));
+  },
+  publishSubscriptionProfile(request, context) {
+    return panelCall(() => ({ profile: new SubscriptionProfileStore().publish(requirePrincipal(context).user.id, request.id, request.expectedVersion, request.previewId) }));
+  },
+  updateSubscriptionProfile(request, context) {
+    return panelCall(() => ({ profile: new SubscriptionProfileStore().update(requirePrincipal(context).user.id, request.id, request.expectedVersion, request.action) }));
   },
 
   getSubscription(_request, context) {

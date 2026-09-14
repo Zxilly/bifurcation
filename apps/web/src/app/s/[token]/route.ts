@@ -18,6 +18,8 @@ export async function GET(
       },
     );
   } catch (error) {
-    return errorResponse(error);
+    const response = errorResponse(error);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   }
 }

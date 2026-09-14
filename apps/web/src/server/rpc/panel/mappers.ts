@@ -269,6 +269,8 @@ export function toProtoSubscription(subscription: SubscriptionDto) {
       machineId: node.machineId,
       name: node.name,
       address: node.address,
+      region: node.region,
+      tags: node.tags,
       protocols: node.protocols.map((protocol) => protocols[protocol]),
       configurationState: configurationStates[node.configurationState],
       available: node.available,

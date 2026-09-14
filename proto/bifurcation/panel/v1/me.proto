@@ -12,6 +12,13 @@ import "google/protobuf/struct.proto";
 service MeService {
   rpc GetMe(GetMeRequest) returns (GetMeResponse);
   rpc GetMyUsage(GetMyUsageRequest) returns (GetMyUsageResponse);
+  rpc ListSubscriptionProfiles(ListSubscriptionProfilesRequest) returns (ListSubscriptionProfilesResponse);
+  rpc GetSubscriptionProfile(GetSubscriptionProfileRequest) returns (GetSubscriptionProfileResponse);
+  rpc CreateSubscriptionProfile(CreateSubscriptionProfileRequest) returns (CreateSubscriptionProfileResponse);
+  rpc SaveSubscriptionDraft(SaveSubscriptionDraftRequest) returns (SaveSubscriptionDraftResponse);
+  rpc PreviewSubscriptionProfile(PreviewSubscriptionProfileRequest) returns (PreviewSubscriptionProfileResponse);
+  rpc PublishSubscriptionProfile(PublishSubscriptionProfileRequest) returns (PublishSubscriptionProfileResponse);
+  rpc UpdateSubscriptionProfile(UpdateSubscriptionProfileRequest) returns (UpdateSubscriptionProfileResponse);
   rpc GetSubscription(GetSubscriptionRequest) returns (GetSubscriptionResponse);
   rpc ResetSubscriptionToken(ResetSubscriptionTokenRequest) returns (ResetSubscriptionTokenResponse);
   rpc ResetProxyCredentials(ResetProxyCredentialsRequest) returns (ResetProxyCredentialsResponse);
@@ -56,6 +63,8 @@ message SubscriptionNode {
   repeated Protocol protocols = 4;
   ConfigurationState configuration_state = 5;
   bool available = 6;
+  string region = 7;
+  repeated string tags = 8;
 }
 
 message Subscription {
@@ -171,3 +180,87 @@ message DeletePasskeyRequest {
 }
 
 message DeletePasskeyResponse {}
+
+// Node attributes select members from the current account-authorized snapshot.
+message SubscriptionGroupBinding {
+  string group_tag = 1;
+  repeated string regions = 2;
+  repeated string tags = 3;
+  repeated string protocols = 4;
+  repeated string machine_ids = 5;
+  repeated string exclude_machine_ids = 6;
+  repeated string static_members = 7;
+}
+message SubscriptionDraft {
+  string template_json = 1;
+  repeated SubscriptionGroupBinding bindings = 2;
+}
+message SubscriptionProfile {
+  string id = 1;
+  string name = 2;
+  string preset = 3;
+  int32 version = 4;
+  int32 published_version = 5;
+  bool enabled = 6;
+  bool legacy = 7;
+  string url = 8;
+  int32 generation = 9;
+  SubscriptionDraft draft = 10;
+  string config_json = 11;
+  string generation_error = 12;
+  int32 node_count = 13;
+  optional int64 last_fetched_at = 14;
+}
+message ListSubscriptionProfilesRequest {}
+message ListSubscriptionProfilesResponse {
+  repeated SubscriptionProfile profiles = 1;
+  Subscription context = 2;
+}
+message GetSubscriptionProfileRequest { string id = 1; }
+message GetSubscriptionProfileResponse { SubscriptionProfile profile = 1; }
+message CreateSubscriptionProfileRequest {
+  string name = 1;
+  string preset = 2;
+  string request_key = 3;
+  optional string copy_from_id = 4;
+}
+message SaveSubscriptionDraftRequest {
+  string id = 1;
+  int32 expected_version = 2;
+  string name = 3;
+  SubscriptionDraft draft = 4;
+}
+message CreateSubscriptionProfileResponse {
+  SubscriptionProfile profile = 1;
+}
+message SaveSubscriptionDraftResponse {
+  SubscriptionProfile profile = 1;
+}
+message PreviewSubscriptionProfileRequest {
+  string id = 1;
+  int32 expected_version = 2;
+}
+message PreviewSubscriptionProfileResponse {
+  string preview_id = 1;
+  string config_json = 2;
+  string digest = 3;
+  int64 expires_at = 4;
+  int32 node_count = 5;
+}
+message PublishSubscriptionProfileRequest {
+  string id = 1;
+  string preview_id = 2;
+  int32 expected_version = 3;
+}
+message UpdateSubscriptionProfileRequest {
+  string id = 1;
+  int32 expected_version = 2;
+  // pause, resume, rotate, delete
+  string action = 3;
+}
+message PublishSubscriptionProfileResponse {
+  SubscriptionProfile profile = 1;
+}
+message UpdateSubscriptionProfileResponse {
+  SubscriptionProfile profile = 1;
+}

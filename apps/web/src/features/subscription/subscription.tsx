@@ -1,244 +1,137 @@
 "use client";
 
-import { Banner, LayerCard, Table, Empty } from "@cloudflare/kumo";
-import { ResourceState } from "@/components/resource-state";
-import { useState } from "react";
-import { Badge } from "@cloudflare/kumo/components/badge";
-import { Button } from "@cloudflare/kumo/components/button";
-import {
-  BlockReason,
-  ConfigurationState,
-  Protocol,
-} from "@bifurcation/rpc/panel/me";
+import { Banner, LayerCard, Table, Empty, Button, Input, Select, Badge } from "@cloudflare/kumo";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+import type { SubscriptionProfile } from "@bifurcation/rpc/panel/me";
 import { Modal, FormError } from "@/components/modal";
-import { CopyValue } from "@/components/secret-result";
 import { JsonDocument } from "@/components/json-document";
-import { Reauthenticate } from "@/features/identity/reauth";
-import { ApiError, errorMessage } from "@/features/shared/api";
+import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 import { useResource } from "@/features/shared/use-resource";
 
+type Action = { kind: "rotate" | "delete" | "pause" | "resume" | "config" | "link"; profile: SubscriptionProfile };
+
+function profileState(profile: SubscriptionProfile) {
+  return !profile.enabled ? "已暂停" : !profile.publishedVersion ? "草稿" : profile.generationError ? "生成失败" : "可下载";
+}
+
 export function Subscription() {
-  const resource = useResource("me:subscription", () =>
-    panel.me.getSubscription({}).then((r) => r.subscription!),
-  );
-  const [action, setAction] = useState<
-    "config" | "subscription" | "credentials" | null
-  >(null);
-  const [error, setError] = useState("");
+  const router = useRouter();
+  const resource = useResource("me:subscriptions", () => panel.me.listSubscriptionProfiles({}));
+  const [creating, setCreating] = useState(false);
+  const [copyFrom, setCopyFrom] = useState<string>();
+  const [name, setName] = useState("");
+  const [preset, setPreset] = useState("desktop");
+  const requestKey = useRef("");
+  const [action, setAction] = useState<Action | null>(null);
+  const [credentials, setCredentials] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [reauth, setReauth] = useState(false);
-  const subscription = resource.data;
-  const open = (action: "config" | "subscription" | "credentials") => {
-    setError("");
-    setNotice("");
-    setAction(action);
-  };
-  async function reset() {
-    if (action !== "subscription" && action !== "credentials") return;
-    setBusy(true);
-    setError("");
+  const data = resource.data;
+
+  function startCreate(source?: SubscriptionProfile) {
+    requestKey.current = crypto.randomUUID(); setCopyFrom(source?.id);
+    setName(source ? `${source.name} 副本` : ""); setPreset("desktop"); setError(""); setCreating(true);
+  }
+  async function create(event: React.FormEvent) {
+    event.preventDefault(); setBusy(true); setError("");
     try {
-      const result =
-        action === "subscription"
-          ? await panel.me.resetSubscriptionToken({})
-          : await panel.me.resetProxyCredentials({});
-      resource.update(result.subscription!);
-      setNotice(
-        action === "subscription"
-          ? "订阅链接已重置，请更新客户端的订阅地址。"
-          : "代理凭据已重置，等待机器应用新配置。请重新获取订阅。",
-      );
-      setAction(null);
-    } catch (e) {
-      if (e instanceof ApiError && e.code === "REAUTH_REQUIRED")
-        setReauth(true);
-      else setError(errorMessage(e));
-    } finally {
-      setBusy(false);
-    }
+      const result = await panel.me.createSubscriptionProfile({ name, preset, copyFromId: copyFrom, requestKey: requestKey.current });
+      router.push(`/subscription/${encodeURIComponent(result.profile!.id)}`);
+      setCreating(false);
+    } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
+  }
+  async function inspect(profile: SubscriptionProfile, kind: Action["kind"]) {
+    setError(""); setBusy(true);
+    try {
+      const detail = (await panel.me.getSubscriptionProfile({ id: profile.id })).profile!;
+      if (kind === "link") {
+        try { await navigator.clipboard.writeText(detail.url); setNotice(`已复制「${profile.name}」的订阅链接。`); return; }
+        catch { setNotice("无法访问剪贴板，请选择完整链接手动复制。"); }
+      }
+      setAction({ profile: detail, kind });
+    } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
+  }
+  async function mutate() {
+    setBusy(true); setError("");
+    try {
+      if (credentials) {
+        await panel.me.resetProxyCredentials({}); setCredentials(false);
+        setNotice("代理凭据已重置，等待机器应用新配置。请重新获取订阅。");
+      } else if (action) {
+        await panel.me.updateSubscriptionProfile({ id: action.profile.id, expectedVersion: action.profile.version, action: action.kind });
+        setNotice(action.kind === "rotate" ? "订阅链接已重置，请更新客户端的订阅地址。" : `「${action.profile.name}」已${{ pause: "暂停", resume: "恢复", delete: "删除" }[action.kind as "pause" | "resume" | "delete"]}。`);
+        setAction(null);
+      }
+      await resource.refresh();
+    } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   return (
     <>
       <div className="page-heading">
-        <h1>接入与订阅</h1>
-        <Button onClick={resource.refresh}>刷新状态</Button>
+        <div><h1>接入与订阅</h1><p className="subtle mt-2">同一批节点，多套分流规则。为手机、PC 或其他用途分别创建订阅。</p></div>
+        <div className="actions"><Button onClick={resource.refresh}>刷新状态</Button><Button variant="primary" onClick={() => startCreate()}>创建订阅</Button></div>
       </div>
       <FormError message={resource.error} />
-      {notice && (
-        <Banner role="status" variant="secondary" className="mb-6">
-          {notice}
-        </Banner>
-      )}
-      {subscription ? (
-        <>
-          {subscription.blocked && (
-            <Banner role="alert" variant="error" className="mb-6">
-              {subscription.blockReason === BlockReason.QUOTA
-                ? "已达到本月额度，代理接入暂停。"
-                : "账号已禁用，代理接入暂停。"}{" "}
-              当前配置不包含可用代理节点。
-            </Banner>
-          )}
-          <LayerCard render={<section />} className="panel">
-            <div className="panel-header">
-              <h2>sing-box 订阅</h2>
-              <Badge variant="secondary">长期有效</Badge>
-            </div>
-            <CopyValue
-              key={subscription.generation}
-              value={subscription.url}
-              copyLabel="复制订阅链接"
-            />
-            <div className="actions mt-4">
-              <Button onClick={() => open("config")}>查看与下载配置</Button>
-              <Button variant="ghost" onClick={() => open("subscription")}>
-                重置订阅链接
-              </Button>
-            </div>
-          </LayerCard>
-          <section className="panel-section stack">
-            <div className="panel-header">
-              <h2>客户端配置格式</h2>
-              <span>sing-box {subscription.configFormatVersion}</span>
-            </div>
-            <LayerCard className="min-w-0 overflow-x-auto p-0">
-              <Table className="min-w-max tabular-nums">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.Head>节点</Table.Head>
-                    <Table.Head>协议</Table.Head>
-                    <Table.Head>地址</Table.Head>
-                    <Table.Head>配置状态</Table.Head>
-                    <Table.Head>接入状态</Table.Head>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {subscription.nodes.map((node) => (
-                    <Table.Row key={node.machineId}>
-                      <Table.Cell>{node.name}</Table.Cell>
-                      <Table.Cell>
-                        {node.protocols
-                          .map((protocol) =>
-                            protocol === Protocol.TROJAN
-                              ? "Trojan"
-                              : "Hysteria2",
-                          )
-                          .join(" + ")}
-                      </Table.Cell>
-                      <Table.Cell>{node.address}</Table.Cell>
-                      <Table.Cell>
-                        <Badge variant="secondary">
-                          {node.configurationState ===
-                          ConfigurationState.APPLIED
-                            ? "已应用"
-                            : "等待应用"}
-                        </Badge>
-                      </Table.Cell>
-                      <Table.Cell>
-                        {node.available ? "可接入" : "未就绪"}
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-                  {!subscription.nodes.length && (
-                    <Table.Row>
-                      <Table.Cell colSpan={5}>
-                        <Empty
-                          className="rounded-none border-0 bg-transparent"
-                          title="暂无可用节点"
-                        />
-                      </Table.Cell>
-                    </Table.Row>
-                  )}
-                </Table.Body>
-              </Table>
-              {subscription.nodes.length > 0 &&
-                subscription.nodes.every((node) => !node.available) && (
-                  <Banner variant="secondary" className="mt-4">
-                    节点尚未就绪，当前订阅不包含可用代理。
-                  </Banner>
-                )}
-            </LayerCard>
-          </section>
-          <LayerCard render={<section />} className="panel">
-            <div className="panel-header">
-              <h2>代理凭据</h2>
-              <span className="subtle text-xs">
-                版本 {subscription.credentialGeneration}
-              </span>
-            </div>
-            {subscription.nodes.some(
-              (node) => node.configurationState === ConfigurationState.PENDING,
-            ) && (
-              <Banner variant="secondary" className="mb-4">
-                部分节点正在等待应用配置，旧配置可能仍在运行。
-              </Banner>
-            )}
-            <Button
-              variant="secondary-destructive"
-              onClick={() => open("credentials")}
-            >
-              重置代理凭据
-            </Button>
-          </LayerCard>
-        </>
-      ) : (
-        <LayerCard render={<section />} className="panel">
-          <ResourceState
-            loading={resource.loading}
-            title={
-              resource.loading ? "正在加载订阅…" : "订阅暂时无法加载，请重试。"
-            }
-          />
-        </LayerCard>
-      )}
-      {action && subscription && (
-        <Modal
-          title={
-            {
-              config: "sing-box 配置",
-              subscription: "重置订阅链接",
-              credentials: "重置代理凭据",
-            }[action]
-          }
-          size={action === "config" ? "xl" : "lg"}
-          open
-          onClose={() => {
-            if (!busy) setAction(null);
-          }}
-        >
-          {action === "config" ? (
-            <JsonDocument value={subscription.configJson} />
-          ) : (
-            <div className="stack">
-              <p>
-                {action === "subscription"
-                  ? "旧订阅链接将立即失效。客户端需更新订阅地址，已导入的代理配置仍可继续使用。"
-                  : "机器应用新配置后，旧代理凭据将失效。请重新获取订阅并更新客户端配置；订阅链接保持有效。"}
-              </p>
-              <FormError message={error} />
-              <div className="mt-8 flex flex-wrap justify-end gap-2">
-                <Button disabled={busy} onClick={() => setAction(null)}>
-                  取消
-                </Button>
-                <Button variant="destructive" loading={busy} onClick={reset}>
-                  {action === "subscription" ? "重置订阅链接" : "重置代理凭据"}
-                </Button>
-              </div>
-            </div>
-          )}
-        </Modal>
-      )}
-      {reauth && (
-        <Reauthenticate
-          onClose={() => setReauth(false)}
-          onComplete={() => {
-            setReauth(false);
-            setError("身份已验证，请再次提交。");
-          }}
-        />
-      )}
+      {!action && !creating && !credentials && <FormError message={error} />}
+      {notice && <Banner role="status" variant="secondary" className="mb-5">{notice}</Banner>}
+      {data?.context?.blocked && <Banner variant="error" className="mb-5">账号已禁用或已达到本月额度，代理接入暂停。</Banner>}
+      <LayerCard className="min-w-0 overflow-x-auto p-0">
+        <Table>
+          <Table.Header><Table.Row><Table.Head>订阅</Table.Head><Table.Head className="hidden sm:table-cell">状态</Table.Head><Table.Head className="hidden sm:table-cell">节点</Table.Head><Table.Head>操作</Table.Head></Table.Row></Table.Header>
+          <Table.Body>
+            {data?.profiles.map((profile) => <Table.Row key={profile.id}>
+              <Table.Cell><Link href={`/subscription/${encodeURIComponent(profile.id)}`} className="underline font-medium">{profile.name}</Link><p className="subtle mt-1">{profile.preset === "legacy" ? "原有配置" : profile.preset === "mobile" ? "手机" : "PC"} · {profile.publishedVersion ? `已发布 v${profile.publishedVersion}` : "未发布"}</p><p className="mt-2 sm:hidden">{profileState(profile)} · {profile.nodeCount} 个节点</p></Table.Cell>
+              <Table.Cell className="hidden sm:table-cell"><Badge variant={profile.generationError && profile.publishedVersion ? "destructive" : "secondary"}>{profileState(profile)}</Badge></Table.Cell>
+              <Table.Cell className="hidden sm:table-cell">{profile.nodeCount}</Table.Cell>
+              <Table.Cell><div className="flex flex-wrap items-center gap-3">
+                <Button disabled={busy} onClick={() => void inspect(profile, "link")}>复制链接</Button>
+                <Link href={`/subscription/${encodeURIComponent(profile.id)}`} className="underline">编辑配置</Link>
+                <details><summary className="cursor-pointer">更多</summary><div className="flex flex-col items-start gap-2 py-3">
+                  <Button variant="ghost" onClick={() => void inspect(profile, "config")}>查看与下载配置</Button>
+                  <Button variant="ghost" onClick={() => startCreate(profile)}>复制为新订阅</Button>
+                  <Button variant="ghost" onClick={() => void inspect(profile, "rotate")}>重置订阅链接</Button>
+                  <Button variant="ghost" onClick={() => void inspect(profile, profile.enabled ? "pause" : "resume")}>{profile.enabled ? "暂停订阅" : "恢复订阅"}</Button>
+                  <Button variant="secondary-destructive" onClick={() => void inspect(profile, "delete")}>删除订阅</Button>
+                </div></details>
+              </div></Table.Cell>
+            </Table.Row>)}
+            {!data?.profiles.length && <Table.Row><Table.Cell colSpan={4}><Empty className="rounded-none border-0 bg-transparent" title={resource.loading ? "正在加载订阅…" : "还没有订阅"} /></Table.Cell></Table.Row>}
+          </Table.Body>
+        </Table>
+      </LayerCard>
+      <section className="panel-section stack mt-8">
+        <h2>可用节点</h2><p className="subtle">所有订阅共享这些节点。地区与标签由管理员维护，模板据此生成选择组；各订阅的路由规则相互独立。</p>
+        <LayerCard className="min-w-0 overflow-x-auto p-0"><Table>
+          <Table.Header><Table.Row><Table.Head>节点</Table.Head><Table.Head>地区 / 标签</Table.Head><Table.Head>接入状态</Table.Head></Table.Row></Table.Header>
+          <Table.Body>{data?.context?.nodes.map((node) => <Table.Row key={node.machineId}><Table.Cell>{node.name}</Table.Cell><Table.Cell>{node.region || "未设置地区"}{node.tags.length > 0 && <p className="subtle">{node.tags.join(" · ")}</p>}</Table.Cell><Table.Cell>{node.available ? "可接入" : "未就绪"}</Table.Cell></Table.Row>)}
+            {!data?.context?.nodes.length && <Table.Row><Table.Cell colSpan={3}><Empty className="rounded-none border-0 bg-transparent" title="暂无可用节点" /></Table.Cell></Table.Row>}
+          </Table.Body>
+        </Table></LayerCard>
+      </section>
+      <section className="panel-section stack mt-8">
+        <h2>代理凭据</h2><p className="subtle">所有订阅共用同一套账号代理凭据。重置会影响全部订阅；单独重置或暂停某条订阅链接不会撤销已导入的代理连接。</p>
+        <div><Button variant="secondary-destructive" onClick={() => { setError(""); setCredentials(true); }}>重置代理凭据</Button></div>
+      </section>
+      <Modal title={copyFrom ? "复制为新订阅" : "创建订阅"} open={creating} onClose={() => { if (!busy) setCreating(false); }}>
+        <form onSubmit={create} className="stack"><Input label="订阅名称" value={name} onChange={(e) => setName(e.target.value)} required maxLength={64} placeholder="例如：手机日常、PC 游戏" />
+          {!copyFrom && <Select label="初始模板" value={preset} onValueChange={(v) => setPreset(String(v))} items={{ desktop: "PC", mobile: "手机" }} />}
+          <p className="subtle">创建后进入独立编辑页。配置发布后，客户端才可通过这条链接获取配置。</p><FormError message={error} />
+          <div className="mt-8 flex justify-end gap-2"><Button type="button" onClick={() => setCreating(false)} disabled={busy}>取消</Button><Button type="submit" variant="primary" loading={busy}>创建并编辑</Button></div>
+        </form>
+      </Modal>
+      {action && <Modal title={`${{ rotate: "重置订阅链接", delete: "删除订阅", pause: "暂停订阅", resume: "恢复订阅", config: "查看配置", link: "订阅链接" }[action.kind]} · ${action.profile.name}`} size={action.kind === "config" ? "xl" : "lg"} open onClose={() => { if (!busy) setAction(null); }}>
+        {action.kind === "config" ? (action.profile.generationError ? <FormError message={action.profile.generationError} /> : <JsonDocument value={action.profile.configJson} />) : action.kind === "link" ? <Input label="完整订阅链接" value={action.profile.url} readOnly onFocus={(event) => event.currentTarget.select()} /> : <div className="stack">
+          <p>{action.kind === "rotate" ? "旧链接将立即失效，请更新此订阅的客户端地址。" : action.kind === "delete" ? "此链接将永久失效，删除后无法恢复。" : action.kind === "pause" ? "停止此链接的配置下载，恢复后仍可使用原地址。" : "恢复此链接的配置下载。"}其他订阅保持不变，已导入的代理凭据不受影响。</p><FormError message={error} />
+          <div className="mt-8 flex justify-end gap-2"><Button disabled={busy} onClick={() => setAction(null)}>取消</Button><Button variant="destructive" loading={busy} onClick={mutate}>{action.kind === "rotate" ? "重置订阅链接" : action.kind === "delete" ? "删除订阅" : action.kind === "pause" ? "暂停订阅" : "恢复订阅"}</Button></div>
+        </div>}
+      </Modal>}
+      <Modal title="重置代理凭据" open={credentials} onClose={() => { if (!busy) setCredentials(false); }}>
+        <div className="stack"><p>所有订阅将使用新代理凭据。机器应用新配置后，旧凭据失效；请更新所有客户端。各条订阅链接保持有效。</p><FormError message={error} /><div className="mt-8 flex justify-end gap-2"><Button disabled={busy} onClick={() => setCredentials(false)}>取消</Button><Button variant="destructive" loading={busy} onClick={mutate}>重置代理凭据</Button></div></div>
+      </Modal>
     </>
   );
 }
