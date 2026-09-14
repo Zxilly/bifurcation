@@ -9,9 +9,7 @@ import {
   Select,
 } from "@cloudflare/kumo";
 import { ResourceState } from "@/components/resource-state";
-import { ResourceFeedback } from "@/components/resource-feedback";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Role, UserStatus, type User } from "@bifurcation/rpc/panel/types";
 import { FlowPurpose } from "@bifurcation/rpc/panel/users";
 import { Modal, FormError } from "@/components/modal";
@@ -19,7 +17,7 @@ import { SecretResult } from "@/components/secret-result";
 import { Reauthenticate } from "@/features/identity/reauth";
 import { ApiError, errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
-import { useResource } from "@/features/shared/use-resource";
+import { useServerRefresh } from "@/features/shared/use-refresh";
 import { UserNodeUsage } from "@/features/usage/overview";
 
 const status: Record<number, string> = {
@@ -40,9 +38,9 @@ function monthlyQuota(user: User) {
     : `${(Number(user.monthlyLimitBytes) / 1073741824).toLocaleString("zh-CN")} GiB`;
 }
 
-export function Users() {
-  const router = useRouter();
-  const resource = useResource("admin-users", () => panel.users.listUsers({}));
+// The page provides the user list; mutations re-render it.
+export function Users({ users }: { users: User[] }) {
+  const { refresh } = useServerRefresh();
   const [action, setAction] = useState<Action | null>(null);
   const [actionOpen, setActionOpen] = useState(false);
   const [error, setError] = useState("");
@@ -115,8 +113,7 @@ export function Users() {
             action.kind === "disable" ? UserStatus.DISABLED : UserStatus.ACTIVE,
         });
       setActionOpen(false);
-      await resource.refresh();
-      router.refresh();
+      refresh();
     } catch (e) {
       if (e instanceof ApiError && e.code === "REAUTH_REQUIRED")
         setReauth(true);
@@ -136,10 +133,9 @@ export function Users() {
       }[action.kind]
     : "";
   const editUser = action && action.kind !== "create" ? action.user : null;
-  const activeAdmins =
-    resource.data?.users.filter(
-      (user) => user.role === Role.ADMIN && user.status === UserStatus.ACTIVE,
-    ) ?? [];
+  const activeAdmins = users.filter(
+    (user) => user.role === Role.ADMIN && user.status === UserStatus.ACTIVE,
+  );
   const lastAdminId = activeAdmins.length === 1 ? activeAdmins[0].id : null;
   return (
     <div className="users-workspace">
@@ -151,10 +147,8 @@ export function Users() {
       </div>
       <section className="panel-section stack">
         <p className="subtle">
-          {resource.data ? `${resource.data.users.length} 位用户 · ` : ""}
-          通过一次性激活链接加入
+          {users.length} 位用户 · 通过一次性激活链接加入
         </p>
-        <ResourceFeedback {...resource} onRetry={resource.refresh} />
         <LayerCard className="min-w-0 overflow-x-auto p-0">
           <Table className="w-full table-fixed tabular-nums">
             <Table.Header>
@@ -169,7 +163,7 @@ export function Users() {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {resource.data?.users.map((user) => (
+              {users.map((user) => (
                 <Table.Row key={user.id}>
                   <Table.Cell className="break-words">
                     {user.username}
@@ -255,19 +249,10 @@ export function Users() {
                   </Table.Cell>
                 </Table.Row>
               ))}
-              {!resource.data?.users.length && (
+              {!users.length && (
                 <Table.Row>
                   <Table.Cell colSpan={5}>
-                    <ResourceState
-                      loading={resource.loading}
-                      title={
-                        resource.loading
-                          ? "正在加载…"
-                          : resource.error
-                            ? "未能加载用户"
-                            : "暂无用户"
-                      }
-                    />
+                    <ResourceState loading={false} title="暂无用户" />
                   </Table.Cell>
                 </Table.Row>
               )}

@@ -21,7 +21,9 @@ import { JsonDocument } from "@/components/json-document";
 import { Reauthenticate } from "@/features/identity/reauth";
 import { ApiError, errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
+import { resourceKeys } from "@/features/shared/keys";
 import { useResource } from "@/features/shared/use-resource";
+import { useServerRefresh } from "@/features/shared/use-refresh";
 
 const states: Record<number, string> = {
   [Reconciliation.NOT_CONFIGURED]: "未配置",
@@ -32,7 +34,7 @@ const states: Record<number, string> = {
 
 export function MachineConfiguration({ machine }: { machine: MachineDetail }) {
   const resource = useResource(
-    `machine-config:${machine.id}`,
+    resourceKeys.machineConfiguration(machine.id),
     () =>
       panel.configuration
         .getMachineConfiguration({ machineId: machine.id })
@@ -116,17 +118,17 @@ export function MachineConfiguration({ machine }: { machine: MachineDetail }) {
   );
 }
 
-export function MachineConfigurationPage({ id }: { id: string }) {
-  const resource = useResource(`machine-config-editor:${id}`, async () => {
-    const [machine, configuration] = await Promise.all([
-      panel.machines.getMachine({ machineId: id }),
-      panel.configuration.getMachineConfiguration({ machineId: id }),
-    ]);
-    return {
-      machine: machine.machine!,
-      configuration: configuration.configuration!,
-    };
-  });
+// The page provides the current machine and configuration; the editor keeps
+// its own draft and version until publishing succeeds.
+export function MachineConfigurationPage({
+  machine,
+  configuration,
+}: {
+  machine: MachineDetail;
+  configuration: MachineConfiguration;
+}) {
+  const id = machine.id;
+  const { refresh } = useServerRefresh();
   const [published, setPublished] = useState(false);
   return (
     <div className="w-full min-w-0">
@@ -137,20 +139,11 @@ export function MachineConfigurationPage({ id }: { id: string }) {
         <div>
           <h1>发布节点配置</h1>
           <p className="subtle mt-2">
-            {resource.data?.machine.name} ·
+            {machine.name} ·
             编辑配置后生成预览，确认最终内容再发布。
           </p>
         </div>
       </div>
-      <FormError message={resource.error} />
-      {resource.error && (
-        <Button onClick={resource.refresh}>重新加载配置</Button>
-      )}
-      {resource.loading && !resource.data && (
-        <p role="status" className="subtle">
-          正在加载配置…
-        </p>
-      )}
       {published ? (
         <div className="stack">
           <Banner
@@ -166,19 +159,19 @@ export function MachineConfigurationPage({ id }: { id: string }) {
           </Link>
         </div>
       ) : (
-        resource.data &&
-        (resource.data.machine.uninstalled ? (
+        machine.uninstalled ? (
           <p className="subtle">机器已卸载，请先重新接入。</p>
         ) : (
           <ConfigurationEditor
             key={id}
-            machine={resource.data.machine}
-            initial={resource.data.configuration}
+            machine={machine}
+            initial={configuration}
             onPublished={async () => {
               setPublished(true);
+              refresh();
             }}
           />
-        ))
+        )
       )}
     </div>
   );

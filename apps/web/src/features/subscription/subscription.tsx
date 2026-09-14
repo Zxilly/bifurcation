@@ -4,12 +4,12 @@ import { Banner, LayerCard, Table, Empty, Button, Input, Select, Badge } from "@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import type { SubscriptionProfile } from "@bifurcation/rpc/panel/me";
+import type { ListSubscriptionProfilesResponse, SubscriptionProfile } from "@bifurcation/rpc/panel/me";
 import { Modal, FormError } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
-import { useResource } from "@/features/shared/use-resource";
+import { useServerRefresh } from "@/features/shared/use-refresh";
 
 type Action = { kind: "rotate" | "delete" | "pause" | "resume" | "config" | "link"; profile: SubscriptionProfile };
 
@@ -17,9 +17,10 @@ function profileState(profile: SubscriptionProfile) {
   return !profile.enabled ? "已暂停" : !profile.publishedVersion ? "草稿" : profile.generationError ? "生成失败" : "可下载";
 }
 
-export function Subscription() {
+// The page provides profiles and node context; mutations re-render it.
+export function Subscription({ profiles, context }: Pick<ListSubscriptionProfilesResponse, "profiles" | "context">) {
   const router = useRouter();
-  const resource = useResource("me:subscriptions", () => panel.me.listSubscriptionProfiles({}));
+  const { pending, refresh } = useServerRefresh();
   const [creating, setCreating] = useState(false);
   const [copyFrom, setCopyFrom] = useState<string>();
   const [name, setName] = useState("");
@@ -30,7 +31,6 @@ export function Subscription() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const data = resource.data;
 
   function startCreate(source?: SubscriptionProfile) {
     requestKey.current = crypto.randomUUID(); setCopyFrom(source?.id);
@@ -66,24 +66,23 @@ export function Subscription() {
         setNotice(action.kind === "rotate" ? "订阅链接已重置，请更新客户端的订阅地址。" : `「${action.profile.name}」已${{ pause: "暂停", resume: "恢复", delete: "删除" }[action.kind as "pause" | "resume" | "delete"]}。`);
         setAction(null);
       }
-      await resource.refresh();
+      refresh();
     } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   return (
     <>
       <div className="page-heading">
         <div><h1>接入与订阅</h1><p className="subtle mt-2">同一批节点，多套分流规则。为手机、PC 或其他用途分别创建订阅。</p></div>
-        <div className="actions"><Button onClick={resource.refresh}>刷新状态</Button><Button variant="primary" onClick={() => startCreate()}>创建订阅</Button></div>
+        <div className="actions"><Button loading={pending} onClick={refresh}>刷新状态</Button><Button variant="primary" onClick={() => startCreate()}>创建订阅</Button></div>
       </div>
-      <FormError message={resource.error} />
       {!action && !creating && !credentials && <FormError message={error} />}
       {notice && <Banner role="status" variant="secondary" className="mb-5">{notice}</Banner>}
-      {data?.context?.blocked && <Banner variant="error" className="mb-5">账号已禁用或已达到本月额度，代理接入暂停。</Banner>}
+      {context?.blocked && <Banner variant="error" className="mb-5">账号已禁用或已达到本月额度，代理接入暂停。</Banner>}
       <LayerCard className="min-w-0 overflow-x-auto p-0">
         <Table>
           <Table.Header><Table.Row><Table.Head>订阅</Table.Head><Table.Head className="hidden sm:table-cell">状态</Table.Head><Table.Head className="hidden sm:table-cell">节点</Table.Head><Table.Head>操作</Table.Head></Table.Row></Table.Header>
           <Table.Body>
-            {data?.profiles.map((profile) => <Table.Row key={profile.id}>
+            {profiles.map((profile) => <Table.Row key={profile.id}>
               <Table.Cell><Link href={`/subscription/${encodeURIComponent(profile.id)}`} className="underline font-medium">{profile.name}</Link><p className="subtle mt-1">{profile.preset === "legacy" ? "原有配置" : profile.preset === "mobile" ? "手机" : "PC"} · {profile.publishedVersion ? `已发布 v${profile.publishedVersion}` : "未发布"}</p><p className="mt-2 sm:hidden">{profileState(profile)} · {profile.nodeCount} 个节点</p></Table.Cell>
               <Table.Cell className="hidden sm:table-cell"><Badge variant={profile.generationError && profile.publishedVersion ? "destructive" : "secondary"}>{profileState(profile)}</Badge></Table.Cell>
               <Table.Cell className="hidden sm:table-cell">{profile.nodeCount}</Table.Cell>
@@ -99,7 +98,7 @@ export function Subscription() {
                 </div></details>
               </div></Table.Cell>
             </Table.Row>)}
-            {!data?.profiles.length && <Table.Row><Table.Cell colSpan={4}><Empty className="rounded-none border-0 bg-transparent" title={resource.loading ? "正在加载订阅…" : "还没有订阅"} /></Table.Cell></Table.Row>}
+            {!profiles.length && <Table.Row><Table.Cell colSpan={4}><Empty className="rounded-none border-0 bg-transparent" title="还没有订阅" /></Table.Cell></Table.Row>}
           </Table.Body>
         </Table>
       </LayerCard>
@@ -107,8 +106,8 @@ export function Subscription() {
         <h2>可用节点</h2><p className="subtle">所有订阅共享这些节点。地区与标签由管理员维护，模板据此生成选择组；各订阅的路由规则相互独立。</p>
         <LayerCard className="min-w-0 overflow-x-auto p-0"><Table>
           <Table.Header><Table.Row><Table.Head>节点</Table.Head><Table.Head>地区 / 标签</Table.Head><Table.Head>接入状态</Table.Head></Table.Row></Table.Header>
-          <Table.Body>{data?.context?.nodes.map((node) => <Table.Row key={node.machineId}><Table.Cell>{node.name}</Table.Cell><Table.Cell>{node.region || "未设置地区"}{node.tags.length > 0 && <p className="subtle">{node.tags.join(" · ")}</p>}</Table.Cell><Table.Cell>{node.available ? "可接入" : "未就绪"}</Table.Cell></Table.Row>)}
-            {!data?.context?.nodes.length && <Table.Row><Table.Cell colSpan={3}><Empty className="rounded-none border-0 bg-transparent" title="暂无可用节点" /></Table.Cell></Table.Row>}
+          <Table.Body>{context?.nodes.map((node) => <Table.Row key={node.machineId}><Table.Cell>{node.name}</Table.Cell><Table.Cell>{node.region || "未设置地区"}{node.tags.length > 0 && <p className="subtle">{node.tags.join(" · ")}</p>}</Table.Cell><Table.Cell>{node.available ? "可接入" : "未就绪"}</Table.Cell></Table.Row>)}
+            {!context?.nodes.length && <Table.Row><Table.Cell colSpan={3}><Empty className="rounded-none border-0 bg-transparent" title="暂无可用节点" /></Table.Cell></Table.Row>}
           </Table.Body>
         </Table></LayerCard>
       </section>

@@ -9,28 +9,28 @@ import {
   Badge,
 } from "@cloudflare/kumo";
 import { ResourceState } from "@/components/resource-state";
-import { ResourceFeedback } from "@/components/resource-feedback";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { startRegistration } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import type { JsonObject } from "@bufbuild/protobuf";
+import type { ApiKey, Passkey } from "@bifurcation/rpc/panel/types";
 import { Modal, FormError } from "@/components/modal";
 import { SecretResult } from "@/components/secret-result";
 import { Reauthenticate } from "./reauth";
 import { ApiError, date, errorMessage } from "@/features/shared/api";
-import { useResource } from "@/features/shared/use-resource";
+import { useServerRefresh } from "@/features/shared/use-refresh";
 import { panel } from "@/features/shared/rpc";
 import { usePasskeySupport } from "./use-passkey-support";
 
 type Action =
   | { kind: "passkey" | "password" | "key" }
   | { kind: "remove-passkey" | "revoke-key"; id: string; name: string };
-export function Account() {
+// The page provides credentials; mutations re-render it.
+export function Account({ apiKeys, passkeys }: { apiKeys: ApiKey[]; passkeys: Passkey[] }) {
   const router = useRouter();
   const passkeySupported = usePasskeySupport();
-  const keys = useResource("me:api-keys", () => panel.me.listApiKeys({}));
-  const passkeys = useResource("me:passkeys", () => panel.me.listPasskeys({}));
+  const { refresh } = useServerRefresh();
   const [action, setAction] = useState<Action | null>(null);
   const [actionOpen, setActionOpen] = useState(false);
   const [error, setError] = useState("");
@@ -70,7 +70,7 @@ export function Account() {
             response: response as unknown as JsonObject,
             name: String(values.get("name")),
           });
-          await passkeys.refresh();
+          refresh();
           setNotice("Passkey 已添加。");
           break;
         }
@@ -86,17 +86,17 @@ export function Account() {
             name: String(values.get("name")),
           });
           setSecret(result.token);
-          await keys.refresh();
+          refresh();
           break;
         }
         case "remove-passkey":
           await panel.me.deletePasskey({ id: action.id });
-          await passkeys.refresh();
+          refresh();
           setNotice("Passkey 已移除。");
           break;
         case "revoke-key":
           await panel.me.revokeApiKey({ id: action.id });
-          await keys.refresh();
+          refresh();
           setNotice("API Key 已撤销。");
           break;
       }
@@ -144,11 +144,10 @@ export function Account() {
             Passkey。
           </p>
         )}
-        <ResourceFeedback {...passkeys} onRetry={passkeys.refresh} />
         <LayerCard className="min-w-0 overflow-x-auto p-0">
           <Table className="w-full table-fixed tabular-nums">
             <Table.Header
-              className={!passkeys.data?.passkeys.length ? "hidden" : undefined}
+              className={!passkeys.length ? "hidden" : undefined}
             >
               <Table.Row>
                 <Table.Head className="w-2/3 sm:w-2/5">名称</Table.Head>
@@ -162,7 +161,7 @@ export function Account() {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {passkeys.data?.passkeys.map((key) => (
+              {passkeys.map((key) => (
                 <Table.Row key={key.id}>
                   <Table.Cell className="break-words">
                     {key.name}
@@ -193,23 +192,13 @@ export function Account() {
                   </Table.Cell>
                 </Table.Row>
               ))}
-              {!passkeys.data?.passkeys.length && (
+              {!passkeys.length && (
                 <Table.Row>
                   <Table.Cell colSpan={4}>
                     <ResourceState
-                      loading={passkeys.loading}
-                      title={
-                        passkeys.loading
-                          ? "正在加载…"
-                          : passkeys.error
-                            ? "未能加载 Passkey"
-                            : "尚未添加 Passkey"
-                      }
-                      description={
-                        !passkeys.loading && !passkeys.error
-                          ? "当前可使用后备密码登录。需要用设备解锁登录时，可添加 Passkey。"
-                          : undefined
-                      }
+                      loading={false}
+                      title="尚未添加 Passkey"
+                      description="当前可使用后备密码登录。需要用设备解锁登录时，可添加 Passkey。"
                     />
                   </Table.Cell>
                 </Table.Row>
@@ -241,11 +230,10 @@ export function Account() {
         <p>
           用于脚本和自动化，权限随当前账号变化。完整密钥仅创建时显示；撤销后调用立即失效。
         </p>
-        <ResourceFeedback {...keys} onRetry={keys.refresh} />
         <LayerCard className="min-w-0 overflow-x-auto p-0">
           <Table className="w-full table-fixed tabular-nums">
             <Table.Header
-              className={!keys.data?.apiKeys.length ? "hidden" : undefined}
+              className={!apiKeys.length ? "hidden" : undefined}
             >
               <Table.Row>
                 <Table.Head className="w-2/3 sm:w-1/4">名称</Table.Head>
@@ -262,7 +250,7 @@ export function Account() {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {keys.data?.apiKeys.map((key) => (
+              {apiKeys.map((key) => (
                 <Table.Row key={key.id}>
                   <Table.Cell className="break-words">
                     {key.name}
@@ -301,23 +289,13 @@ export function Account() {
                   </Table.Cell>
                 </Table.Row>
               ))}
-              {!keys.data?.apiKeys.length && (
+              {!apiKeys.length && (
                 <Table.Row>
                   <Table.Cell colSpan={5}>
                     <ResourceState
-                      loading={keys.loading}
-                      title={
-                        keys.loading
-                          ? "正在加载…"
-                          : keys.error
-                            ? "未能加载 API Key"
-                            : "尚未创建 API Key"
-                      }
-                      description={
-                        !keys.loading && !keys.error
-                          ? "仅在需要脚本或自动化调用时创建；日常使用面板无需 API Key。"
-                          : undefined
-                      }
+                      loading={false}
+                      title="尚未创建 API Key"
+                      description="仅在需要脚本或自动化调用时创建；日常使用面板无需 API Key。"
                     />
                   </Table.Cell>
                 </Table.Row>

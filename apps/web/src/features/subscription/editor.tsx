@@ -9,7 +9,6 @@ import { FormError } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
-import { useResource } from "@/features/shared/use-resource";
 
 const split = (value: string) => value.split(/[,，]+/).map((part) => part.trim()).filter(Boolean);
 
@@ -18,13 +17,11 @@ function ListInput({ label, values, placeholder, onEdit, onCommit }: { label: st
   return <Input label={label} value={text} placeholder={placeholder} onChange={(event) => { setText(event.target.value); onEdit(); }} onBlur={() => onCommit(split(text))} />;
 }
 
-export function SubscriptionEditorPage({ id }: { id: string }) {
-  const resource = useResource(`me:subscription:${id}`, () => panel.me.getSubscriptionProfile({ id }).then((r) => r.profile!));
+// The page provides the profile; the editor owns the draft from then on.
+export function SubscriptionEditorPage({ profile }: { profile: SubscriptionProfile }) {
   return <div className="w-full min-w-0">
     <Link href="/subscription" className="subtle underline">返回订阅列表</Link>
-    <FormError message={resource.error} />
-    {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
-    {resource.data ? <Editor key={id} initial={resource.data} /> : <p role="status" className="subtle mt-5">{resource.loading ? "正在加载订阅…" : "订阅暂时无法加载。"}</p>}
+    <Editor key={profile.id} initial={profile} />
   </div>;
 }
 
