@@ -6,9 +6,10 @@ import { getDatabase } from "@/server/db";
 import { ConfigurationStore } from "@/server/configuration/store";
 import { MachineStore } from "@/server/modules/machines/store";
 import { ReleaseStore } from "@/server/releases/store";
-import { panelCall } from "./common";
+import { getMachine, getMachineUpgrades, listMachines } from "@/server/modules/machines/queries";
+import { panelCall, requirePrincipal } from "./common";
 import { taskHub } from "../task-hub";
-import { toProtoMachine, toProtoMachineDetail, toProtoMachineUpgrades, toProtoTask } from "./mappers";
+import { toProtoMachineDetail, toProtoTask } from "./mappers";
 
 const tagsInput = z.array(z.string().trim().min(1).max(32)).max(20).transform((tags) => [...new Set(tags)]);
 
@@ -48,8 +49,8 @@ const inspectInput = z.object({
 });
 
 export const machinesImplementation: ServiceImpl<typeof AdminMachineService> = {
-  listMachines() {
-    return panelCall(() => ({ machines: new MachineStore().list().map(toProtoMachine) }));
+  listMachines(_request, context) {
+    return panelCall(() => listMachines(requirePrincipal(context)));
   },
 
   createMachine(request) {
@@ -58,8 +59,8 @@ export const machinesImplementation: ServiceImpl<typeof AdminMachineService> = {
     }));
   },
 
-  getMachine(request) {
-    return panelCall(() => ({ machine: toProtoMachineDetail(new MachineStore().detail(request.machineId)) }));
+  getMachine(request, context) {
+    return panelCall(() => ({ machine: getMachine(requirePrincipal(context), request.machineId) }));
   },
 
   updateMachine(request) {
@@ -134,8 +135,8 @@ export const machinesImplementation: ServiceImpl<typeof AdminMachineService> = {
     });
   },
 
-  getMachineUpgrades(request) {
-    return panelCall(() => ({ upgrades: toProtoMachineUpgrades(new ReleaseStore().get(request.machineId)) }));
+  getMachineUpgrades(request, context) {
+    return panelCall(() => ({ upgrades: getMachineUpgrades(requirePrincipal(context), request.machineId) }));
   },
 
   enqueueUpgrade(request) {

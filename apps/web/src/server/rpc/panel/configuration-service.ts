@@ -2,8 +2,9 @@ import "server-only";
 import type { ServiceImpl } from "@connectrpc/connect";
 import { AdminConfigurationService, type MachineConfigurationInput as ProtoSettings } from "@bifurcation/rpc/panel/configuration";
 import { ConfigurationStore } from "@/server/configuration/store";
+import { getMachineConfiguration } from "@/server/configuration/queries";
 import { panelCall, requirePrincipal } from "./common";
-import { toProtoConfiguration, toProtoPreview, toProtoTask } from "./mappers";
+import { toProtoPreview, toProtoTask } from "./mappers";
 
 // Converts the wire shape back into the discriminated union the domain
 // validator expects; validation itself stays in the configuration store.
@@ -28,8 +29,8 @@ function settingsFromProto(settings: ProtoSettings | undefined) {
 }
 
 export const configurationImplementation: ServiceImpl<typeof AdminConfigurationService> = {
-  getMachineConfiguration(request) {
-    return panelCall(() => ({ configuration: toProtoConfiguration(new ConfigurationStore().get(request.machineId)) }));
+  getMachineConfiguration(request, context) {
+    return panelCall(() => ({ configuration: getMachineConfiguration(requirePrincipal(context), request.machineId) }));
   },
 
   previewConfiguration(request, context) {

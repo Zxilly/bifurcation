@@ -2,7 +2,8 @@ import "server-only";
 import type { ServiceImpl } from "@connectrpc/connect";
 import { AdminUserService, FlowPurpose } from "@bifurcation/rpc/panel/users";
 import { Role, UserStatus } from "@bifurcation/rpc/panel/types";
-import { createUser, createUserFlow, listUsers, updateUser } from "@/server/users/service";
+import { createUser, createUserFlow, updateUser } from "@/server/users/service";
+import { listUsers } from "@/server/users/queries";
 import { panelCall, requirePrincipal } from "./common";
 import { toProtoUser } from "./mappers";
 
@@ -25,7 +26,7 @@ const purposeNames: Record<FlowPurpose, "activation" | "recovery"> = {
 
 export const usersImplementation: ServiceImpl<typeof AdminUserService> = {
   listUsers(_request, context) {
-    return panelCall(() => ({ users: listUsers(requirePrincipal(context)).map(toProtoUser) }));
+    return panelCall(() => listUsers(requirePrincipal(context)));
   },
 
   createUser(request, context) {

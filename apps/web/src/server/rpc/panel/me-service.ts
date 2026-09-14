@@ -6,8 +6,6 @@ import {
   changePassword,
   createApiKey,
   deletePasskey,
-  listApiKeys,
-  listPasskeys,
   revokeApiKey,
   sessionCookie,
 } from "@/server/identity/service";
@@ -15,9 +13,11 @@ import { newPasskeyOptions, newPasskeyVerify } from "@/server/identity/webauthn"
 import { SubscriptionProfileStore } from "@/server/subscription/profiles";
 import { draftSchema } from "@/server/subscription/template";
 import { SubscriptionStore } from "@/server/subscription/store";
-import { UsageStore } from "@/server/usage/store";
+import { getMyUsage } from "@/server/usage/queries";
+import { listApiKeys, listPasskeys } from "@/server/identity/account-queries";
+import { getSubscriptionProfile, listSubscriptionProfiles } from "@/server/subscription/queries";
 import { panelCall, requirePrincipal } from "./common";
-import { authentications, grainNames, toProtoApiKey, toProtoPasskey, toProtoSubscription, toProtoUsage, toProtoUser } from "./mappers";
+import { authentications, grainNames, toProtoApiKey, toProtoPasskey, toProtoSubscription, toProtoUser } from "./mappers";
 
 export const meImplementation: ServiceImpl<typeof MeService> = {
   getMe(_request, context) {
@@ -32,27 +32,21 @@ export const meImplementation: ServiceImpl<typeof MeService> = {
   },
 
   getMyUsage(request, context) {
-    return panelCall(() => {
-      const principal = requirePrincipal(context);
-      const usage = new UsageStore().query({
+    return panelCall(() => ({
+      usage: getMyUsage(requirePrincipal(context), {
         start: request.start === undefined ? undefined : Number(request.start),
         end: request.end === undefined ? undefined : Number(request.end),
         grain: grainNames[request.grain],
         machineId: request.machineId,
-        userId: principal.user.id,
-      });
-      return { usage: toProtoUsage(usage) };
-    });
+      }),
+    }));
   },
 
   listSubscriptionProfiles(_request, context) {
-    return panelCall(() => {
-      const userId = requirePrincipal(context).user.id;
-      return { profiles: new SubscriptionProfileStore().list(userId), context: toProtoSubscription({ ...new SubscriptionStore().get(userId), url: "", configJson: "" }) };
-    });
+    return panelCall(() => listSubscriptionProfiles(requirePrincipal(context)));
   },
   getSubscriptionProfile(request, context) {
-    return panelCall(() => ({ profile: new SubscriptionProfileStore().get(requirePrincipal(context).user.id, request.id) }));
+    return panelCall(() => ({ profile: getSubscriptionProfile(requirePrincipal(context), request.id) }));
   },
   createSubscriptionProfile(request, context) {
     return panelCall(() => ({ profile: new SubscriptionProfileStore().create(requirePrincipal(context).user.id, request) }));
@@ -91,7 +85,7 @@ export const meImplementation: ServiceImpl<typeof MeService> = {
   },
 
   listApiKeys(_request, context) {
-    return panelCall(() => ({ apiKeys: listApiKeys(requirePrincipal(context)).map(toProtoApiKey) }));
+    return panelCall(() => listApiKeys(requirePrincipal(context)));
   },
 
   createApiKey(request, context) {
@@ -109,7 +103,7 @@ export const meImplementation: ServiceImpl<typeof MeService> = {
   },
 
   listPasskeys(_request, context) {
-    return panelCall(() => ({ passkeys: listPasskeys(requirePrincipal(context)).map(toProtoPasskey) }));
+    return panelCall(() => listPasskeys(requirePrincipal(context)));
   },
 
   newPasskeyOptions(_request, context) {
