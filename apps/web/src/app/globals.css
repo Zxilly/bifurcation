@@ -49,6 +49,15 @@ a {
   min-width: 0;
   background: var(--color-kumo-elevated);
 }
+.page-frame {
+  width: 100%;
+  min-width: 0;
+  max-width: 1480px;
+  margin-inline: auto;
+}
+html {
+  scrollbar-gutter: stable;
+}
 .page-heading {
   display: flex;
   gap: 16px;
@@ -137,15 +146,6 @@ a {
   margin-top: 0;
 }
 
-.overview-workspace,
-.users-workspace {
-  max-width: 1480px;
-  margin-inline: auto;
-}
-.account-workspace {
-  max-width: 1240px;
-  margin-inline: auto;
-}
 .admin-overview .metric-row {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -226,10 +226,6 @@ a {
 }
 
 /* Machine workspace: scoped layout around native Kumo components. */
-.machine-workspace {
-  max-width: 1480px;
-  margin-inline: auto;
-}
 .machine-heading {
   display: flex;
   align-items: flex-start;

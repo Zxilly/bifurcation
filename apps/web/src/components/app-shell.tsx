@@ -143,7 +143,7 @@ function ShellContent({
           </Sidebar.Content>
         </Sidebar>
         <main className="page-content" id="main-content">
-          {children}
+          <div className="page-frame">{children}</div>
         </main>
       </div>
     </>

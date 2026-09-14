@@ -129,7 +129,7 @@ export function MachineConfigurationPage({ id }: { id: string }) {
   });
   const [published, setPublished] = useState(false);
   return (
-    <div className="mx-auto w-full max-w-5xl min-w-0">
+    <div className="w-full min-w-0">
       <Link href={`/admin/machines/${id}`} className="subtle underline">
         返回机器详情
       </Link>

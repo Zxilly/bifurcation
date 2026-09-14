@@ -20,7 +20,7 @@ function ListInput({ label, values, placeholder, onEdit, onCommit }: { label: st
 
 export function SubscriptionEditorPage({ id }: { id: string }) {
   const resource = useResource(`me:subscription:${id}`, () => panel.me.getSubscriptionProfile({ id }).then((r) => r.profile!));
-  return <div className="mx-auto w-full max-w-6xl min-w-0">
+  return <div className="w-full min-w-0">
     <Link href="/subscription" className="subtle underline">返回订阅列表</Link>
     <FormError message={resource.error} />
     {resource.error && <Button onClick={resource.refresh}>重新加载</Button>}
