@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Button,
-  ClipboardText,
-  Collapsible,
-  InputArea,
-} from "@cloudflare/kumo";
+import { Button, ClipboardText } from "@cloudflare/kumo";
 import { Modal } from "./modal";
 export function CopyValue({
   value,
@@ -15,29 +10,12 @@ export function CopyValue({
   copyLabel?: string;
 }) {
   return (
-    <div className="stack min-w-0 gap-3">
-      <ClipboardText
-        text={value}
-        size="base"
-        labels={{ copyAction: copyLabel }}
-        tooltip={{ text: copyLabel, copiedText: "已复制" }}
-      />
-      <Collapsible.Root>
-        <Collapsible.DefaultTrigger>
-          查看完整内容 / 手动复制
-        </Collapsible.DefaultTrigger>
-        <Collapsible.DefaultPanel>
-          <InputArea
-            label="完整内容"
-            description="未出现“已复制”提示时，可选择这里的完整文本手动复制。"
-            value={value}
-            readOnly
-            className="font-mono text-sm"
-            onFocus={(event) => event.currentTarget.select()}
-          />
-        </Collapsible.DefaultPanel>
-      </Collapsible.Root>
-    </div>
+    <ClipboardText
+      text={value}
+      size="base"
+      labels={{ copyAction: copyLabel }}
+      tooltip={{ text: copyLabel, copiedText: "已复制" }}
+    />
   );
 }
 export function SecretResult({
