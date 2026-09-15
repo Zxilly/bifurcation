@@ -1,5 +1,12 @@
 import { randomBytes } from "node:crypto";
-import { test, expect, activate, passwordLogin, logout } from "./fixtures";
+import {
+  test,
+  expect,
+  activate,
+  copyValueText,
+  passwordLogin,
+  logout,
+} from "./fixtures";
 import { rpc } from "./rpc";
 
 test("a browser without WebAuthn can activate and log in using only a short password", async ({
@@ -132,14 +139,9 @@ test("Passkey activation, login, recovery and password change use real authentic
     await expect(
       page.getByRole("heading", { name: "恢复链接", exact: true }),
     ).toBeVisible();
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: "查看完整内容 / 手动复制", exact: true })
-      .click();
-    const recoveryUrl = await page
-      .getByRole("dialog")
-      .getByLabel("完整内容", { exact: true })
-      .inputValue();
+    const recoveryUrl = await copyValueText(
+      page.getByRole("dialog"),
+    ).innerText();
     // Model a lost local credential: the server still has the old Passkey until
     // successful recovery atomically replaces it with the newly registered one.
     await authenticator.cdp.send("WebAuthn.clearCredentials", {

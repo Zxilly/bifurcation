@@ -1,4 +1,4 @@
-import { test, expect, activate } from "./fixtures";
+import { test, expect, activate, copyValueText } from "./fixtures";
 
 test("Kumo selection, clipboard fallback and mobile navigation preserve user actions", async ({
   page,
@@ -54,21 +54,10 @@ test("Kumo selection, clipboard fallback and mobile navigation preserve user act
     .getByRole("button", { name: "复制", exact: true })
     .click();
   await expect(page.getByText("已复制", { exact: true })).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "查看完整内容 / 手动复制", exact: true })
-    .click();
-  const fullText = page.getByLabel("完整内容", { exact: true });
+  const fullText = copyValueText(page.getByRole("dialog"));
   await expect(fullText).toBeVisible();
-  const value = await fullText.inputValue();
+  const value = await fullText.innerText();
   expect(value.startsWith(`${app.origin}/activate?token=`)).toBe(true);
-  await fullText.focus();
-  expect(
-    await fullText.evaluate(
-      (element: HTMLTextAreaElement) =>
-        element.selectionStart === 0 &&
-        element.selectionEnd === element.value.length,
-    ),
-  ).toBe(true);
   await page.getByRole("button", { name: "完成", exact: true }).click();
   await expect(
     page

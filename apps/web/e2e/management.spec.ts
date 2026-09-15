@@ -1,4 +1,4 @@
-import { test, expect, activate } from "./fixtures";
+import { test, expect, activate, copyValueText } from "./fixtures";
 import { connectMachine } from "./machine-fixture";
 import { rpc } from "./rpc";
 
@@ -18,10 +18,7 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
   await expect(
     page.getByRole("heading", { name: "API Key 已创建", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "查看完整内容 / 手动复制", exact: true })
-    .click();
-  const token = await page.getByLabel("完整内容", { exact: true }).inputValue();
+  const token = await copyValueText(page.getByRole("dialog")).innerText();
   expect(token.startsWith("bf_key_")).toBe(true);
   await page.getByRole("button", { name: "完成", exact: true }).click();
   await page.reload();
@@ -82,12 +79,7 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
   const tokenSection = page.locator("section").filter({
     has: page.getByRole("heading", { name: "机器 Token", exact: true }),
   });
-  await tokenSection
-    .getByRole("button", { name: "查看完整内容 / 手动复制", exact: true })
-    .click();
-  const machineToken = await tokenSection
-    .getByLabel("完整内容", { exact: true })
-    .inputValue();
+  const machineToken = await copyValueText(tokenSection).innerText();
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Test node", exact: true }),
@@ -125,12 +117,7 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
     const newTokenSection = page.locator("section").filter({
       has: page.getByRole("heading", { name: "机器 Token", exact: true }),
     });
-    await newTokenSection
-      .getByRole("button", { name: "查看完整内容 / 手动复制", exact: true })
-      .click();
-    const newToken = await newTokenSection
-      .getByLabel("完整内容", { exact: true })
-      .inputValue();
+    const newToken = await copyValueText(newTokenSection).innerText();
     expect(newToken === machineToken).toBe(false);
     const machineId = new URL(machineUrl).pathname.split("/admin/machines/")[1];
     const detail = (

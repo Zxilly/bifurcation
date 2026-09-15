@@ -111,7 +111,7 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
       page.getByRole("cell", { name: "Shared node", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText("查看完整内容 / 手动复制", { exact: true }),
+      page.getByRole("button", { name: "复制", exact: true }),
     ).toHaveCount(0);
     const ids: string[] = [];
     for (const [name, preset, level] of [

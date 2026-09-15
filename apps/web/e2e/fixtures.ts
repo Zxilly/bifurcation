@@ -1,4 +1,4 @@
-import { test as base, expect, type Page } from "@playwright/test";
+import { test as base, expect, type Locator, type Page } from "@playwright/test";
 import { randomBytes } from "node:crypto";
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { access, mkdtemp, rm } from "node:fs/promises";
@@ -147,6 +147,13 @@ export const test = base.extend<{ app: TestApp; initializeAdmin: boolean }>({
 });
 
 export { expect };
+
+/** The full text rendered by a CopyValue inside `scope` (the display is CSS-truncated only). */
+export function copyValueText(scope: Locator | Page): Locator {
+  return scope
+    .getByRole("button", { name: "复制", exact: true })
+    .locator("xpath=preceding-sibling::span[1]");
+}
 
 export async function activate(page: Page, app: TestApp) {
   const cdp = await page.context().newCDPSession(page);
