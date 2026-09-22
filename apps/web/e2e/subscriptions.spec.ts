@@ -139,12 +139,12 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
       await input.fill(JSON.stringify(json));
       await page.getByRole("button", { name: "保存草稿", exact: true }).click();
       await expect(
-        page.getByText("草稿已保存，客户端仍使用已发布配置。", { exact: true }),
+        page.getByText("草稿已保存。生成预览并发布后，客户端才可下载配置。", { exact: true }),
       ).toBeVisible();
       await page.reload();
       expect(await input.value()).toBe(JSON.stringify(json));
       await page
-        .getByRole("button", { name: "节点组与属性", exact: true })
+        .getByRole("tab", { name: "节点组与属性", exact: true })
         .click();
       await page
         .getByLabel("select-ai · 地区", { exact: true })
@@ -221,7 +221,7 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
     await phone.getByRole("button", { name: "手机规则 的更多操作", exact: true }).click();
     await page.getByRole("menuitem", { name: "暂停订阅", exact: true }).click();
     await page
-      .getByRole("dialog")
+      .getByRole("alertdialog")
       .getByRole("button", { name: "暂停订阅", exact: true })
       .click();
     await expect(phone.getByText("已暂停", { exact: true })).toBeVisible();

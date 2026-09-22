@@ -3,9 +3,9 @@
 import { Button, Banner, Sidebar } from "@cloudflare/kumo";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSidebar } from "@cloudflare/kumo/components/sidebar";
-import { ListIcon, SignOutIcon } from "@phosphor-icons/react";
+import { ChartBarIcon, GaugeIcon, GearSixIcon, LinkIcon, ListIcon, SignOutIcon, HardDrivesIcon, UsersIcon, type Icon } from "@phosphor-icons/react";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 
@@ -36,7 +36,7 @@ export function AppShell({
   );
 }
 
-export function NavLink({ href, label }: { href: string; label: string }) {
+export function NavLink({ href, label, icon: NavIcon }: { href: string; label: string; icon: Icon }) {
   const path = usePathname();
   const router = useRouter();
   const { setOpenMobile } = useSidebar();
@@ -48,6 +48,7 @@ export function NavLink({ href, label }: { href: string; label: string }) {
       active={active}
       aria-current={active ? "page" : undefined}
       onClick={(event) => {
+        if (event.defaultPrevented) return;
         if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
           return;
         event.preventDefault();
@@ -55,6 +56,7 @@ export function NavLink({ href, label }: { href: string; label: string }) {
         router.push(href);
       }}
     >
+      <NavIcon size={18} aria-hidden weight={active ? "fill" : "regular"} />
       {label}
     </Sidebar.MenuButton>
   );
@@ -65,9 +67,9 @@ export function AdminNavigation() {
     <Sidebar.Group>
       <Sidebar.GroupLabel>管理</Sidebar.GroupLabel>
       <Sidebar.Menu>
-        <NavLink href="/admin" label="管理概览" />
-        <NavLink href="/admin/machines" label="机器" />
-        <NavLink href="/admin/users" label="用户" />
+        <NavLink href="/admin" label="管理概览" icon={GaugeIcon} />
+        <NavLink href="/admin/machines" label="机器" icon={HardDrivesIcon} />
+        <NavLink href="/admin/users" label="用户" icon={UsersIcon} />
       </Sidebar.Menu>
     </Sidebar.Group>
   );
@@ -84,6 +86,10 @@ function ShellContent({
 }) {
   const router = useRouter();
   const { openMobile, setOpenMobile } = useSidebar();
+  const path = usePathname();
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [path, setOpenMobile]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   async function logout() {
@@ -101,6 +107,7 @@ function ShellContent({
   }
   return (
     <>
+      <a href="#main-content" className="skip-link">跳到主要内容</a>
       <header className="shell-header">
         <div className="actions">
           <Button
@@ -116,7 +123,7 @@ function ShellContent({
             bifurcation
           </Link>
         </div>
-        <div className="actions">
+        <div className="actions shell-identity">
           {identity}
           <Button
             variant="ghost"
@@ -144,14 +151,14 @@ function ShellContent({
             <Sidebar.Group>
               <Sidebar.GroupLabel>我的空间</Sidebar.GroupLabel>
               <Sidebar.Menu>
-                <NavLink href="/overview" label="我的概览" />
-                <NavLink href="/subscription" label="接入与订阅" />
-                <NavLink href="/account" label="账号设置" />
+                <NavLink href="/overview" label="我的概览" icon={ChartBarIcon} />
+                <NavLink href="/subscription" label="接入与订阅" icon={LinkIcon} />
+                <NavLink href="/account" label="账号设置" icon={GearSixIcon} />
               </Sidebar.Menu>
             </Sidebar.Group>
           </Sidebar.Content>
         </Sidebar>
-        <main className="page-content" id="main-content">
+        <main className="page-content" id="main-content" tabIndex={-1}>
           <div className="page-frame">{children}</div>
         </main>
       </div>

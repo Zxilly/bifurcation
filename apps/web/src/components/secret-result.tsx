@@ -1,6 +1,8 @@
 "use client";
 
-import { Button, ClipboardText } from "@cloudflare/kumo";
+import { Button, Input } from "@cloudflare/kumo";
+import { CheckIcon, CopyIcon } from "@phosphor-icons/react";
+import { useState } from "react";
 import { Modal } from "./modal";
 export function CopyValue({
   value,
@@ -9,13 +11,33 @@ export function CopyValue({
   value: string;
   copyLabel?: string;
 }) {
+  const [copiedValue, setCopiedValue] = useState<string | null>(null);
+  const [manualValue, setManualValue] = useState<string | null>(null);
+  const [failedValue, setFailedValue] = useState<string | null>(null);
+  const copied = copiedValue === value;
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedValue(value);
+      setFailedValue(null);
+    } catch {
+      setCopiedValue(null);
+      setFailedValue(value);
+      setManualValue(value);
+    }
+  }
   return (
-    <ClipboardText
-      text={value}
-      size="base"
-      labels={{ copyAction: copyLabel }}
-      tooltip={{ text: copyLabel, copiedText: "已复制" }}
-    />
+    <div className="min-w-0 space-y-3">
+      <div className="flex min-w-0 items-center gap-2 rounded-lg bg-kumo-recessed p-2">
+        <span className="min-w-0 flex-1 truncate px-1 font-mono text-sm">{value}</span>
+        <Button aria-label={copyLabel} icon={copied ? CheckIcon : CopyIcon} onClick={() => void copy()}>{copied ? "已复制" : copyLabel}</Button>
+        <Button variant="ghost" onClick={() => setManualValue(manualValue === value ? null : value)} aria-expanded={manualValue === value}>手动复制</Button>
+      </div>
+      <div role="status" className="subtle text-sm">
+        {failedValue === value ? "无法访问剪贴板，请在下方选择完整内容后手动复制。" : copied ? "已复制到剪贴板。" : null}
+      </div>
+      {manualValue === value && <Input label="完整内容" value={value} readOnly onFocus={(event) => event.currentTarget.select()} />}
+    </div>
   );
 }
 export function SecretResult({

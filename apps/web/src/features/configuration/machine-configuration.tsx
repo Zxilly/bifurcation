@@ -19,6 +19,7 @@ import Link from "next/link";
 import { FormError } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
 import { JsonEditor } from "@/components/json-editor";
+import { UnsavedChanges } from "@/components/unsaved-changes";
 import { Reauthenticate } from "@/features/identity/reauth";
 import { ApiError, errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
@@ -222,6 +223,12 @@ function ConfigurationEditor({
   const [baseJson, setBaseJson] = useState(
     JSON.stringify(existing?.baseJson ?? {}, null, 2),
   );
+  const editorValues = JSON.stringify([
+    listen, trojanPort, hysteria2Port, mode, serverName, acmeEmail,
+    certificatePath, privateKeyPath, certificatePem, privateKeyPem, baseJson,
+  ]);
+  const [savedValues, setSavedValues] = useState(editorValues);
+  const dirty = editorValues !== savedValues;
   const [preview, setPreview] = useState<ConfigurationPreview | null>(null);
   const previewHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -344,6 +351,7 @@ function ConfigurationEditor({
         expectedVersion: preview.expectedVersion,
         requestKey: publishRequestKey,
       });
+      setSavedValues(editorValues);
       await onPublished();
     } catch (e) {
       await handleError(e);
@@ -353,10 +361,11 @@ function ConfigurationEditor({
   }
   return (
     <>
+      <UnsavedChanges dirty={dirty} />
       <LayerCard render={<section />} className="panel">
         <div className="stack">
           <p className="subtle">
-            {machine.name} · 当前版本 {version}
+            {machine.name} · 当前版本 {version}{dirty ? " · 有未发布修改" : ""}
           </p>
           <form onSubmit={createPreview} onChange={() => setPreview(null)}>
             <fieldset disabled={busy} className="stack">

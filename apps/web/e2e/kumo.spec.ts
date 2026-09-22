@@ -58,6 +58,11 @@ test("Kumo selection, clipboard fallback and mobile navigation preserve user act
   await expect(fullText).toBeVisible();
   const value = await fullText.innerText();
   expect(value.startsWith(`${app.origin}/activate?token=`)).toBe(true);
+  await expect(page.getByRole("status")).toContainText("无法访问剪贴板");
+  const manual = page.getByRole("textbox", { name: "完整内容", exact: true });
+  await expect(manual).toHaveValue(value);
+  await manual.focus();
+  expect(await manual.evaluate((input: HTMLInputElement) => input.selectionEnd! - input.selectionStart!)).toBe(value.length);
   await page.getByRole("button", { name: "完成", exact: true }).click();
   await expect(
     page

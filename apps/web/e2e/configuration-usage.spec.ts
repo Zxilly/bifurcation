@@ -252,7 +252,7 @@ test("configuration preview and publish, independent subscription resets, and re
       .body.subscription;
     await page.getByRole("menuitem", { name: "重置订阅链接", exact: true }).click();
     await page
-      .getByRole("dialog")
+      .getByRole("alertdialog")
       .getByRole("button", { name: "重置订阅链接", exact: true })
       .click();
     await expect(
@@ -271,7 +271,7 @@ test("configuration preview and publish, independent subscription resets, and re
       .getByRole("button", { name: "重置代理凭据", exact: true })
       .click();
     await page
-      .getByRole("dialog")
+      .getByRole("alertdialog")
       .getByRole("button", { name: "重置代理凭据", exact: true })
       .click();
     await expect(

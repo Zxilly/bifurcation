@@ -12,6 +12,7 @@ import {
   LinkButton,
 } from "@cloudflare/kumo";
 import { ResourceState } from "@/components/resource-state";
+import { ResourceFeedback } from "@/components/resource-feedback";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -132,7 +133,7 @@ export function Machines() {
         </Button>
       </div>
       <section className="panel-section stack">
-        <FormError message={resource.error} />
+        <ResourceFeedback error={resource.error} updatedAt={resource.updatedAt} refreshing={resource.refreshing} onRetry={resource.refresh} />
         <div className="machine-list-toolbar">
           <Input
             aria-label="搜索机器"
@@ -156,6 +157,7 @@ export function Machines() {
           <Button
             variant="ghost"
             icon={ArrowClockwiseIcon}
+            loading={resource.refreshing}
             onClick={resource.refresh}
           >
             刷新
@@ -472,7 +474,7 @@ export function MachineDetailPage({ id }: { id: string }) {
     return (
       <LayerCard render={<div />} className="panel stack">
         <h1>机器详情</h1>
-        <FormError message={resource.error} />
+        <ResourceFeedback error={resource.error} updatedAt={resource.updatedAt} refreshing={resource.refreshing} onRetry={resource.refresh} />
         {resource.loading ? (
           <p role="status">正在加载…</p>
         ) : (
