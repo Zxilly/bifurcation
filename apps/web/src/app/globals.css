@@ -36,6 +36,68 @@ body {
   flex-wrap: nowrap;
 }
 
+.json-editor-workspace {
+  min-width: 0;
+  scroll-margin-top: 16px;
+}
+.json-editor-toolbar {
+  position: sticky;
+  top: 8px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 8px 8px 0 0;
+  background: var(--color-kumo-base);
+}
+.json-editor-workspace .json-editor-host,
+.json-editor-placeholder {
+  height: clamp(360px, 56dvh, 760px);
+}
+.json-editor-workspace[data-expanded="true"] .json-editor-host {
+  height: max(640px, calc(100dvh - 160px));
+}
+.json-editor-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 0 0 8px 8px;
+  background: var(--color-kumo-base);
+  color: var(--text-color-kumo-subtle);
+  font-size: 12px;
+}
+.json-editor-problems {
+  max-height: 240px;
+  overflow: auto;
+  margin-top: 8px;
+  border-radius: 8px;
+  background: var(--color-kumo-recessed);
+  font-size: 13px;
+}
+.json-editor-problem {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.json-editor-problem:hover {
+  background: var(--color-kumo-interact);
+}
+.json-editor-problem:focus-visible {
+  outline: 2px solid var(--color-kumo-focus);
+  outline-offset: -2px;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;

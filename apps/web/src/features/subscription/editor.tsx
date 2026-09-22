@@ -89,15 +89,15 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
       setConflict(true); setPreview(null); setError("");
     } else setError(errorMessage(error));
   }
-  async function saveDraft() {
-    const result = await panel.me.saveSubscriptionDraft({ id: profile.id, expectedVersion: profile.version, name, draft: { templateJson, bindings: bindings.map(bindingInput) } });
+  async function saveDraft(currentTemplate: string) {
+    const result = await panel.me.saveSubscriptionDraft({ id: profile.id, expectedVersion: profile.version, name, draft: { templateJson: currentTemplate, bindings: bindings.map(bindingInput) } });
     setProfile(result.profile!); setDirty(false); setConflict(false);
     return result.profile!;
   }
-  async function save(thenPreview: boolean) {
+  async function save(thenPreview: boolean, currentTemplate = templateJson) {
     setPending(thenPreview ? "preview" : "save"); setError(""); setPreview(null); setNotice("");
     try {
-      const saved = dirty ? await saveDraft() : profile;
+      const saved = dirty || currentTemplate !== templateJson ? await saveDraft(currentTemplate) : profile;
       if (thenPreview) setPreview(await panel.me.previewSubscriptionProfile({ id: profile.id, expectedVersion: saved.version }));
       else setNotice(saved.publishedVersion ? "草稿已保存，客户端仍使用已发布配置。" : "草稿已保存。生成预览并发布后，客户端才可下载配置。");
     } catch (error) { handleError(error); } finally { setPending(null); }
@@ -134,7 +134,7 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
 
   return <>
     <UnsavedChanges dirty={dirty} />
-    <div className="mt-5 mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="mt-4 mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         <h1>编辑订阅配置</h1><p className="subtle mt-2 break-words">{profile.name}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -157,7 +157,7 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
       </div>
     </Banner>}
     {!profile.enabled && <Banner variant="alert" className="mb-5">此订阅已暂停。发布配置不会恢复下载，请在订阅列表中恢复。</Banner>}
-    <LayerCard render={<section />} className="panel stack">
+    <LayerCard render={<section />} className="panel flex min-w-0 flex-col gap-4">
       <Input label="订阅名称" value={name} maxLength={64} disabled={busy} onChange={(event) => { setName(event.target.value); change(); }} />
       <Tabs variant="underline" value={tab} onValueChange={(value) => setTab(value as EditorTab)}
         labels={{ scrollStart: "向左查看更多标签", scrollEnd: "向右查看更多标签" }}
@@ -165,41 +165,50 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
           ...item, render: <button id={`subscription-tab-${item.value}`} aria-controls={`subscription-panel-${item.value}`} />,
         }))}
       />
-      <div id={`subscription-panel-${tab}`} role="tabpanel" aria-labelledby={`subscription-tab-${tab}`} tabIndex={0} className="min-w-0">
-        <fieldset disabled={busy} className="stack min-w-0">
-          {tab === "template" ? <>
-            <p className="subtle">编辑客户端的 DNS、TUN 和分流规则。修改先保存为草稿，预览并发布后才会更新客户端下载的配置。</p>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={() => { try { setTemplateJson(JSON.stringify(JSON.parse(templateJson), null, 2)); change(); setError(""); } catch { setError("JSON 格式错误，请修正后再格式化。"); } }}>格式化 JSON</Button>
-              <Button type="button" loading={pending === "import"} onClick={() => fileInput.current?.click()}>导入 JSON 文件</Button>
+      {/* Keep both panels mounted so Monaco retains undo history, folds and cursor state. */}
+      <div id="subscription-panel-template" role="tabpanel" aria-labelledby="subscription-tab-template" tabIndex={0} hidden={tab !== "template"} className="min-w-0">
+        <fieldset disabled={busy} className="flex min-w-0 flex-col gap-3">
+          <p className="subtle">编辑客户端的 DNS、TUN 和分流规则。保存草稿后，预览并发布才会更新客户端下载的配置。</p>
+          <JsonEditor
+            label="客户端基础配置 JSON"
+            variant="workspace"
+            value={templateJson}
+            rows={24}
+            disabled={busy}
+            onChange={(value) => { setTemplateJson(value); change(); }}
+            onSave={(value) => { if (!busy && (dirty || value !== templateJson)) void save(false, value); }}
+            toolbar={<>
+              <Button type="button" size="sm" disabled={busy} loading={pending === "import"} onClick={() => fileInput.current?.click()}>导入 JSON 文件</Button>
               <input ref={fileInput} type="file" accept=".json,application/json" className="sr-only" tabIndex={-1} aria-hidden onChange={(event) => { void importFile(event.target.files?.[0]); event.target.value = ""; }} />
+            </>}
+          />
+          <details className="subtle"><summary className="cursor-pointer">平台生成内容与预览检查范围</summary><div className="mt-3 space-y-3">
+            <p>代理出口的地址、TLS 和账号凭据由平台根据节点配置生成；以 bfc_ 开头的 tag 留给平台使用。</p>
+            <p>配置中的本地路径和远程规则集由客户端处理；预览只检查 JSON、节点组及出口引用，不验证客户端系统权限、远程资源可达性或所有核心选项。</p>
+          </div></details>
+        </fieldset>
+      </div>
+      <div id="subscription-panel-groups" role="tabpanel" aria-labelledby="subscription-tab-groups" tabIndex={0} hidden={tab !== "groups"} className="min-w-0">
+        <fieldset disabled={busy} className="stack min-w-0">
+          <p className="subtle">按地区、标签和协议为每个节点组选择节点。多个值用逗号分隔，留空表示不限制。</p>
+          <details className="subtle"><summary className="cursor-pointer">节点组如何匹配与引用</summary><div className="mt-3 space-y-3">
+            <p>组 tag 对应基础配置中的 selector / urltest。地区匹配任一填写值，标签须全部匹配；筛选只从当前账号可用节点中选取，节点改名不会改变绑定。</p>
+            <p>默认 AI 组使用 ai 标签，游戏组使用 game 标签。选择组和它引用的自动组应使用一致的属性筛选；无匹配节点时需调整属性或条件。</p>
+          </div></details>
+          {!bindings.length && <p>尚未添加节点组绑定。添加绑定后，可按属性自动选择当前账号可用的节点。</p>}
+          {bindings.map((binding, index) => <div key={binding.key} className="stack border-t border-kumo-line pt-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="min-w-0 flex-1"><Input label={`组 ${index + 1} tag`} value={binding.groupTag} onChange={(event) => editBinding(binding.key, "groupTag", event.target.value)} /></div>
+              <Button className="self-start sm:self-auto" variant="secondary-destructive" onClick={() => { setBindings((current) => current.filter((entry) => entry.key !== binding.key)); change(); }}>移除此绑定</Button>
             </div>
-            <JsonEditor label="客户端基础配置 JSON" value={templateJson} rows={24} disabled={busy} onChange={(value) => { setTemplateJson(value); change(); }} />
-            <details className="subtle"><summary className="cursor-pointer">平台生成内容与预览检查范围</summary><div className="mt-3 space-y-3">
-              <p>代理出口的地址、TLS 和账号凭据由平台根据节点配置生成；以 bfc_ 开头的 tag 留给平台使用。</p>
-              <p>配置中的本地路径和远程规则集由客户端处理；预览只检查 JSON、节点组及出口引用，不验证客户端系统权限、远程资源可达性或所有核心选项。</p>
-            </div></details>
-          </> : <>
-            <p className="subtle">按地区、标签和协议为每个节点组选择节点。多个值用逗号分隔，留空表示不限制。</p>
-            <details className="subtle"><summary className="cursor-pointer">节点组如何匹配与引用</summary><div className="mt-3 space-y-3">
-              <p>组 tag 对应基础配置中的 selector / urltest。地区匹配任一填写值，标签须全部匹配；筛选只从当前账号可用节点中选取，节点改名不会改变绑定。</p>
-              <p>默认 AI 组使用 ai 标签，游戏组使用 game 标签。选择组和它引用的自动组应使用一致的属性筛选；无匹配节点时需调整属性或条件。</p>
-            </div></details>
-            {!bindings.length && <p>尚未添加节点组绑定。添加绑定后，可按属性自动选择当前账号可用的节点。</p>}
-            {bindings.map((binding, index) => <div key={binding.key} className="stack border-t border-kumo-line pt-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="min-w-0 flex-1"><Input label={`组 ${index + 1} tag`} value={binding.groupTag} onChange={(event) => editBinding(binding.key, "groupTag", event.target.value)} /></div>
-                <Button className="self-start sm:self-auto" variant="secondary-destructive" onClick={() => { setBindings((current) => current.filter((entry) => entry.key !== binding.key)); change(); }}>移除此绑定</Button>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">{bindingFields.map(([key, label, placeholder]) =>
-                <Input key={key} label={`${binding.groupTag || index + 1} · ${label}`} value={binding[key]} placeholder={placeholder} onChange={(event) => editBinding(binding.key, key, event.target.value)} />,
-              )}</div>
-            </div>)}
-            <div><Button onClick={() => {
-              const binding = bindingDraft(create(SubscriptionGroupBindingSchema), nextBindingKey.current++);
-              setBindings((current) => [...current, binding]); change();
-            }}>添加节点组绑定</Button></div>
-          </>}
+            <div className="grid gap-4 sm:grid-cols-2">{bindingFields.map(([key, label, placeholder]) =>
+              <Input key={key} label={`${binding.groupTag || index + 1} · ${label}`} value={binding[key]} placeholder={placeholder} onChange={(event) => editBinding(binding.key, key, event.target.value)} />,
+            )}</div>
+          </div>)}
+          <div><Button onClick={() => {
+            const binding = bindingDraft(create(SubscriptionGroupBindingSchema), nextBindingKey.current++);
+            setBindings((current) => [...current, binding]); change();
+          }}>添加节点组绑定</Button></div>
         </fieldset>
       </div>
     </LayerCard>
