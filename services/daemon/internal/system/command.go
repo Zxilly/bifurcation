@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -24,6 +25,9 @@ func (b *limitedBuffer) Write(p []byte) (int, error) {
 }
 func Command(ctx context.Context, path string, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, path, args...)
+	// A subprocess may leave descendants holding its output pipes after it exits
+	// or is killed. Bound that drain too, so maintenance deadlines remain effective.
+	cmd.WaitDelay = time.Second
 	output := &limitedBuffer{limit: 256 << 10}
 	cmd.Stdout = output
 	cmd.Stderr = output
