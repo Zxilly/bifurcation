@@ -63,7 +63,8 @@ async function stopServer(server: ChildProcess) {
 
 export const test = base.extend<{ app: TestApp; initializeAdmin: boolean }>({
   initializeAdmin: [true, { option: true }],
-  app: async ({ initializeAdmin }, provide) => {
+  // Start before browser fixtures so their connections close before SIGTERM.
+  app: [async ({ initializeAdmin }, provide) => {
     await Promise.all([
       access(join(webRoot, ".next", "BUILD_ID")),
       access(join(webRoot, "scripts", "admin.mjs")),
@@ -143,7 +144,7 @@ export const test = base.extend<{ app: TestApp; initializeAdmin: boolean }>({
         retryDelay: 100,
       });
     }
-  },
+  }, { auto: true }],
 });
 
 export { expect };
