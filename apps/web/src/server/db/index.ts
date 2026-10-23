@@ -12,6 +12,9 @@ export function openDatabase(path: string, migrationsFolder = resolve(process.cw
   const sqlite = new Database(path);
   try {
     sqlite.pragma("journal_mode = WAL");
+    // Acknowledged usage and revoked access must survive a host crash. The
+    // driver's WAL default is NORMAL, which can lose committed transactions.
+    sqlite.pragma("synchronous = FULL");
     sqlite.pragma("foreign_keys = ON");
     sqlite.pragma("busy_timeout = 5000");
     const db = drizzle(sqlite, { schema });

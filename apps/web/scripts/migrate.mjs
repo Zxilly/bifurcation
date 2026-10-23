@@ -9,6 +9,7 @@ mkdirSync(dirname(path), { recursive: true });
 const sqlite = new Database(path);
 try {
   sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("synchronous = FULL");
   sqlite.pragma("foreign_keys = ON");
   sqlite.pragma("busy_timeout = 5000");
   migrate(drizzle(sqlite), { migrationsFolder: resolve(import.meta.dirname, "../drizzle") });
