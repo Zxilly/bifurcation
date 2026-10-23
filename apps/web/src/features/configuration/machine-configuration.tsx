@@ -1,6 +1,6 @@
 "use client";
 
-import { LayerCard, Banner, Select } from "@cloudflare/kumo";
+import { LayerCard, Banner, Select, LinkButton } from "@cloudflare/kumo";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Badge } from "@cloudflare/kumo/components/badge";
@@ -14,9 +14,12 @@ import {
   Reconciliation,
   type ConfigurationPreview,
   type MachineConfiguration,
+  type MachineConfigurationInput,
+  type PublishConfigurationResponse,
 } from "@bifurcation/rpc/panel/configuration";
 import Link from "next/link";
 import { FormError } from "@/components/modal";
+import { ResourceFeedback } from "@/components/resource-feedback";
 import { JsonDocument } from "@/components/json-document";
 import { JsonEditor } from "@/components/json-editor";
 import { UnsavedChanges } from "@/components/unsaved-changes";
@@ -26,6 +29,7 @@ import { panel } from "@/features/shared/rpc";
 import { resourceKeys } from "@/features/shared/keys";
 import { useResource } from "@/features/shared/use-resource";
 import { useServerRefresh } from "@/features/shared/use-refresh";
+import { PublicationProgress } from "./publication-progress";
 
 const states: Record<number, string> = {
   [Reconciliation.NOT_CONFIGURED]: "未配置",
@@ -131,7 +135,8 @@ export function MachineConfigurationPage({
 }) {
   const id = machine.id;
   const { refresh } = useServerRefresh();
-  const [published, setPublished] = useState(false);
+  const [published, setPublished] = useState<PublishConfigurationResponse | null>(null);
+  const [draft, setDraft] = useState<MachineConfiguration | null>(null);
   return (
     <div className="w-full min-w-0">
       <Link href={`/admin/machines/${id}`} className="subtle underline">
@@ -147,19 +152,10 @@ export function MachineConfigurationPage({
         </div>
       </div>
       {published ? (
-        <div className="stack">
-          <Banner
-            role="status"
-            variant="secondary"
-            title="配置已发布，等待机器完成检查和应用。"
-          />
-          <Link
-            href={`/admin/machines/${id}`}
-            className="text-kumo-link underline"
-          >
-            返回机器详情查看应用状态
-          </Link>
-        </div>
+        <PublicationProgress machineId={id} publication={published} onEdit={(latest) => {
+          if (latest) setDraft(latest);
+          setPublished(null);
+        }} />
       ) : (
         machine.uninstalled ? (
           <p className="subtle">机器已卸载，请先重新接入。</p>
@@ -167,9 +163,10 @@ export function MachineConfigurationPage({
           <ConfigurationEditor
             key={id}
             machine={machine}
-            initial={configuration}
-            onPublished={async () => {
-              setPublished(true);
+            initial={draft ?? configuration}
+            onPublished={async (publication, settings) => {
+              setDraft({ ...configuration, settings, version: publication.version });
+              setPublished(publication);
               refresh();
             }}
           />
@@ -180,14 +177,20 @@ export function MachineConfigurationPage({
 }
 
 function ConfigurationEditor({
-  machine,
+  machine: initialMachine,
   initial,
   onPublished,
 }: {
   machine: MachineDetail;
   initial: MachineConfiguration;
-  onPublished: () => Promise<void>;
+  onPublished: (publication: PublishConfigurationResponse, settings: MachineConfigurationInput) => Promise<void>;
 }) {
+  const machineResource = useResource(
+    resourceKeys.machine(initialMachine.id),
+    () => panel.machines.getMachine({ machineId: initialMachine.id }).then((r) => r.machine!),
+    { refreshInterval: 5_000 },
+  );
+  const machine = machineResource.data ?? initialMachine;
   const existing = initial.settings;
   const existingMode = existing?.tls?.mode;
   const [listen, setListen] = useState(existing?.listen ?? "::");
@@ -223,6 +226,8 @@ function ConfigurationEditor({
   const [baseJson, setBaseJson] = useState(
     JSON.stringify(existing?.baseJson ?? {}, null, 2),
   );
+  const [advancedOpen, setAdvancedOpen] = useState(Object.keys(existing?.baseJson ?? {}).length > 0);
+  const customBase = baseJson.trim() !== "{}";
   const editorValues = JSON.stringify([
     listen, trojanPort, hysteria2Port, mode, serverName, acmeEmail,
     certificatePath, privateKeyPath, certificatePem, privateKeyPem, baseJson,
@@ -230,9 +235,17 @@ function ConfigurationEditor({
   const [savedValues, setSavedValues] = useState(editorValues);
   const dirty = editorValues !== savedValues;
   const [preview, setPreview] = useState<ConfigurationPreview | null>(null);
+  const [expiredPreviewId, setExpiredPreviewId] = useState("");
+  const previewExpired = !!preview && expiredPreviewId === preview.previewId;
   const previewHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    if (preview) previewHeading.current?.focus();
+    if (!preview) return;
+    previewHeading.current?.focus();
+    const timer = window.setTimeout(
+      () => setExpiredPreviewId(preview.previewId),
+      Math.max(0, Number(preview.expiresAt) - Date.now()),
+    );
+    return () => window.clearTimeout(timer);
   }, [preview]);
   const [publishRequestKey, setPublishRequestKey] = useState("");
   const [version, setVersion] = useState(initial.version);
@@ -266,10 +279,13 @@ function ConfigurationEditor({
     try {
       base = JSON.parse(baseJson);
     } catch {
+      setAdvancedOpen(true);
       throw new Error("基础配置不是有效 JSON，请修正后重新预览。");
     }
-    if (!base || typeof base !== "object" || Array.isArray(base))
+    if (!base || typeof base !== "object" || Array.isArray(base)) {
+      setAdvancedOpen(true);
       throw new Error("基础配置必须是 JSON 对象。");
+    }
     const ports = [Number(trojanPort), Number(hysteria2Port)];
     if (
       ports.some((port) => !Number.isInteger(port) || port < 1 || port > 65535)
@@ -291,8 +307,8 @@ function ConfigurationEditor({
       baseJson: base as JsonObject,
     });
   }
-  async function createPreview(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function createPreview(event?: React.FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     setBusy(true);
     setError("");
     setPreview(null);
@@ -342,17 +358,17 @@ function ConfigurationEditor({
     setError("");
     try {
       if (preview.expiresAt <= Date.now()) {
-        setPreview(null);
-        throw new Error("预览已过期，请重新生成。");
+        setExpiredPreviewId(preview.previewId);
+        return;
       }
-      await panel.configuration.publishConfiguration({
+      const publication = await panel.configuration.publishConfiguration({
         machineId: machine.id,
         previewId: preview.previewId,
         expectedVersion: preview.expectedVersion,
         requestKey: publishRequestKey,
       });
       setSavedValues(editorValues);
-      await onPublished();
+      await onPublished(publication, settings());
     } catch (e) {
       await handleError(e);
     } finally {
@@ -362,6 +378,24 @@ function ConfigurationEditor({
   return (
     <>
       <UnsavedChanges dirty={dirty} />
+      <ResourceFeedback {...machineResource} onRetry={machineResource.refresh} />
+      {!machine.installationId ? (
+        <Banner variant="secondary" role="status" className="mb-5">
+          <div>
+            <p className="font-medium">先接入机器，再发布配置</p>
+            <p className="mt-2">可以先填写并预览配置。发布需要在 Linux 机器上执行安装命令，等待节点接入。</p>
+            <LinkButton className="mt-3" variant="secondary" href={`/admin/machines/${machine.id}?tab=maintenance`}>查看安装命令</LinkButton>
+          </div>
+        </Banner>
+      ) : !supported ? (
+        <Banner variant="alert" role="status" className="mb-5">
+          <div>
+            <p className="font-medium">此节点需要先升级 daemon</p>
+            <p className="mt-2">当前 daemon 不支持配置发布。可以先准备配置，升级后再发布。</p>
+            <LinkButton className="mt-3" variant="secondary" href={`/admin/machines/${machine.id}?tab=maintenance`}>查看接入与维护</LinkButton>
+          </div>
+        </Banner>
+      ) : null}
       <LayerCard render={<section />} className="panel">
         <div className="stack">
           <p className="subtle">
@@ -413,9 +447,10 @@ function ConfigurationEditor({
                   acme: "ACME 自动签发",
                 }}
                 value={mode}
-                onValueChange={(value) =>
-                  setMode(value as "path" | "pem" | "acme")
-                }
+                onValueChange={(value) => {
+                  setMode(value as "path" | "pem" | "acme");
+                  setPreview(null);
+                }}
               />
               {mode === "acme" && (
                 <Input
@@ -481,8 +516,9 @@ function ConfigurationEditor({
                   />
                 </>
               )}
-              <div className="stack mt-5">
-                <h2>基础配置</h2>
+              <details className="mt-5 min-w-0" open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
+                <summary className="cursor-pointer py-2 font-medium">高级基础配置（可选）<span className="subtle ml-2 text-sm font-normal">{customBase ? "含自定义配置" : "使用默认日志与直连出站"}</span></summary>
+                <div className="stack mt-3">
                 <p className="subtle">
                   这是运行在节点上的 sing-box
                   服务端补充配置，用于设置日志、DNS、路由和出站。没有额外需求时保留{" "}
@@ -514,8 +550,7 @@ function ConfigurationEditor({
                     此示例仅替换日志设置，保留默认直连出站。其他允许的顶层字段原样保留，最终是否可运行由节点检查。
                   </p>
                 </details>
-              </div>
-              <JsonEditor
+              {advancedOpen && <JsonEditor
                 label="基础配置 JSON"
                 value={baseJson}
                 onChange={(value) => {
@@ -525,7 +560,9 @@ function ConfigurationEditor({
                 rows={12}
                 disabled={busy}
                 description="请输入 JSON 对象。生成预览不会应用配置；修改后需要重新预览。"
-              />
+              />}
+                </div>
+              </details>
               <div className="flex flex-wrap justify-end gap-2">
                 <Button type="submit" variant="primary" loading={busy}>
                   生成预览
@@ -542,6 +579,17 @@ function ConfigurationEditor({
                 </h2>
                 <Badge variant="secondary">策略 {preview.policyRevision}</Badge>
               </div>
+              {previewExpired ? (
+                <Banner role="status" variant="alert">
+                  预览已过期。编辑内容已保留，请重新生成预览后再发布。
+                </Banner>
+              ) : (
+                <p className="subtle">
+                  有效至 {new Intl.DateTimeFormat("zh-CN", {
+                    hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Shanghai",
+                  }).format(Number(preview.expiresAt))}（上海时间）。修改配置后需重新生成预览。
+                </p>
+              )}
               <JsonDocument
                 key={preview.previewId}
                 value={preview.finalJson}
@@ -570,14 +618,20 @@ function ConfigurationEditor({
                 >
                   返回机器详情
                 </Link>
-                <Button
-                  variant="primary"
-                  loading={busy}
-                  disabled={!machine.installationId || !supported}
-                  onClick={publish}
-                >
-                  检查并发布
-                </Button>
+                {previewExpired ? (
+                  <Button variant="primary" loading={busy} onClick={() => void createPreview()}>
+                    重新生成预览
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    loading={busy}
+                    disabled={!machine.installationId || !supported || machine.uninstalled || !!machineResource.error}
+                    onClick={publish}
+                  >
+                    检查并发布
+                  </Button>
+                )}
               </div>
             </>
           )}

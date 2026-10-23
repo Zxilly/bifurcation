@@ -58,6 +58,7 @@ const detailTabs = [
 ];
 export function Machines() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const resource = useResource(
     resourceKeys.machines,
     () => panel.machines.listMachines({}),
@@ -79,6 +80,15 @@ export function Machines() {
     );
   });
   const [open, setOpen] = useState(false);
+  const createRequested = searchParams.get("action") === "create";
+  function closeCreate() {
+    setOpen(false);
+    if (createRequested) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("action");
+      window.history.replaceState(null, "", url);
+    }
+  }
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [reauth, setReauth] = useState(false);
@@ -96,7 +106,7 @@ export function Machines() {
           .split(/[,，\s]+/)
           .filter(Boolean),
       });
-      setOpen(false);
+      closeCreate();
       router.push(`/admin/machines/${machine!.id}`);
     } catch (e) {
       if (e instanceof ApiError && e.code === "REAUTH_REQUIRED")
@@ -347,12 +357,12 @@ export function Machines() {
           资源数据为节点最近上报值；失联机器的数值不会实时更新。
         </p>
       </section>
-      {open && (
+      {(open || createRequested) && (
         <Modal
           title="添加机器"
           open
           onClose={() => {
-            if (!busy) setOpen(false);
+            if (!busy) closeCreate();
           }}
         >
           <form className="stack" onSubmit={create}>
@@ -381,7 +391,7 @@ export function Machines() {
               <Button
                 type="button"
                 disabled={busy}
-                onClick={() => setOpen(false)}
+                onClick={closeCreate}
               >
                 取消
               </Button>

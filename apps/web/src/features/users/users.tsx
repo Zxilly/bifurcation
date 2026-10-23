@@ -10,6 +10,7 @@ import {
 } from "@cloudflare/kumo";
 import { ResourceState } from "@/components/resource-state";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Role, UserStatus, type User } from "@bifurcation/rpc/panel/types";
 import { FlowPurpose } from "@bifurcation/rpc/panel/users";
 import { Modal, FormError } from "@/components/modal";
@@ -41,7 +42,10 @@ function monthlyQuota(user: User) {
 // The page provides the user list; mutations re-render it.
 export function Users({ users }: { users: User[] }) {
   const { refresh } = useServerRefresh();
-  const [action, setAction] = useState<Action | null>(null);
+  const searchParams = useSearchParams();
+  const createRequested = searchParams.get("action") === "create";
+  const [selectedAction, setAction] = useState<Action | null>(null);
+  const action: Action | null = createRequested ? { kind: "create" } : selectedAction;
   const [actionOpen, setActionOpen] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -49,6 +53,14 @@ export function Users({ users }: { users: User[] }) {
   const [result, setResult] = useState<{ title: string; url: string } | null>(
     null,
   );
+  function closeAction() {
+    setActionOpen(false);
+    if (createRequested) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("action");
+      window.history.replaceState(null, "", url);
+    }
+  }
   function open(value: Action) {
     setError("");
     setAction(value);
@@ -112,7 +124,7 @@ export function Users({ users }: { users: User[] }) {
           status:
             action.kind === "disable" ? UserStatus.DISABLED : UserStatus.ACTIVE,
         });
-      setActionOpen(false);
+      closeAction();
       refresh();
     } catch (e) {
       if (e instanceof ApiError && e.code === "REAUTH_REQUIRED")
@@ -264,10 +276,10 @@ export function Users({ users }: { users: User[] }) {
       {action && (
         <Modal
           title={title}
-          open={actionOpen}
+          open={actionOpen || createRequested}
           role={action.kind === "disable" ? "alertdialog" : "dialog"}
           onClose={() => {
-            if (!busy) setActionOpen(false);
+            if (!busy) closeAction();
           }}
         >
           <form
@@ -337,7 +349,7 @@ export function Users({ users }: { users: User[] }) {
               <Button
                 type="button"
                 disabled={busy}
-                onClick={() => setActionOpen(false)}
+                onClick={closeAction}
               >
                 取消
               </Button>

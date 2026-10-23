@@ -69,6 +69,7 @@ test("configuration preview and publish, independent subscription resets, and re
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.getByLabel("TLS 服务器名称", { exact: true }).fill("node.test");
+    await page.getByText("高级基础配置（可选）", { exact: false }).click();
     const baseJson = jsonEditor(page, "基础配置 JSON");
     await baseJson.fill('{"log":{"level":"debug"},"inbounds":[]}');
     await page.getByRole("button", { name: "生成预览", exact: true }).click();
@@ -121,7 +122,7 @@ test("configuration preview and publish, independent subscription resets, and re
       task: { id: string };
     };
     await expect(
-      page.getByText("配置已发布，等待机器完成检查和应用。", { exact: true }),
+      page.getByRole("heading", { name: "配置已发布，等待节点执行", exact: true }),
     ).toBeVisible();
     const task = await peer.nextTask();
     expect(task.taskId).toBe(published.task.id);
@@ -181,7 +182,8 @@ test("configuration preview and publish, independent subscription resets, and re
         appliedConfigSha256: config.configSha256,
       },
     });
-    await page.getByRole("link", { name: "返回机器详情查看应用状态", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "节点已确认应用配置", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "返回机器详情", exact: true }).last().click();
     await expect(page.getByText("已同步", { exact: true })).toBeVisible();
     await page.getByRole("tab", { name: "操作记录", exact: true }).click();
     const diagnosticResponse = page.waitForResponse(

@@ -15,6 +15,7 @@ import { periodRange, usageKey, usageRequest } from "./range";
 import { Trend } from "./trend";
 import { DataQuality, GroupUsageTable, UserMachineTable } from "./usage-table";
 import { UsageSummary } from "./summary";
+import { AdminWorkflow } from "./admin-workflow";
 
 const dayLabel = new Intl.DateTimeFormat("zh-CN", {
   month: "numeric",
@@ -234,21 +235,10 @@ export function AdminUsageOverview() {
         <ResourceFeedback {...resource} onRetry={resource.refresh} />
         <ResourceFeedback {...machines} onRetry={machines.refresh} />
         <ResourceFeedback {...users} onRetry={users.refresh} />
-        {!!machines.data?.machines.some(
-          (machine) =>
-            machine.connection === MachineConnection.OFFLINE &&
-            !machine.uninstalled,
-        ) && (
-          <Banner variant="alert" role="status">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p>
-                有机器失联，当前运行状态无法确认；面板失联不代表代理已停止。
-              </p>
-              <LinkButton variant="secondary" href="/admin/machines">查看节点状态</LinkButton>
-            </div>
-          </Banner>
-        )}
       </div>
+      {machines.data && users.data && !machines.error && !users.error && (
+        <AdminWorkflow machines={machines.data.machines} users={users.data.users} />
+      )}
       <div className="metric-row">
         <LayerCard render={<section />} className="panel">
           <h2>在线机器</h2>
