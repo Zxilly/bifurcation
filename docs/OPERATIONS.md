@@ -4,6 +4,25 @@
 
 面板以 Docker Compose 单实例运行。公开入口使用 HTTPS；daemon 支持 Linux amd64/arm64，安装和维护需要 root 与 systemd。
 
+以下命令在仓库根目录运行。先确认 Docker 引擎已经启动、当前用户有访问权限，且安装了 Compose 插件：
+
+```sh
+docker info
+docker compose version
+```
+
+首次部署生成 `.env`。下面的 Linux 命令仅需要 Docker，临时容器按当前宿主机用户写入配置文件；宿主机已有 Node.js 24 时也可以直接运行其中的 `node deploy/configure.mjs ...`：
+
+```sh
+docker run --rm --network none --user "$(id -u):$(id -g)" \
+  -v "$PWD:/workspace" -w /workspace node:24-bookworm-slim \
+  node deploy/configure.mjs --url https://panel.example.com
+```
+
+替换示例地址后执行。工具一次生成固定的随机应用密钥，文件权限设为 `0600`，不在终端输出密钥；发现已有 `.env` 时拒绝覆盖。监听端口可用 `--port 8300` 指定，公开地址的端口仍以反向代理入口为准。已有部署不要重新生成密钥；手工配置时可参考 [`.env.example`](../.env.example)。
+
+本机试用使用 `--url http://localhost:3000`。通过远程域名访问时必须改成实际 HTTPS origin；浏览器登录、Passkey、激活链接及节点接入都依赖这个地址。
+
 | 变量 | 用途 |
 | --- | --- |
 | BIFURCATION_PUBLIC_URL | 无末尾路径的公开 origin；Passkey 和链接生成使用它 |
@@ -13,10 +32,18 @@
 | BIFURCATION_ARTIFACT_DIRECTORY | daemon 制品目录；镜像已配置 |
 
 ```sh
-docker compose up -d --build
+docker run --rm --network none --user "$(id -u):$(id -g)" \
+  -v "$PWD:/workspace:ro" -w /workspace node:24-bookworm-slim \
+  node deploy/configure.mjs --check
+docker compose config --quiet
+docker compose up -d --build --wait --wait-timeout 180
 docker compose ps
 docker compose logs --tail 100 panel
 ```
+
+`--check` 只读取 `.env`，验证 origin、端口及密钥格式；不会连接数据库，也不能确认密钥是否匹配已有数据。`docker compose config --quiet` 检查 Compose 插值且不打印配置中的密钥。若 shell 中已有同名环境变量，它们会覆盖 `.env`，部署前确认这些变量的来源。
+
+确认容器健康后，检查公开入口的 `/api/health` 返回 `status: "ok"`，并从浏览器打开首页。公开入口失败而容器健康时，检查 DNS、证书和反向代理；不要反复重建或删除数据卷。源码构建若未指定 `VCS_REF`，健康接口的 revision 为 `dev`。
 
 首次启动后打开面板首页，空数据库自动进入创建管理员界面；设置用户名与后备密码后直接登录。首次设置完成前，仅向部署管理员开放访问。已有任意账号后初始化入口关闭，后续账号由管理员创建。管理员丢失登录凭据时执行 `docker compose exec panel node scripts/admin.mjs recover admin`，生成的一次性恢复链接用于重新设置凭据。
 
@@ -97,5 +124,7 @@ daemon 更新从机器详情发起。界面显示目标 daemon 和内嵌核心�
 | 用量不完整 | 核心崩溃、时钟倒退、存储空间、outbox 积压、面板高水位 |
 | 更新未确认 | 实际 daemon 版本、本地就绪证据、重连和任务结果 |
 | 数据库锁冲突 | 是否有第二个面板实例或恢复进程；不要删除正在使用的锁文件 |
+| Compose 提示缺少密钥或地址 | 是否已在仓库根目录创建 `.env`；用配置工具 `--check` 校验 |
+| Docker 无法连接 daemon / 命名管道 | 先恢复 Docker 引擎并重新运行 `docker info`；应用容器尚未启动 |
 
 保留错误现场及数据库一致备份后再处理恢复。不要通过清空节点 journal/outbox、降低授权下限或修改迁移校验值绕过错误。

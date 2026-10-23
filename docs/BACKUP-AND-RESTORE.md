@@ -11,10 +11,11 @@
 ```sh
 docker compose exec panel node scripts/backup.mjs create /data/backups/backup-name
 docker compose exec panel node scripts/backup.mjs inspect /data/backups/backup-name
-docker compose cp panel:/data/backups/backup-name ./backups/backup-name
+mkdir -p ./.local/backups
+docker compose cp panel:/data/backups/backup-name ./.local/backups/backup-name
 ```
 
-`inspect` 校验数据库摘要、结构、外键、迁移记录和当前应用密钥。备份成功不等于已经离开面板数据卷；把备份目录和原密钥分别保存到独立、受访问权限保护的位置。备份目录中出现数据库文件但没有有效 `metadata.json`，表示备份没有完成，不应当作为可恢复快照。
+`inspect` 校验数据库摘要、结构、外键、迁移记录和当前应用密钥。`.local` 已排除出 Git 和 Docker 构建上下文，用作本机导出位置；仍应把备份目录和原密钥分别保存到独立、受访问权限保护的位置。备份成功不等于已经离开面板数据卷。备份目录中出现数据库文件但没有有效 `metadata.json`，表示备份没有完成，不应当作为可恢复快照。
 
 Windows 本地开发也可以运行：
 

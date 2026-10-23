@@ -28,6 +28,7 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm test:e2e
+node --test deploy/tests/configure.test.mjs
 go -C services/daemon test -tags=with_quic,with_acme ./...
 go -C services/daemon vet -tags=with_quic,with_acme ./...
 ```

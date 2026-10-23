@@ -2,6 +2,14 @@
 
 These tests create disposable resources. Never point their service fixtures at an existing server or production database. sing-box is embedded into the daemon; no separate core binary or core systemd service is installed.
 
+## First deployment configuration
+
+```sh
+node --test deploy/tests/configure.test.mjs
+```
+
+The configuration tests create private temporary directories and check valid HTTPS/local origins, persistent key creation, refusal to overwrite an existing deployment, invalid input rejection and read-only checks without printing key material. They require Node.js 24 and do not contact Docker or a running panel.
+
 ## Panel image
 
 ```sh
@@ -9,7 +17,7 @@ docker build -t bifurcation:ci .
 node deploy/tests/panel.test.mjs bifurcation:ci
 ```
 
-The panel test starts a uniquely named container and volume, verifies health and SSR, runs the real administrator CLI, recreates the container, checks persistence, and cleans up. Image construction checks the exact Turbopack native-module aliases used by instrumentation. The daemon manifest records both its version and the embedded sing-box module version.
+The panel test starts a uniquely named container and volume, verifies health and SSR, creates the first administrator through the real Connect endpoint, checks the administrator activation/recovery CLI, recreates the container, and verifies account, session and password persistence before cleanup. Image construction checks the exact Turbopack native-module aliases used by instrumentation. The daemon manifest records both its version and the embedded sing-box module version.
 
 ## Backup and restore
 
