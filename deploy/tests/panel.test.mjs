@@ -9,6 +9,8 @@ const suffix = randomBytes(8).toString("hex");
 const container = `bifurcation-smoke-${suffix}`;
 const volume = `bifurcation-smoke-data-${suffix}`;
 const key = randomBytes(32).toString("hex");
+const password = randomBytes(24).toString("hex");
+const publicOrigin = "http://localhost:3000";
 
 function docker(args, required = true) {
   const result = spawnSync("docker", args, { encoding: "utf8", maxBuffer: 2 * 1024 * 1024 });
@@ -20,7 +22,7 @@ function docker(args, required = true) {
 async function start() {
   docker(["run", "-d", "--name", container, "--init",
     "-p", "127.0.0.1::3000", "-v", `${volume}:/data`,
-    "-e", "BIFURCATION_PUBLIC_URL=http://localhost:3000",
+    "-e", `BIFURCATION_PUBLIC_URL=${publicOrigin}`,
     "-e", "BIFURCATION_DATABASE_PATH=/data/panel.sqlite",
     "-e", `BIFURCATION_APP_KEY=${key}`, image]);
   const port = docker(["port", container, "3000/tcp"]).split(":").at(-1);
@@ -40,6 +42,17 @@ async function start() {
   const login = await fetch(`${origin}/login`);
   assert.equal(login.status, 200, "SSR login route failed");
   assert.match(await login.text(), /Passkey/);
+  return origin;
+}
+
+async function rpc(origin, method, body = {}, cookie) {
+  const response = await fetch(`${origin}/rpc/bifurcation.panel.v1.${method}`, {
+    method: "POST", signal: AbortSignal.timeout(15_000),
+    headers: { "Content-Type": "application/json", "Connect-Protocol-Version": "1", Origin: publicOrigin, ...(cookie ? { Cookie: cookie } : {}) },
+    body: JSON.stringify(body),
+  });
+  assert.equal(response.status, 200, `${method} failed with HTTP ${response.status}`);
+  return { body: await response.json(), cookie: response.headers.get("set-cookie")?.split(";")[0] };
 }
 
 function accountSnapshot() {
@@ -49,16 +62,33 @@ function accountSnapshot() {
 
 try {
   docker(["volume", "create", volume]);
-  await start();
-  const activation = docker(["exec", container, "node", "scripts/admin.mjs", "init", "smoke-admin"]);
+  let origin = await start();
+  const home = await fetch(origin);
+  assert.match(await home.text(), /创建管理员/, "Empty deployment did not expose first administrator setup");
+  const setup = await rpc(origin, "AuthService/SetupAdministrator", { username: "smoke-admin", password });
+  assert.equal(setup.body.user.username, "smoke-admin");
+  assert.ok(setup.cookie, "Setup did not establish a session");
+  assert.equal((await rpc(origin, "MeService/GetMe", {}, setup.cookie)).body.user.id, setup.body.user.id);
+
+  // Keep the standalone administrator CLI path covered without replacing the
+  // first-run browser flow or mixing its pending account into the live database.
+  const cliDatabase = ["-e", "BIFURCATION_DATABASE_PATH=/data/cli-smoke.sqlite"];
+  docker(["exec", ...cliDatabase, container, "node", "scripts/migrate.mjs"]);
+  const activation = docker(["exec", ...cliDatabase, container, "node", "scripts/admin.mjs", "init", "cli-admin"]);
   assert.match(activation, /http:\/\/localhost:3000\/activate\?token=/);
+  const recovery = docker(["exec", container, "node", "scripts/admin.mjs", "recover", "smoke-admin"]);
+  assert.match(recovery, /http:\/\/localhost:3000\/recover\?token=/);
   const before = accountSnapshot();
   assert.equal(JSON.parse(before).length, 1);
   docker(["stop", "--time", "10", container]);
   docker(["rm", container]);
-  await start();
+  origin = await start();
   assert.equal(accountSnapshot(), before, "Container recreation lost account data");
-  console.log("PASS: container health, SSR, administrator CLI and persistent volume recreation");
+  assert.equal((await rpc(origin, "MeService/GetMe", {}, setup.cookie)).body.user.id, setup.body.user.id, "Container recreation lost the established session");
+  const login = await rpc(origin, "AuthService/PasswordLogin", { username: "smoke-admin", password });
+  assert.equal(login.body.user.id, setup.body.user.id, "Container recreation lost the password credential");
+  assert.ok(login.cookie, "Password login did not establish a session");
+  console.log("PASS: container health, SSR, first administrator setup, CLI activation/recovery, and account/session/password persistence across recreation");
 } catch (error) {
   console.error(docker(["logs", "--tail", "40", container], false));
   throw error;
