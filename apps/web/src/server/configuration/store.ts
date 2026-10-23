@@ -138,7 +138,9 @@ export class ConfigurationStore {
         tx.update(machineConfigs).set({ version, desiredRevisionId: revisionId, desiredPolicyRevision: Number(authorization.policyRevision) }).where(eq(machineConfigs.machineId, machine.id)).run();
         this.rememberUsers(machine.id, authorization);
         const spec = create(TaskSpecSchema, { operation: { case: "applyConfig", value: { revisionId, policyRevision: BigInt(authorization.policyRevision) } } });
-        new MachineStore(this.handle).enqueueTask(machine.id, spec, `policy:${machine.id}:${authorization.policyRevision}`);
+        // A replacement installation must receive its own immutable task even
+        // when the effective authorization set has not changed since rebinding.
+        new MachineStore(this.handle).enqueueTask(machine.id, spec, `policy:${machine.id}:${machine.bindingEpoch}:${authorization.policyRevision}`);
         changed.push(machine.id);
       }); } catch (error) { console.error("Machine authorization reconciliation failed", { machineId: machine.id, error }); }
     }

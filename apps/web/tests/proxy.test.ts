@@ -245,6 +245,30 @@ describe("configuration, subscription and exact usage accounting", () => {
     expect(configuration.get(machineId).latestTask?.kind).toBe("apply_config");
     expect(configuration.get(machineId).settings?.trojanPort).toBe(settings.trojanPort);
   });
+  it("restores the approved configuration after rebinding a machine with an earlier authorization reconciliation", () => {
+    publish(true);
+    database.db.update(users).set({ monthlyLimitBytes: "0" }).where(eq(users.id, memberId)).run();
+    expect(configuration.reconcile()).toEqual([machineId]);
+    const oldTask = configuration.get(machineId).latestTask!;
+    const policyRevision = configuration.get(machineId).desiredPolicyRevision;
+
+    database.db.transaction(() => {
+      machineStore.rebind(machineId, machineStore.get(machineId).version);
+      configuration.markForRebind(machineId);
+    });
+    machineStore.bind(machineId, create(InstallationSchema, { installationId: "replacement-installation-0002" }), { daemonVersion: "test", os: "linux", arch: "amd64", supportedTasks: [TaskKind.APPLY_CONFIG] });
+
+    expect(configuration.reconcile()).toEqual([machineId]);
+    const restored = configuration.get(machineId);
+    expect(restored.desiredPolicyRevision).toBe(policyRevision);
+    expect(restored.settings).toEqual(validateSettings(settings));
+    expect(restored.latestTask?.id).not.toBe(oldTask.id);
+    expect(restored.latestTask?.state).toBe("queued");
+    const queued = machineStore.pending(machineId, machineStore.get(machineId).bindingEpoch);
+    expect(queued).toHaveLength(1);
+    expect(queued[0].id).toBe(restored.latestTask?.id);
+    expect(configuration.reconcile()).toEqual([]);
+  });
   it("keeps subscription and proxy rotations independent, retaining latest authorization on old revisions", () => {
     const { result } = publish(true);
     const subscriptions = new SubscriptionStore(database);
