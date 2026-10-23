@@ -168,6 +168,9 @@ func systemctl(t *testing.T, args ...string) {
 }
 func setupMaintenance(t *testing.T, oldBinary, artifact string) (*maintenancePanel, string, string) {
 	t.Helper()
+	// Docker exec can run before boot finishes. Wait before creating files in
+	// /tmp, which systemd-tmpfiles-setup removes during container startup.
+	systemctl(t, "start", "systemd-tmpfiles-setup.service")
 	directory := t.TempDir()
 	if base := os.Getenv("BIFURCATION_TEST_STATE_BASE"); base != "" {
 		if err := os.MkdirAll(base, 0700); err != nil {
@@ -314,14 +317,22 @@ func TestRealSystemdFailedCandidateRollsBackWithoutRestoringDatabase(t *testing.
 	}
 	streamID := "usage-" + id.InstallationID
 	for _, counter := range []state.Counter{{UserID: "fixture-user", RuntimeID: "fixture-counter-source", ObservedAt: 1}, {UserID: "fixture-user", RuntimeID: "fixture-counter-source", ObservedAt: 2, Upload: 123}} {
-		if _, err = store.RecordSample(context.Background(), streamID, []state.Counter{counter}); err != nil {
-			t.Fatal(err)
-		}
+		// The candidate's compatibility check may still own a write transaction
+		// after the executable has been replaced. Keep this external fixture
+		// write outside that short-lived lock without retrying other failures.
+		eventually(t, 10*time.Second, "could not persist outbox fixture after candidate check", func() bool {
+			_, err = store.RecordSample(context.Background(), streamID, []state.Counter{counter})
+			if err != nil && !strings.Contains(err.Error(), "SQLITE_BUSY") {
+				t.Fatal(err)
+			}
+			return err == nil
+		})
 	}
 	original, err := store.NextBatch(context.Background(), streamID)
 	if err != nil || original == nil {
 		t.Fatal("usage persistence fixture failed", err)
 	}
+	t.Logf("candidate switched; outbox persisted before rollback: sequence=%d", original.Seq)
 	eventually(t, 75*time.Second, "failed candidate was not rolled back", func() bool {
 		panel.mu.Lock()
 		defer panel.mu.Unlock()
