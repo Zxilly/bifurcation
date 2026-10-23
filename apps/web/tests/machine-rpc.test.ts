@@ -5,11 +5,13 @@ import { join } from "node:path";
 import { create, fromJson, toJson, toBinary } from "@bufbuild/protobuf";
 import {
   AcceptTaskRequestSchema, AcceptTaskResponseSchema, CoreHealth, InstallationSchema, MachineStatusSchema,
-  ReportStatusRequestSchema, ReportTaskRequestSchema, TaskKind, TaskSpecSchema, TaskState,
+  ReportStatusRequestSchema, ReportTaskRequestSchema, ReportUsageRequestSchema, TaskKind, TaskSpecSchema, TaskState, UsageBatchSchema,
 } from "@bifurcation/rpc";
 import { openDatabase, type DatabaseHandle } from "@/server/db";
+import { users } from "@/server/db/schema";
+import { machineUserHistory, usageStreams } from "@/server/db/schema-proxy";
 import { MachineStore } from "@/server/modules/machines/store";
-import { sha256 } from "@/server/crypto";
+import { newId, sha256 } from "@/server/crypto";
 import { TaskHub } from "@/server/rpc/task-hub";
 import { createMachineRouter } from "@/server/rpc/machine-service";
 import { handleConnectRequest } from "@/server/rpc/web-adapter";
@@ -176,6 +178,44 @@ describe("machine persistence and Connect boundary", () => {
     hub.wake("machine");
     await wake;
     hub.release("machine", current);
+    expect(hub.size).toBe(0);
+  });
+
+  it("commits authorized task and usage acknowledgements after task streams shut down", async () => {
+    const { machine, bound, identity } = enroll();
+    const task = store.enqueueInspect(machine.id, "shutdown-acknowledgement");
+    const offered = store.pending(machine.id, bound.bindingEpoch)[0];
+    store.accept(bound, BigInt(bound.sessionEpoch), task.id, offered.payloadHash);
+    const userId = newId();
+    const now = Date.now();
+    database.db.insert(users).values({ id: userId, username: "usage-user", role: "user", status: "active", createdAt: now }).run();
+    database.db.insert(machineUserHistory).values({ machineId: machine.id, userId }).run();
+    const payload = toBinary(UsageBatchSchema, create(UsageBatchSchema, {
+      coreRuntimeId: "shutdown-core", deltas: [{ userId, startUnixMs: BigInt(now - 1000), endUnixMs: BigInt(now), uploadBytes: 12n, downloadBytes: 34n }],
+    }));
+    const reports = [
+      { method: "ReportTask", input: toJson(ReportTaskRequestSchema, create(ReportTaskRequestSchema, { installation: identity, taskId: task.id, payloadSha256: offered.payloadHash, sequence: 1n, state: TaskState.SUCCEEDED })) },
+      { method: "ReportUsage", input: toJson(ReportUsageRequestSchema, create(ReportUsageRequestSchema, { installation: identity, streamId: "shutdown-usage-stream", sequence: 1n, payload, payloadSha256: sha256(payload) })) },
+    ];
+    const router = createMachineRouter(store, hub);
+    const pending = reports.map(({ method, input }) => {
+      const reading = Promise.withResolvers<void>();
+      let controller!: ReadableStreamDefaultController<Uint8Array>;
+      const body = new ReadableStream<Uint8Array>({ start(value) { controller = value; }, pull() { reading.resolve(); } }, { highWaterMark: 0 });
+      const response = handleConnectRequest(router, new Request(`http://localhost/rpc/bifurcation.v1.MachineService/${method}`, {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${machine.token}` }, body, duplex: "half",
+      } as RequestInit));
+      return { reading: reading.promise, response, complete() { controller.enqueue(new TextEncoder().encode(JSON.stringify(input))); controller.close(); } };
+    });
+    await Promise.all(pending.map((report) => report.reading));
+    hub.shutdown();
+    for (const report of pending) report.complete();
+    const responses = await Promise.all(pending.map((report) => report.response));
+    expect(responses.map((response) => response.status)).toEqual([200, 200]);
+    expect(await responses[0].json()).toMatchObject({ committedSequence: "1", terminal: true });
+    expect(await responses[1].json()).toMatchObject({ committedSequence: "1", expectedSequence: "2" });
+    expect(store.getTask(machine.id, task.id).state).toBe("succeeded");
+    expect(database.db.select().from(usageStreams).get()?.committedSequence).toBe("1");
     expect(hub.size).toBe(0);
   });
 });

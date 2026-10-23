@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
-import { WatchTasksRequestSchema, WatchTasksResponseSchema, TaskKind } from "@bifurcation/rpc";
+import { InstallationSchema, WatchTasksRequestSchema, WatchTasksResponseSchema, TaskKind } from "@bifurcation/rpc";
 import { openDatabase, type DatabaseHandle } from "@/server/db";
 import { MachineStore } from "@/server/modules/machines/store";
 import { TaskHub } from "@/server/rpc/task-hub";
@@ -76,5 +76,44 @@ describe("Connect streaming Web Request/Response adapter", () => {
     if (notification.event.case === "task") expect(notification.event.value.taskId).toBe(task.id);
     await currentReader.cancel();
     expect(hub.size).toBe(0);
+  });
+
+  it.each([false, true])("rejects a WatchTasks body completed after shutdown without changing its binding (enrolled: %s)", async (enrolled) => {
+    const machine = store.create({ name: "Delayed node", address: "node.example", region: "" });
+    const installation = create(InstallationSchema, { installationId: "delayed-installation-id", bindingEpoch: 0n });
+    const info = { daemonVersion: "test", os: "linux", arch: "amd64", supportedTasks: [TaskKind.INSPECT] };
+    if (enrolled) installation.bindingEpoch = BigInt(store.bind(machine.id, installation, info).bindingEpoch);
+    const original = store.get(machine.id);
+    const message = toBinary(WatchTasksRequestSchema, create(WatchTasksRequestSchema, { installation, ...info, protocolVersion: 1 }));
+    const prefix = Buffer.alloc(5); prefix.writeUInt32BE(message.length, 1);
+    const reading = Promise.withResolvers<void>();
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start(value) { controller = value; value.enqueue(prefix); },
+      pull() { reading.resolve(); },
+    }, { highWaterMark: 0 });
+    const pending = handleConnectRequest(createMachineRouter(store, hub), new Request("http://localhost:3000/rpc/bifurcation.v1.MachineService/WatchTasks", {
+      method: "POST", headers: { authorization: `Bearer ${machine.token}`, "content-type": "application/connect+proto", "connect-protocol-version": "1" },
+      body, duplex: "half",
+    } as RequestInit));
+    // The real Connect transport has consumed the frame header and is waiting
+    // for its payload when runtime shutdown stops accepting task streams.
+    await reading.promise;
+    hub.shutdown();
+    controller.enqueue(message);
+    controller.close();
+    const response = await pending;
+    const reader = response.body!.getReader();
+    try {
+      const frame = await reader.read();
+      expect(frame.done).toBe(false);
+      const bytes = Buffer.from(frame.value!);
+      expect(bytes[0]).toBe(2);
+      expect(JSON.parse(bytes.subarray(5).toString("utf8"))).toMatchObject({ error: { code: "unavailable" } });
+      expect((await reader.read()).done).toBe(true);
+      expect(store.get(machine.id)).toEqual(original);
+      expect(hub.size).toBe(0);
+      expect(() => hub.open(machine.id)).toThrow("panel shutting down");
+    } finally { await reader.cancel(); }
   });
 });

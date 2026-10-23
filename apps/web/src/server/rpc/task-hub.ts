@@ -34,8 +34,14 @@ class TaskSubscription {
 
 export class TaskHub {
   private readonly subscriptions = new Map<string, TaskSubscription>();
+  private stopping = false;
+
+  assertRunning() {
+    if (this.stopping) throw new ConnectError("panel shutting down", Code.Unavailable);
+  }
 
   open(machineId: string): TaskSubscription {
+    this.assertRunning();
     this.close(machineId, new ConnectError("connection replaced", Code.Canceled));
     const subscription = new TaskSubscription();
     this.subscriptions.set(machineId, subscription);
@@ -55,6 +61,7 @@ export class TaskHub {
   }
 
   shutdown() {
+    this.stopping = true;
     for (const id of this.subscriptions.keys()) this.close(id, new ConnectError("panel shutting down", Code.Unavailable));
   }
 

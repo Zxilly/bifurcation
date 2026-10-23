@@ -56,6 +56,9 @@ export function createMachineRouter(store = new MachineStore(), hub: TaskHub = t
         throw new ConnectError("invalid daemon information", Code.InvalidArgument);
       }
       const authenticated = authenticate(context);
+      // A request body may finish after shutdown has already canceled the hub.
+      // Reject it before persisting a binding or advancing the session epoch.
+      hub.assertRunning();
       const bound = store.bind(authenticated.id, request.installation, request);
       const subscription = hub.open(bound.id);
       context.responseHeader.set("Cache-Control", "no-store");
