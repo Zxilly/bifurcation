@@ -213,7 +213,7 @@ export function JsonEditorMonaco({
       <label className={labelVariants()} onClick={() => editor.current?.focus()}>
         {label}
       </label>
-      <div ref={root} className={workspace ? "json-editor-workspace" : undefined} data-expanded={expanded}>
+      <div ref={root} className={workspace ? "json-editor-workspace min-w-0" : "min-w-0"} data-expanded={expanded}>
         {workspace && <div className="json-editor-toolbar" role="group" aria-label="JSON 编辑工具">
           <div className="flex flex-wrap items-center gap-1.5">
             <Button type="button" size="sm" disabled={disabled || formatting} loading={formatting} onClick={() => void format()}>格式化 JSON</Button>

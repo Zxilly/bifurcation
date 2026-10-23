@@ -1,7 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useSyncExternalStore, type ReactNode } from "react";
-import { Field } from "@cloudflare/kumo";
+import { Field, SkeletonLine } from "@cloudflare/kumo";
 import { labelVariants } from "@cloudflare/kumo/components/label";
 
 export type JsonEditorProps = {
@@ -46,10 +46,23 @@ function JsonEditorPlaceholder({ label, description, rows = 20, variant = "field
       <div
         role="status"
         aria-label={`${label}：正在加载编辑器`}
-        className={`grid min-w-0 place-items-center rounded-lg bg-kumo-control ring ring-kumo-line ${variant === "workspace" ? "json-editor-placeholder" : ""}`}
+        aria-busy="true"
+        className={`min-w-0 rounded-lg bg-kumo-control p-4 ring ring-kumo-line ${variant === "workspace" ? "json-editor-placeholder" : ""}`}
         style={variant === "field" ? { height: `${rows * 20 + 16}px` } : undefined}
       >
-        <p className="subtle">正在加载 JSON 编辑器…</p>
+        <div aria-hidden="true" className="max-w-xl space-y-3">
+          {[52, 76, 64, 44, 56].map((width) => (
+            <SkeletonLine
+              key={width}
+              minWidth={width}
+              maxWidth={width}
+              minDuration={1.5}
+              maxDuration={1.5}
+              minDelay={0}
+              maxDelay={0}
+            />
+          ))}
+        </div>
       </div>
     </Field>
   );
