@@ -14,6 +14,7 @@ test("the subscription editor validates and completes against the sing-box schem
   await page.getByLabel("订阅名称", { exact: true }).fill("Schema check");
   await page.getByRole("button", { name: "创建并编辑", exact: true }).click();
   await expect(page.getByRole("heading", { name: "编辑订阅配置", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "高级 JSON 配置", exact: true }).click();
 
   const editor = jsonEditor(page, "客户端基础配置 JSON");
   const markers = () =>

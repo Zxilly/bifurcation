@@ -1,5 +1,6 @@
 import { test, expect, activate } from "./fixtures";
 import { rpc } from "./rpc";
+import { readySubscriptionNode } from "./subscription-fixture";
 
 type Profile = { id: string; name: string; url: string; version: number };
 
@@ -63,38 +64,54 @@ test("subscription actions follow draft, paused and downloadable states on mobil
   const readyRow = page.getByRole("row").filter({
     has: page.getByRole("link", { name: "默认订阅", exact: true }),
   });
-  await readyRow.getByRole("button", { name: "复制链接", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("已复制「默认订阅」");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(detail.body.profile.url);
-
-  await readyRow.getByRole("button", { name: "默认订阅 的更多操作", exact: true }).click();
-  await page.getByRole("menuitem", { name: "暂停订阅", exact: true }).click();
-  const pauseDialog = page.getByRole("alertdialog");
-  await expect(pauseDialog).toContainText("恢复后仍可使用原地址");
-  await pauseDialog.getByRole("button", { name: "取消", exact: true }).click();
-  expect((await page.request.get(detail.body.profile.url)).status()).toBe(200);
-  await readyRow.getByRole("button", { name: "默认订阅 的更多操作", exact: true }).click();
-  await page.getByRole("menuitem", { name: "暂停订阅", exact: true }).click();
-  await pauseDialog.getByRole("button", { name: "暂停订阅", exact: true }).click();
-  await expect(readyRow.getByRole("button", { name: "恢复订阅", exact: true })).toBeVisible();
-  expect((await page.request.get(detail.body.profile.url)).status()).toBe(403);
-
+  await expect(readyRow).toContainText("等待节点");
+  await expect(readyRow.getByRole("button", { name: "复制链接", exact: true })).toHaveCount(0);
   await readyRow.getByRole("button", { name: "默认订阅 的更多操作", exact: true }).click();
   await page.getByRole("menuitem", { name: "复制链接", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText("订阅已暂停，当前不能通过链接下载配置");
-  await page.keyboard.press("Escape");
-  await readyRow.getByRole("button", { name: "恢复订阅", exact: true }).click();
-  const resumeDialog = page.getByRole("dialog");
-  await expect(resumeDialog).toContainText("仍需有可生成的已发布配置");
-  await expect(page.getByRole("alertdialog")).toHaveCount(0);
-  await resumeDialog.getByRole("button", { name: "恢复订阅", exact: true }).click();
-  await expect(readyRow.getByRole("button", { name: "复制链接", exact: true })).toBeVisible();
-  expect((await page.request.get(detail.body.profile.url)).status()).toBe(200);
-  await page.getByRole("button", { name: "重置代理凭据", exact: true }).click();
-  await expect(page.getByRole("alertdialog")).toContainText("所有订阅将使用新代理凭据");
-  await page.getByRole("alertdialog").getByRole("button", { name: "取消", exact: true }).click();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(linkDialog).toContainText("当前没有已就绪的节点");
+  await linkDialog.getByRole("button", { name: "复制链接", exact: true }).click();
+  await expect(linkDialog).toHaveCount(0);
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(detail.body.profile.url);
+
+  const node = await readySubscriptionNode(page.request, app.origin, "订阅可用节点", "日本");
+  try {
+    await page.getByRole("button", { name: "刷新状态", exact: true }).click();
+    await expect(readyRow).toContainText("可下载");
+    await readyRow.getByRole("button", { name: "复制链接", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("已复制「默认订阅」");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(detail.body.profile.url);
+
+    await readyRow.getByRole("button", { name: "默认订阅 的更多操作", exact: true }).click();
+    await page.getByRole("menuitem", { name: "暂停订阅", exact: true }).click();
+    const pauseDialog = page.getByRole("alertdialog");
+    await expect(pauseDialog).toContainText("恢复后仍可使用原地址");
+    await pauseDialog.getByRole("button", { name: "取消", exact: true }).click();
+    expect((await page.request.get(detail.body.profile.url)).status()).toBe(200);
+    await readyRow.getByRole("button", { name: "默认订阅 的更多操作", exact: true }).click();
+    await page.getByRole("menuitem", { name: "暂停订阅", exact: true }).click();
+    await pauseDialog.getByRole("button", { name: "暂停订阅", exact: true }).click();
+    await expect(readyRow.getByRole("button", { name: "恢复订阅", exact: true })).toBeVisible();
+    expect((await page.request.get(detail.body.profile.url)).status()).toBe(403);
+
+    await readyRow.getByRole("button", { name: "默认订阅 的更多操作", exact: true }).click();
+    await page.getByRole("menuitem", { name: "复制链接", exact: true }).click();
+    await expect(page.getByRole("dialog")).toContainText("订阅已暂停，当前不能通过链接下载配置");
+    await page.keyboard.press("Escape");
+    await readyRow.getByRole("button", { name: "恢复订阅", exact: true }).click();
+    const resumeDialog = page.getByRole("dialog");
+    await expect(resumeDialog).toContainText("仍需有可生成的已发布配置");
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    await resumeDialog.getByRole("button", { name: "恢复订阅", exact: true }).click();
+    await expect(readyRow.getByRole("button", { name: "复制链接", exact: true })).toBeVisible();
+    expect((await page.request.get(detail.body.profile.url)).status()).toBe(200);
+    await page.getByRole("button", { name: "重置代理凭据", exact: true }).click();
+    await expect(page.getByRole("alertdialog")).toContainText("所有订阅将使用新代理凭据");
+    await page.getByRole("alertdialog").getByRole("button", { name: "取消", exact: true }).click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  } finally {
+    await node.peer.close();
+  }
 });
 
 test("subscription limit disables creation and duplication until a subscription is deleted", async ({

@@ -4,13 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { create } from "@bufbuild/protobuf";
 import { Badge, Banner, Button, Input, LayerCard, Tabs } from "@cloudflare/kumo";
-import { SubscriptionGroupBindingSchema, type SubscriptionGroupBinding, type SubscriptionProfile, type PreviewSubscriptionProfileResponse } from "@bifurcation/rpc/panel/me";
+import { SubscriptionGroupBindingSchema, type SubscriptionGroupBinding, type SubscriptionProfile, type PreviewSubscriptionProfileResponse, type Subscription } from "@bifurcation/rpc/panel/me";
 import { FormError, Modal } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
 import { JsonEditor } from "@/components/json-editor";
 import { UnsavedChanges } from "@/components/unsaved-changes";
 import { ApiError, errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
+import { NodeSelection } from "./node-selection";
+import { PublishedAccess } from "./published-access";
 
 const bindingFields = [
   ["regions", "地区", "例如：日本, 新加坡"],
@@ -22,7 +24,7 @@ const bindingFields = [
 ] as const;
 type BindingField = (typeof bindingFields)[number][0];
 type BindingDraft = Record<BindingField | "groupTag", string> & { key: number };
-type EditorTab = "template" | "groups";
+type EditorTab = "nodes" | "template" | "groups";
 type PendingAction = "save" | "preview" | "publish" | "import" | "reload" | null;
 
 const split = (value: string) => value.split(/[,，]+/).map((part) => part.trim()).filter(Boolean);
@@ -44,21 +46,24 @@ function bindingInput(binding: BindingDraft) {
 }
 
 // The page provides the profile; the editor owns the draft from then on.
-export function SubscriptionEditorPage({ profile }: { profile: SubscriptionProfile }) {
+export function SubscriptionEditorPage({ profile, context }: { profile: SubscriptionProfile; context?: Subscription }) {
   return <div className="w-full min-w-0">
     <Link href="/subscription" className="subtle underline">返回订阅列表</Link>
-    <Editor key={profile.id} initial={profile} />
+    <Editor key={profile.id} initial={profile} initialContext={context} />
   </div>;
 }
 
-function Editor({ initial }: { initial: SubscriptionProfile }) {
+function Editor({ initial, initialContext }: { initial: SubscriptionProfile; initialContext?: Subscription }) {
   const [profile, setProfile] = useState(initial);
   const [name, setName] = useState(initial.name);
   const [templateJson, setTemplateJson] = useState(initial.draft?.templateJson ?? "{}");
   // Keep raw text in the parent so separators survive typing, tab switches and saves.
   const [bindings, setBindings] = useState(() => (initial.draft?.bindings ?? []).map(bindingDraft));
   const nextBindingKey = useRef(bindings.length);
-  const [tab, setTab] = useState<EditorTab>("template");
+  const [tab, setTab] = useState<EditorTab>("nodes");
+  const [context, setContext] = useState(initialContext);
+  const [refreshingNodes, setRefreshingNodes] = useState(false);
+  const [published, setPublished] = useState(false);
   const [preview, setPreview] = useState<PreviewSubscriptionProfileResponse | null>(null);
   const [expiredPreviewId, setExpiredPreviewId] = useState("");
   const [pending, setPending] = useState<PendingAction>(null);
@@ -79,7 +84,7 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
     return () => window.clearTimeout(timer);
   }, [preview]);
 
-  function change() { setDirty(true); setPreview(null); setNotice(""); }
+  function change() { setDirty(true); setPreview(null); setNotice(""); setPublished(false); }
   function editBinding(key: number, field: BindingField | "groupTag", value: string) {
     setBindings((current) => current.map((binding) => binding.key === key ? { ...binding, [field]: value } : binding));
     change();
@@ -109,6 +114,7 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
     try {
       const result = await panel.me.publishSubscriptionProfile({ id: profile.id, expectedVersion: profile.version, previewId: preview.previewId });
       setProfile(result.profile!); setPreview(null);
+      setPublished(true);
       setNotice("订阅配置已发布。链接保持不变，客户端下次更新订阅时获取新规则；其他订阅不受影响。");
     } catch (error) { handleError(error); setPreview(null); } finally { setPending(null); }
   }
@@ -132,6 +138,13 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
     } catch (error) { setError(errorMessage(error)); } finally { setPending(null); }
   }
 
+  async function refreshNodes() {
+    setRefreshingNodes(true); setError("");
+    try { setContext((await panel.me.listSubscriptionProfiles({})).context); }
+    catch (error) { setError(errorMessage(error)); }
+    finally { setRefreshingNodes(false); }
+  }
+
   return <>
     <UnsavedChanges dirty={dirty} />
     <div className="mt-4 mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -148,6 +161,10 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
       </div>
     </div>
     {notice && <Banner role="status" variant="secondary" className="mb-5">{notice}</Banner>}
+    {published && <LayerCard render={<section />} className="panel stack mb-5">
+      <h2 tabIndex={-1} ref={(element) => element?.focus()}>添加到客户端</h2>
+      <PublishedAccess profile={profile} />
+    </LayerCard>}
     {!reloadOpen && <FormError message={error} />}
     {conflict && <Banner role="alert" variant="alert" className="mb-5">
       <div className="stack gap-3">
@@ -157,14 +174,27 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
       </div>
     </Banner>}
     {!profile.enabled && <Banner variant="alert" className="mb-5">此订阅已暂停。发布配置不会恢复下载，请在订阅列表中恢复。</Banner>}
+    {context?.blocked && <Banner variant="error" className="mb-5">账号已禁用或已达到本月额度，当前不能发布或使用订阅。请联系管理员。</Banner>}
     <LayerCard render={<section />} className="panel flex min-w-0 flex-col gap-4">
       <Input label="订阅名称" value={name} maxLength={64} disabled={busy} onChange={(event) => { setName(event.target.value); change(); }} />
       <Tabs variant="underline" value={tab} onValueChange={(value) => setTab(value as EditorTab)}
         labels={{ scrollStart: "向左查看更多标签", scrollEnd: "向右查看更多标签" }}
-        tabs={[{ value: "template", label: "基础配置" }, { value: "groups", label: "节点组与属性" }].map((item) => ({
+        tabs={[{ value: "nodes", label: "选择节点" }, { value: "template", label: "高级 JSON 配置" }, { value: "groups", label: "节点组与属性" }].map((item) => ({
           ...item, render: <button id={`subscription-tab-${item.value}`} aria-controls={`subscription-panel-${item.value}`} />,
         }))}
       />
+      <div id="subscription-panel-nodes" role="tabpanel" aria-labelledby="subscription-tab-nodes" tabIndex={0} hidden={tab !== "nodes"}>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="subtle">{profile.preset === "mobile" ? "手机模板" : profile.preset === "desktop" ? "PC 模板" : "当前模板"} · 无需修改 JSON 即可选择节点</p>
+          <Button disabled={busy || refreshingNodes} loading={refreshingNodes} onClick={() => void refreshNodes()}>刷新可用节点</Button>
+        </div>
+        <NodeSelection bindings={bindings.map((binding) => ({ ...bindingInput(binding), key: binding.key }))} templateJson={templateJson} nodes={context?.nodes ?? []} disabled={busy || !!context?.blocked} onApply={(keys, machineIds) => {
+          setBindings((current) => current.map((binding) => keys.includes(binding.key) ? {
+            ...binding, machineIds: machineIds.join(", "), regions: "", tags: "", protocols: "", excludeMachineIds: "",
+          } : binding));
+          change();
+        }} />
+      </div>
       {/* Keep both panels mounted so Monaco retains undo history, folds and cursor state. */}
       <div id="subscription-panel-template" role="tabpanel" aria-labelledby="subscription-tab-template" tabIndex={0} hidden={tab !== "template"} className="min-w-0">
         <fieldset disabled={busy} className="flex min-w-0 flex-col gap-3">
@@ -213,7 +243,8 @@ function Editor({ initial }: { initial: SubscriptionProfile }) {
       </div>
     </LayerCard>
     {preview && <LayerCard render={<section />} className="panel stack mt-6">
-      <div className="panel-header"><h2 ref={heading} tabIndex={-1}>订阅配置预览</h2><Badge variant="secondary">{preview.nodeCount} 个节点</Badge></div>
+      <div className="panel-header"><h2 ref={heading} tabIndex={-1}>订阅配置预览</h2><Badge variant="secondary">{preview.nodeCount} 台可用节点</Badge></div>
+      <p className="subtle">这里统计账号可用节点，各用途实际使用的节点以节点组选择为准。</p>
       {previewExpired ? <Banner role="status" variant="alert">预览已过期。请重新生成，确认当前节点和授权后再发布。</Banner>
         : <p className="subtle">有效至 {new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Shanghai" }).format(Number(preview.expiresAt))}（上海时间）。发布只更新这条订阅的规则，不更换链接。</p>}
       <details><summary className="cursor-pointer">显示完整配置（含代理凭据）</summary><div className="mt-4 stack"><JsonDocument value={preview.configJson} /><p className="subtle break-all text-xs">SHA-256 · {preview.digest}</p></div></details>

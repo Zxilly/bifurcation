@@ -34,7 +34,7 @@ test("subscription group input survives keyboard tabs, renaming and removing ear
   await activate(page, app);
   const profile = await createProfile(page, app.origin, "节点组编辑");
   await page.goto(`${app.origin}/subscription/${profile.id}`);
-  const templateTab = page.getByRole("tab", { name: "基础配置", exact: true });
+  const templateTab = page.getByRole("tab", { name: "高级 JSON 配置", exact: true });
   const groupsTab = page.getByRole("tab", { name: "节点组与属性", exact: true });
   await templateTab.focus();
   await page.keyboard.press("ArrowRight");
@@ -70,6 +70,7 @@ test("a conflicting subscription draft stays intact until the user confirms load
   await activate(page, app);
   const profile = await createProfile(page, app.origin, "原始草稿");
   await page.goto(`${app.origin}/subscription/${profile.id}`);
+  await page.getByRole("tab", { name: "高级 JSON 配置", exact: true }).click();
   const editor = jsonEditor(page, "客户端基础配置 JSON");
   const localJson = '{"log":{"level":"debug"},"outbounds":[]}';
   const remoteJson = '{"log":{"level":"warn"},"outbounds":[]}';

@@ -44,13 +44,15 @@ const subscriptionLimit = 20;
 function profileState(profile: SubscriptionProfile) {
   if (!profile.enabled) return "已暂停";
   if (!profile.publishedVersion) return "草稿";
-  return profile.generationError ? "生成失败" : "可下载";
+  if (profile.generationError) return "生成失败";
+  return profile.nodeCount ? "可下载" : "等待节点";
 }
 
 function downloadUnavailable(profile: SubscriptionProfile) {
   if (!profile.enabled) return "订阅已暂停，当前不能通过链接下载配置。恢复订阅后仍可使用原地址。";
   if (!profile.publishedVersion) return "订阅尚未发布，当前不能通过链接下载配置。请先编辑、预览并发布。";
   if (profile.generationError) return "配置生成失败，当前不能通过链接下载配置。请检查配置和可用节点。";
+  if (!profile.nodeCount) return "当前没有已就绪的节点，请联系管理员后再更新客户端订阅。";
   return "";
 }
 
@@ -107,7 +109,7 @@ export function Subscription({
   async function copyLink(profile: SubscriptionProfile) {
     await navigator.clipboard.writeText(profile.url);
     const unavailable = downloadUnavailable(profile);
-    setNotice(`已复制「${profile.name}」的订阅链接。${unavailable}`);
+    setNotice(`已复制「${profile.name}」的订阅链接。${unavailable || "请在支持 sing-box 配置的客户端中添加远程订阅，粘贴此链接并更新。"}`);
   }
 
   async function inspect(profile: SubscriptionProfile, kind: Action["kind"]) {
@@ -210,7 +212,7 @@ export function Subscription({
               <Table.Row>
                 <Table.Head>订阅</Table.Head>
                 <Table.Head className="hidden w-28 sm:table-cell">状态</Table.Head>
-                <Table.Head className="hidden w-20 text-right sm:table-cell">节点</Table.Head>
+                <Table.Head className="hidden w-24 text-right sm:table-cell">可用节点</Table.Head>
                 <Table.Head className="w-42 lg:w-72">操作</Table.Head>
               </Table.Row>
             </Table.Header>
@@ -227,7 +229,7 @@ export function Subscription({
                         {" · "}
                         {profile.publishedVersion ? `已发布 v${profile.publishedVersion}` : "未发布"}
                       </p>
-                      <p className="mt-2 sm:hidden">{state} · {profile.nodeCount} 个节点</p>
+                      <p className="mt-2 sm:hidden">{state} · {profile.nodeCount} 台可用节点</p>
                     </Table.Cell>
                     <Table.Cell className="hidden sm:table-cell">
                       <Badge variant={state === "生成失败" ? "destructive" : "secondary"}>{state}</Badge>
@@ -241,7 +243,7 @@ export function Subscription({
                           <Button disabled={busy} onClick={() => void inspect(profile, "resume")}>恢复订阅</Button>
                         ) : (
                           <LinkButton variant="secondary" href={href}>
-                            {state === "草稿" ? "编辑并发布" : "修复配置"}
+                            {state === "草稿" ? "编辑并发布" : state === "等待节点" ? "查看节点" : "修复配置"}
                           </LinkButton>
                         )}
                         {state === "可下载" && (
@@ -329,7 +331,7 @@ export function Subscription({
         <form onSubmit={create} className="stack">
           <Input label="订阅名称" value={name} onChange={(e) => setName(e.target.value)} required maxLength={64} placeholder="例如：手机日常、PC 游戏" />
           {!copyFrom && <Select label="初始模板" value={preset} onValueChange={(value) => setPreset(String(value))} items={{ desktop: "PC", mobile: "手机" }} />}
-          <p className="subtle">创建后进入独立编辑页。配置发布后，客户端才可通过这条链接获取配置。</p>
+          <p className="subtle">创建后选择各用途的节点，预览并发布，再将链接添加到客户端。可直接使用模板，无需修改 JSON。</p>
           <FormError message={error} />
           <div className="mt-8 flex justify-end gap-2">
             <Button type="button" onClick={() => setCreating(false)} disabled={busy}>取消</Button>

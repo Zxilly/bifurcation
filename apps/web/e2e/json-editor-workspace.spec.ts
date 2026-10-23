@@ -26,6 +26,7 @@ async function openEditor(page: Page, origin: string) {
   expect(result.status).toBe(200);
   await page.goto(`${origin}/subscription/${result.body.profile.id}`);
   await expect(page.getByRole("heading", { name: "编辑订阅配置", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "高级 JSON 配置", exact: true }).click();
   return result.body.profile;
 }
 
@@ -40,8 +41,8 @@ test("keyboard edits remain undoable across tabs and the save shortcut persists 
   await expect.poll(() => editor.value()).toBe(`${original} `);
 
   await page.getByRole("tab", { name: "节点组与属性", exact: true }).click();
-  await expect(page.getByRole("tabpanel", { name: "基础配置", exact: true })).not.toBeVisible();
-  await page.getByRole("tab", { name: "基础配置", exact: true }).click();
+  await expect(page.getByRole("tabpanel", { name: "高级 JSON 配置", exact: true })).not.toBeVisible();
+  await page.getByRole("tab", { name: "高级 JSON 配置", exact: true }).click();
   await editor.textbox.focus();
   await page.keyboard.press("ControlOrMeta+z");
   await expect.poll(() => editor.value()).toBe(original);
@@ -57,6 +58,7 @@ test("keyboard edits remain undoable across tabs and the save shortcut persists 
   expect(saved.status).toBe(200);
   expect(saved.body.profile.draft.templateJson).toBe(`${original} `);
   await page.reload();
+  await page.getByRole("tab", { name: "高级 JSON 配置", exact: true }).click();
   expect(await editor.value()).toBe(`${original} `);
 });
 

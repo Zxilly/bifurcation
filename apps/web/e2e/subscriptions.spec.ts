@@ -133,6 +133,7 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
       ids.push(
         decodeURIComponent(new URL(page.url()).pathname.split("/").at(-1)!),
       );
+      await page.getByRole("tab", { name: "高级 JSON 配置", exact: true }).click();
       const input = jsonEditor(page, "客户端基础配置 JSON");
       const json = JSON.parse(await input.value());
       json.log.level = level;
@@ -142,6 +143,7 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
         page.getByText("草稿已保存。生成预览并发布后，客户端才可下载配置。", { exact: true }),
       ).toBeVisible();
       await page.reload();
+      await page.getByRole("tab", { name: "高级 JSON 配置", exact: true }).click();
       expect(await input.value()).toBe(JSON.stringify(json));
       await page
         .getByRole("tab", { name: "节点组与属性", exact: true })
