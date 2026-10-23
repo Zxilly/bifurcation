@@ -12,7 +12,7 @@ import { machinesImplementation } from "./machines-service";
 import { configurationImplementation } from "./configuration-service";
 import { usersImplementation } from "./users-service";
 import { usageImplementation } from "./usage-service";
-import { panelGate } from "./common";
+import { panelAuthorizationInterceptor, panelGate } from "./common";
 
 // Panel API for the web console and API Key automation. Session cookies
 // ride the same Connect endpoint; authorization tiers live in common.ts.
@@ -24,6 +24,7 @@ export function createPanelRouter() {
     readMaxBytes: 4 * 1024 * 1024,
     writeMaxBytes: 8 * 1024 * 1024,
     requestGate: panelGate,
+    interceptors: [panelAuthorizationInterceptor],
   });
   router.service(AuthService, authImplementation);
   router.service(MeService, meImplementation);

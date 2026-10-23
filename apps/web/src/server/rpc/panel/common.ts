@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { Code, ConnectError, createContextKey, type HandlerContext } from "@connectrpc/connect";
+import { Code, ConnectError, createContextKey, type HandlerContext, type Interceptor } from "@connectrpc/connect";
 import { ZodError } from "zod";
 import { ErrorDetailSchema } from "@bifurcation/rpc/panel/types";
 import { authenticate, requireAdmin, requireRecentSession, type Principal } from "@/server/identity/service";
@@ -128,7 +128,7 @@ export function toConnectError(error: unknown): ConnectError {
 
 // Authenticates every panel RPC before its body is parsed, mirroring the
 // REST envelope: origin check for cookie callers, no Bearer on public flows.
-export function panelGate(context: HandlerContext) {
+export function panelGate(context: Pick<HandlerContext, "service" | "method" | "requestHeader" | "values">) {
   try {
     const tier = tiers[`${context.service.typeName}.${context.method.name}`];
     if (!tier) throw new AppError("INTERNAL_ERROR", "授权配置缺失", 500);
@@ -148,6 +148,14 @@ export function panelGate(context: HandlerContext) {
     throw toConnectError(error);
   }
 }
+
+// Panel methods are unary: Connect invokes this after receiving and parsing
+// the message, immediately before the domain handler. Reuse the same policy so
+// a revoked credential or changed role cannot survive a slow request body.
+export const panelAuthorizationInterceptor: Interceptor = (next) => async (request) => {
+  panelGate({ service: request.service, method: request.method, requestHeader: request.header, values: request.contextValues });
+  return next(request);
+};
 
 export function requirePrincipal(context: HandlerContext): Principal {
   const principal = context.values.get(principalKey);
