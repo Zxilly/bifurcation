@@ -36,6 +36,9 @@ test("subscription group input survives keyboard tabs, renaming and removing ear
   await page.goto(`${app.origin}/subscription/${profile.id}`);
   const templateTab = page.getByRole("tab", { name: "高级 JSON 配置", exact: true });
   const groupsTab = page.getByRole("tab", { name: "节点组与属性", exact: true });
+  // Wait for a visible client-side tab change before checking keyboard navigation.
+  await templateTab.click();
+  await expect(templateTab).toHaveAttribute("aria-selected", "true");
   await templateTab.focus();
   await page.keyboard.press("ArrowRight");
   await expect(groupsTab).toBeFocused();
