@@ -33,6 +33,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: node --test deploy/tests/configure.test.mjs
       - run: pnpm build
       - run: pnpm exec buf lint
       - run: node scripts/generate-rpc.mjs
