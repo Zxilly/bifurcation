@@ -10,13 +10,17 @@
 
 ## 组件、字体与颜色
 
-- 使用 `@cloudflare/kumo` 的原生 npm exports，包括 Sidebar、Table、LayerCard、Tabs、Dialog、Input、Button、Badge、Meter 和 Chart。不要复制安装或重写这些组件。
+- 使用 `@cloudflare/kumo` 的原生 npm exports，包括 Sidebar、Table、LayerCard、Tabs、Dialog、Input、Button、Badge、Meter、Collapsible 和 Chart。任务进度使用 `@cloudflare/kumo/primitives/progress`，保留 progressbar 语义；Meter 用于额度或资源占用。不要复制安装或重写这些组件。
 - Kumo 的颜色、圆角、ring、阴影、焦点与交互状态保持原生。只为页面组合、尺寸和响应式布局增加 CSS，不用全局 `table`、`th`、`td` 或泛化选择器覆盖组件内部样式。
-- 英文使用 Inter，中文使用 Noto Sans SC。正文为 14px / 21px，页面标题为 24px / 32px semibold，分区标题为 16px / 24px semibold，元信息为 12px / 18px。数字使用等宽数字；代码使用等宽字体。不额外调整字距。
+- 英文使用 Inter，中文使用 Noto Sans SC。正文、默认输入与表格为 16px / 24px，辅助信息和紧凑控件为 14px / 20px；页面标题为 28px / 36px semibold，分区标题为 20px / 28px semibold。上述 CSS 字号使用 rem，按默认 16px 根字号换算，不锁定浏览器根字号。数字使用等宽数字，代码使用等宽字体；Monaco 为 15px / 24px，图表标签为 14px。不额外调整字距。
 - 颜色采用 Kumo 语义 token；状态同时使用文字，不能只依赖颜色。图标使用 Phosphor，图表展示真实统计数据。
 - 间距以 4、8、12、16、24、32px 为主。先用标题、间距和分隔线组织信息，避免嵌套装饰卡片。
 
 `app/globals.css` 导入 Kumo 的 Tailwind 主题与 Tailwind，并保留 `@source "../../node_modules/@cloudflare/kumo/dist/**/*.{js,jsx,ts,tsx}"`。通用布局放在 `components/workspace.css`；各领域的布局放在相应的 CSS 文件中，由全局入口统一导入。
+
+Kumo 2.15.0 的默认 `text-base` 为 14px、`text-sm` 为 13px、`text-xs` 为 12px。本应用采用较大的阅读字号，在主题导入之后通过 Tailwind 的公开 `@theme` 机制统一设置 `--text-base` 为 1rem、`--text-sm` 和 `--text-xs` 为 0.875rem、`--text-lg` 为 1.125rem，并设置对应行高；不通过缩放根元素或覆盖组件内部选择器放大界面。控件尺寸仍使用 Kumo 的公开 size 属性。[Kumo 主题](https://kumo-ui.com/colors)、[Tailwind 主题覆盖](https://tailwindcss.com/docs/theme#overriding-the-default-theme)。
+
+字号按内容角色选择，不把任一设计系统的默认值当作通用最低标准。[web.dev 排版教程](https://web.dev/learn/design/typography)建议使用相对单位，并结合行长、行高和缩放检查可读性；[GOV.UK 正文规范](https://design-system.service.gov.uk/styles/paragraphs/)采用 19px 正文和谨慎使用的 16px 小字号，作为可读性参考。[WCAG 2.2 的文字缩放要求](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)关注放大到 200% 后仍可阅读和操作，并未规定统一的最小像素字号。字体调整后检查表格、表单、按钮、弹窗与编辑器，不能只检查 body。
 
 ## 页面框架
 
@@ -41,6 +45,8 @@
 登录默认显示用户名和后备密码输入，Passkey 保留独立入口。首次设置只在空实例开放；激活和恢复保留一次性链接、密码设置、可选 Passkey 以及错误状态。密码要求由现有服务端规则决定，界面不增加额外限制。
 
 账号设置按 Passkey、后备密码和 API Key 分区，使用左侧说明、右侧操作或表格的结构，窄屏转单列。最近身份验证、凭据撤销、一次性 API Key 展示和复制失败反馈保持一致。
+
+后备密码的状态标记与修改按钮在同一行垂直居中。账号凭据表的数据行最小高度为 56px，表内操作使用 Kumo 小号按钮并靠右；这是本应用的密度约定，Kumo Table 本身按内容与单元格内边距决定行高。密钥前缀单行省略并保留完整前缀提示，避免仅因标识换行抬高整行。长名称和手机端附加信息仍可自然增加行高，空状态不按数据行压缩。
 
 ## 概览与用量
 
