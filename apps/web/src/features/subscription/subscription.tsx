@@ -181,7 +181,7 @@ export function Subscription({
       <div className="page-heading">
         <div>
           <h1>接入与订阅</h1>
-          <p className="subtle mt-2">为手机、PC 或其他用途分别创建订阅，共享节点，独立管理分流规则。</p>
+          <p className="page-description">为手机、PC 或其他用途分别创建订阅，共享节点，独立管理分流规则。</p>
         </div>
         <div className="actions">
           <Button loading={pending} onClick={refresh}>刷新状态</Button>
@@ -200,6 +200,8 @@ export function Subscription({
       {context?.blocked && (
         <Banner variant="error" className="mb-5">账号已禁用或已达到本月额度，代理接入暂停。</Banner>
       )}
+      <div className="subscription-list-layout">
+      <section className="min-w-0" aria-label="订阅列表">
       <p id="subscription-limit" className="subtle mb-3">
         {atLimit
           ? "已达到 20 条订阅上限。删除不再使用的订阅后，可继续创建或复制。"
@@ -285,7 +287,9 @@ export function Subscription({
           <InlineEmpty title="还没有订阅" description="创建订阅并发布配置后，即可将链接导入客户端。" />
         )}
       </LayerCard>
-      <section className="panel-section stack mt-8" aria-labelledby="subscription-nodes">
+      </section>
+      <aside className="subscription-list-support stack">
+      <section className="stack" aria-labelledby="subscription-nodes">
         <h2 id="subscription-nodes">可用节点</h2>
         {context?.nodes.length ? (
           <>
@@ -295,19 +299,18 @@ export function Subscription({
                 <Table.Header>
                   <Table.Row>
                     <Table.Head>节点</Table.Head>
-                    <Table.Head>地区 / 标签</Table.Head>
                     <Table.Head>接入状态</Table.Head>
                   </Table.Row>
                 </Table.Header>
                 <Table.Body>
                   {context.nodes.map((node) => (
                     <Table.Row key={node.machineId}>
-                      <Table.Cell>{node.name}</Table.Cell>
                       <Table.Cell>
-                        {node.region || "未设置地区"}
-                        {node.tags.length > 0 && <p className="subtle">{node.tags.join(" · ")}</p>}
+                        <span className="break-words">{node.name}</span>
+                        <p className="subtle">{node.region || "未设置地区"}</p>
+                        {node.tags.length > 0 && <p className="subtle break-words">{node.tags.join(" · ")}</p>}
                       </Table.Cell>
-                      <Table.Cell>{node.available ? "可接入" : "未就绪"}</Table.Cell>
+                      <Table.Cell className="whitespace-nowrap">{node.available ? "可接入" : "未就绪"}</Table.Cell>
                     </Table.Row>
                   ))}
                 </Table.Body>
@@ -318,7 +321,7 @@ export function Subscription({
           <p className="subtle">暂无可用节点。管理员发布节点配置后会显示在这里；现在仍可创建订阅、保存草稿。</p>
         )}
       </section>
-      <section className="panel-section stack mt-8">
+      <section className="subscription-credentials stack">
         <h2>代理凭据</h2>
         <p className="subtle">所有订阅共用同一套账号代理凭据。重置会影响全部订阅；单独重置或暂停某条订阅链接不会撤销已导入的代理连接。</p>
         <div>
@@ -327,6 +330,8 @@ export function Subscription({
           </Button>
         </div>
       </section>
+      </aside>
+      </div>
       <Modal title={copyFrom ? "复制为新订阅" : "创建订阅"} open={creating} onClose={() => { if (!busy) setCreating(false); }}>
         <form onSubmit={create} className="stack">
           <Input label="订阅名称" value={name} onChange={(e) => setName(e.target.value)} required maxLength={64} placeholder="例如：手机日常、PC 游戏" />

@@ -49,7 +49,7 @@ test("an invited user publishes phone and PC subscriptions by named nodes withou
 
       for (const use of ["日常访问", "AI 服务", "游戏"]) {
         await page.getByRole("button", { name: `选择${use}节点`, exact: true }).click();
-        const dialog = page.getByRole("dialog", { name: `选择${use}节点`, exact: true });
+        const dialog = page.getByRole("region", { name: `选择${use}节点`, exact: true });
         await dialog.getByRole("checkbox", { name: "东京日常 · 日本", exact: true }).setChecked(true);
         await dialog.getByRole("checkbox", { name: "香港备用 · 香港", exact: true }).setChecked(false);
         await dialog.getByRole("button", { name: "应用到本订阅草稿", exact: true }).click();
@@ -85,10 +85,10 @@ test("an invited user publishes phone and PC subscriptions by named nodes withou
     await page.goto(`${app.origin}/subscription/${profiles[0].id}`);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.getByRole("button", { name: "选择AI 服务节点", exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: "选择AI 服务节点", exact: true });
+    const dialog = page.getByRole("region", { name: "选择AI 服务节点", exact: true });
     await dialog.getByRole("checkbox", { name: "东京日常 · 日本", exact: true }).setChecked(false);
     await expect(dialog.getByRole("button", { name: "应用到本订阅草稿", exact: true })).toBeDisabled();
-    await dialog.getByRole("button", { name: "取消", exact: true }).click();
+    await dialog.getByRole("button", { name: "取消选择", exact: true }).click();
     await expect(page.getByRole("button", { name: "保存草稿", exact: true })).toBeDisabled();
 
     // A custom group with no automatic-group reference must remain independent.
@@ -97,7 +97,7 @@ test("an invited user publishes phone and PC subscriptions by named nodes withou
     expect((await rpc(page.request, app.origin, `${me}/SaveSubscriptionDraft`, { id: custom.id, name: custom.name, expectedVersion: custom.version, draft: custom.draft })).status).toBe(200);
     await page.goto(`${app.origin}/subscription/${custom.id}`);
     await page.getByRole("button", { name: "选择select-ai节点", exact: true }).click();
-    await page.getByRole("dialog").getByRole("checkbox", { name: "东京日常 · 日本", exact: true }).setChecked(true);
+    await page.getByRole("region", { name: "选择select-ai节点", exact: true }).getByRole("checkbox", { name: "东京日常 · 日本", exact: true }).setChecked(true);
     await page.getByRole("button", { name: "应用到本订阅草稿", exact: true }).click();
     await page.getByRole("button", { name: "保存草稿", exact: true }).click();
     await expect(page.getByRole("button", { name: "保存草稿", exact: true })).toBeDisabled();

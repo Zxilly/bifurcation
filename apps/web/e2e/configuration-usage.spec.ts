@@ -247,7 +247,8 @@ test("configuration preview and publish, independent subscription resets, and re
 
     await page.goto(`${app.origin}/subscription`);
     await expect(
-      page.getByRole("cell", { name: "Traffic fixture", exact: true }),
+      page.getByRole("region", { name: "可用节点", exact: true })
+        .getByText("Traffic fixture", { exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: "默认订阅 的更多操作", exact: true }).click();
     const subscriptionBefore = (await getSubscription(page.request, app.origin))

@@ -108,7 +108,8 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
     });
     await page.goto(`${app.origin}/subscription`);
     await expect(
-      page.getByRole("cell", { name: "Shared node", exact: true }),
+      page.getByRole("region", { name: "可用节点", exact: true })
+        .getByText("Shared node", { exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "复制", exact: true }),
@@ -148,9 +149,11 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
       await page
         .getByRole("tab", { name: "节点组与属性", exact: true })
         .click();
+      await page.getByRole("button", { name: "编辑 select-ai 节点组", exact: true }).click();
       await page
         .getByLabel("select-ai · 地区", { exact: true })
         .fill("日本, 新加坡");
+      await page.getByRole("button", { name: "编辑 auto-ai 节点组", exact: true }).click();
       await page
         .getByLabel("auto-ai · 地区", { exact: true })
         .fill("日本, 新加坡");

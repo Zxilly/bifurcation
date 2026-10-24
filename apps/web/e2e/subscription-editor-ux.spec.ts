@@ -46,6 +46,7 @@ test("subscription group input survives keyboard tabs, renaming and removing ear
   await expect(groupsTab).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tabpanel", { name: "节点组与属性", exact: true })).toBeVisible();
 
+  await page.getByRole("button", { name: "编辑 auto 节点组", exact: true }).click();
   await page.getByLabel("auto · 地区", { exact: true }).fill("日本, 新加坡,");
   await templateTab.click();
   await groupsTab.click();
@@ -66,6 +67,26 @@ test("subscription group input survives keyboard tabs, renaming and removing ear
   await expect(page.getByLabel("auto-renamed · 地区", { exact: true })).toHaveValue("日本, 新加坡");
   await expect(page.getByLabel("auto-renamed · 标签", { exact: true })).toHaveValue("ai, game");
   await page.setViewportSize({ width: 390, height: 844 });
+  const groupRow = page.getByRole("row").filter({ has: page.getByRole("button", { name: "编辑 auto-renamed 节点组", exact: true }) });
+  await expect.poll(async () => (await groupRow.getByRole("cell").first().boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(120);
+  const editGroup = groupRow.getByRole("button", { name: "编辑 auto-renamed 节点组", exact: true });
+  await expect(editGroup).toBeVisible();
+  const actionBox = await editGroup.boundingBox();
+  expect(actionBox).not.toBeNull();
+  expect(actionBox!.x).toBeGreaterThanOrEqual(0);
+  expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(390);
+  await editGroup.click();
+  await expect(page.getByLabel("auto-renamed · 地区", { exact: true })).not.toBeVisible();
+  await editGroup.click();
+  await page.getByLabel("auto-renamed · 地区", { exact: true }).fill("日本, 香港,");
+  // Crossing the table breakpoint must retain the same field and its raw input.
+  await page.setViewportSize({ width: 1440, height: 1024 });
+  await expect(page.getByLabel("auto-renamed · 地区", { exact: true })).toHaveValue("日本, 香港,");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByLabel("auto-renamed · 地区", { exact: true })).toHaveValue("日本, 香港,");
+  await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "草稿已保存" })).toBeVisible();
+  expect((await getProfile(page, app.origin, profile.id)).draft.bindings[0].regions).toEqual(["日本", "香港"]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

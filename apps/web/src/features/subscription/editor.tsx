@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { create } from "@bufbuild/protobuf";
-import { Badge, Banner, Button, Input, LayerCard, Tabs } from "@cloudflare/kumo";
+import { Badge, Banner, Button, Input, LayerCard, Table, Tabs } from "@cloudflare/kumo";
 import { SubscriptionGroupBindingSchema, type SubscriptionGroupBinding, type SubscriptionProfile, type PreviewSubscriptionProfileResponse, type Subscription } from "@bifurcation/rpc/panel/me";
 import { FormError, Modal } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
@@ -28,6 +28,15 @@ type EditorTab = "nodes" | "template" | "groups";
 type PendingAction = "save" | "preview" | "publish" | "import" | "reload" | null;
 
 const split = (value: string) => value.split(/[,，]+/).map((part) => part.trim()).filter(Boolean);
+const narrowBindingTableQuery = "(max-width: 639px)";
+function subscribeBindingTableWidth(onChange: () => void) {
+  const query = window.matchMedia(narrowBindingTableQuery);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+const isNarrowBindingTable = () => window.matchMedia(narrowBindingTableQuery).matches;
+const serverBindingTableWidth = () => false;
+
 function bindingDraft(binding: SubscriptionGroupBinding, key: number): BindingDraft {
   return {
     key, groupTag: binding.groupTag,
@@ -47,18 +56,20 @@ function bindingInput(binding: BindingDraft) {
 
 // The page provides the profile; the editor owns the draft from then on.
 export function SubscriptionEditorPage({ profile, context }: { profile: SubscriptionProfile; context?: Subscription }) {
-  return <div className="w-full min-w-0">
-    <Link href="/subscription" className="subtle underline">返回订阅列表</Link>
+  return <div className="subscription-editor w-full min-w-0">
+    <Link href="/subscription" className="subscription-back subtle underline">返回订阅列表</Link>
     <Editor key={profile.id} initial={profile} initialContext={context} />
   </div>;
 }
 
 function Editor({ initial, initialContext }: { initial: SubscriptionProfile; initialContext?: Subscription }) {
+  const narrowBindingTable = useSyncExternalStore(subscribeBindingTableWidth, isNarrowBindingTable, serverBindingTableWidth);
   const [profile, setProfile] = useState(initial);
   const [name, setName] = useState(initial.name);
   const [templateJson, setTemplateJson] = useState(initial.draft?.templateJson ?? "{}");
   // Keep raw text in the parent so separators survive typing, tab switches and saves.
   const [bindings, setBindings] = useState(() => (initial.draft?.bindings ?? []).map(bindingDraft));
+  const [expandedBinding, setExpandedBinding] = useState<number | null>(bindings[0]?.key ?? null);
   const nextBindingKey = useRef(bindings.length);
   const [tab, setTab] = useState<EditorTab>("nodes");
   const [context, setContext] = useState(initialContext);
@@ -76,6 +87,8 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
   const fileInput = useRef<HTMLInputElement>(null);
   const busy = pending !== null;
   const previewExpired = !!preview && expiredPreviewId === preview.previewId;
+  const expandedKey = expandedBinding !== null && !bindings.some((binding) => binding.key === expandedBinding)
+    ? bindings[0]?.key : expandedBinding;
 
   useEffect(() => {
     if (!preview) return;
@@ -147,13 +160,13 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
 
   return <>
     <UnsavedChanges dirty={dirty} />
-    <div className="mt-4 mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="page-heading">
       <div className="min-w-0">
-        <h1>编辑订阅配置</h1><p className="subtle mt-2 break-words">{profile.name}</p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <h1>编辑订阅配置</h1><p className="page-description break-words">{profile.name}</p>
+        {tab !== "template" && <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{dirty ? "有未保存修改" : "草稿已保存"}</Badge>
           <span className="subtle">{profile.publishedVersion ? `客户端使用已发布 v${profile.publishedVersion}` : "尚未发布，客户端暂不可下载"}</span>
-        </div>
+        </div>}
       </div>
       <div className="flex w-full gap-2 sm:w-auto sm:shrink-0">
         <Button className="flex-1 sm:flex-none" disabled={busy || !dirty} loading={pending === "save"} onClick={() => void save(false)}>保存草稿</Button>
@@ -175,14 +188,16 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
     </Banner>}
     {!profile.enabled && <Banner variant="alert" className="mb-5">此订阅已暂停。发布配置不会恢复下载，请在订阅列表中恢复。</Banner>}
     {context?.blocked && <Banner variant="error" className="mb-5">账号已禁用或已达到本月额度，当前不能发布或使用订阅。请联系管理员。</Banner>}
-    <LayerCard render={<section />} className="panel flex min-w-0 flex-col gap-4">
-      <Input label="订阅名称" value={name} maxLength={64} disabled={busy} onChange={(event) => { setName(event.target.value); change(); }} />
+    <section className="subscription-editor-workspace stack">
+      {tab !== "template" && <div className="subscription-name"><Input label="订阅名称" value={name} maxLength={64} disabled={busy} onChange={(event) => { setName(event.target.value); change(); }} /></div>}
       <Tabs variant="underline" value={tab} onValueChange={(value) => setTab(value as EditorTab)}
         labels={{ scrollStart: "向左查看更多标签", scrollEnd: "向右查看更多标签" }}
         tabs={[{ value: "nodes", label: "选择节点" }, { value: "template", label: "高级 JSON 配置" }, { value: "groups", label: "节点组与属性" }].map((item) => ({
           ...item, render: <button id={`subscription-tab-${item.value}`} aria-controls={`subscription-panel-${item.value}`} />,
         }))}
       />
+      <div className="subscription-editor-layout" data-tab={tab}>
+      <div className="subscription-editor-panels">
       <div id="subscription-panel-nodes" role="tabpanel" aria-labelledby="subscription-tab-nodes" tabIndex={0} hidden={tab !== "nodes"}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="subtle">{profile.preset === "mobile" ? "手机模板" : profile.preset === "desktop" ? "PC 模板" : "当前模板"} · 无需修改 JSON 即可选择节点</p>
@@ -195,7 +210,7 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
           change();
         }} />
       </div>
-      {/* Keep both panels mounted so Monaco retains undo history, folds and cursor state. */}
+      {/* Keep all panels mounted so Monaco retains undo history, folds and cursor state. */}
       <div id="subscription-panel-template" role="tabpanel" aria-labelledby="subscription-tab-template" tabIndex={0} hidden={tab !== "template"} className="min-w-0">
         <fieldset disabled={busy} className="flex min-w-0 flex-col gap-3">
           <p className="subtle">编辑客户端的 DNS、TUN 和分流规则。保存草稿后，预览并发布才会更新客户端下载的配置。</p>
@@ -226,22 +241,59 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
             <p>默认 AI 组使用 ai 标签，游戏组使用 game 标签。选择组和它引用的自动组应使用一致的属性筛选；无匹配节点时需调整属性或条件。</p>
           </div></details>
           {!bindings.length && <p>尚未添加节点组绑定。添加绑定后，可按属性自动选择当前账号可用的节点。</p>}
-          {bindings.map((binding, index) => <div key={binding.key} className="stack border-t border-kumo-line pt-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="min-w-0 flex-1"><Input label={`组 ${index + 1} tag`} value={binding.groupTag} onChange={(event) => editBinding(binding.key, "groupTag", event.target.value)} /></div>
-              <Button className="self-start sm:self-auto" variant="secondary-destructive" onClick={() => { setBindings((current) => current.filter((entry) => entry.key !== binding.key)); change(); }}>移除此绑定</Button>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">{bindingFields.map(([key, label, placeholder]) =>
-              <Input key={key} label={`${binding.groupTag || index + 1} · ${label}`} value={binding[key]} placeholder={placeholder} onChange={(event) => editBinding(binding.key, key, event.target.value)} />,
-            )}</div>
-          </div>)}
+          {bindings.length > 0 && <LayerCard className="min-w-0 overflow-hidden p-0">
+            <Table layout="fixed" className="subscription-binding-table">
+              <Table.Header><Table.Row>
+                <Table.Head>节点组</Table.Head>
+                <Table.Head className="subscription-binding-summary">地区</Table.Head>
+                <Table.Head className="subscription-binding-summary">协议</Table.Head>
+                <Table.Head className="subscription-binding-summary">固定成员</Table.Head>
+                <Table.Head className="subscription-binding-actions">操作</Table.Head>
+              </Table.Row></Table.Header>
+              <Table.Body>{bindings.map((binding, index) => <Fragment key={binding.key}>
+                <Table.Row>
+                  <Table.Cell className="break-words font-medium">{binding.groupTag || "未命名组"}</Table.Cell>
+                  <Table.Cell className="subscription-binding-summary break-words">{binding.regions || "不限"}</Table.Cell>
+                  <Table.Cell className="subscription-binding-summary break-words">{binding.protocols || "不限"}</Table.Cell>
+                  <Table.Cell className="subscription-binding-summary break-words">{binding.staticMembers || "无"}</Table.Cell>
+                  <Table.Cell><div className="actions flex-nowrap">
+                    <Button size="sm" aria-label={`编辑 ${binding.groupTag || "未命名组"} 节点组`} aria-expanded={expandedKey === binding.key} aria-controls={`subscription-binding-${binding.key}`} disabled={busy} onClick={() => setExpandedBinding(expandedKey === binding.key ? null : binding.key)}>{expandedKey === binding.key ? "收起" : "编辑"}</Button>
+                    <Button size="sm" variant="secondary-destructive" aria-label="移除此绑定" disabled={busy} onClick={() => { setBindings((current) => current.filter((entry) => entry.key !== binding.key)); change(); }}>移除</Button>
+                  </div></Table.Cell>
+                </Table.Row>
+                {expandedKey === binding.key && <Table.Row>
+                  <Table.Cell colSpan={narrowBindingTable ? 2 : 5}>
+                    <div id={`subscription-binding-${binding.key}`} className="subscription-binding-fields stack">
+                      <Input label={`组 ${index + 1} tag`} value={binding.groupTag} onChange={(event) => editBinding(binding.key, "groupTag", event.target.value)} />
+                      <div className="subscription-binding-grid">{bindingFields.map(([key, label, placeholder]) =>
+                        <Input key={key} label={`${binding.groupTag || index + 1} · ${label}`} value={binding[key]} placeholder={placeholder} onChange={(event) => editBinding(binding.key, key, event.target.value)} />,
+                      )}</div>
+                    </div>
+                  </Table.Cell>
+                </Table.Row>}
+              </Fragment>)}</Table.Body>
+            </Table>
+          </LayerCard>}
           <div><Button onClick={() => {
             const binding = bindingDraft(create(SubscriptionGroupBindingSchema), nextBindingKey.current++);
-            setBindings((current) => [...current, binding]); change();
+            setBindings((current) => [...current, binding]); setExpandedBinding(binding.key); change();
           }}>添加节点组绑定</Button></div>
         </fieldset>
       </div>
-    </LayerCard>
+      </div>
+      {tab === "template" && <aside className="subscription-editor-support stack" aria-label="订阅草稿信息">
+        <h2>订阅草稿</h2>
+        <Input label="订阅名称" value={name} maxLength={64} disabled={busy} onChange={(event) => { setName(event.target.value); change(); }} />
+        <div className="stack"><div><Badge variant="secondary">{dirty ? "有未保存修改" : "草稿已保存"}</Badge></div>
+          <p className="subtle">{profile.publishedVersion ? `客户端使用已发布 v${profile.publishedVersion}` : "尚未发布，客户端暂不可下载"}</p>
+        </div>
+        <div className="subscription-editor-guidance stack"><h3>保存与发布</h3>
+          <p className="subtle">保存草稿会保留当前编辑。生成预览并确认发布后，客户端更新订阅时才会获取新配置。</p>
+          <p className="subtle">节点地址、TLS 与账号凭据由平台生成。各用途的节点可以在“选择节点”中调整。</p>
+        </div>
+      </aside>}
+      </div>
+    </section>
     {preview && <LayerCard render={<section />} className="panel stack mt-6">
       <div className="panel-header"><h2 ref={heading} tabIndex={-1}>订阅配置预览</h2><Badge variant="secondary">{preview.nodeCount} 台可用节点</Badge></div>
       <p className="subtle">这里统计账号可用节点，各用途实际使用的节点以节点组选择为准。</p>
