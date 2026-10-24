@@ -31,7 +31,7 @@ import {
   TaskState,
   type MachineDetail,
 } from "@bifurcation/rpc/panel/machines";
-import { Modal, FormError } from "@/components/modal";
+import { Modal, ModalActions, FormError } from "@/components/modal";
 import { CopyValue } from "@/components/secret-result";
 import { Reauthenticate } from "@/features/identity/reauth";
 import { ApiError, errorMessage } from "@/features/shared/api";
@@ -387,7 +387,7 @@ export function Machines() {
               description="逗号分隔，订阅按标签生成节点组。"
             />
             <FormError message={error} />
-            <div className="mt-8 flex flex-wrap justify-end gap-2">
+            <ModalActions>
               <Button
                 type="button"
                 disabled={busy}
@@ -398,7 +398,7 @@ export function Machines() {
               <Button variant="primary" type="submit" loading={busy}>
                 创建机器
               </Button>
-            </div>
+            </ModalActions>
           </form>
         </Modal>
       )}
@@ -940,7 +940,7 @@ export function MachineDetailPage({ id }: { id: string }) {
                     另一项节点操作正在进行，请等待任务结束。
                   </p>
                 )}
-                <div className="mt-8 flex flex-wrap justify-end gap-2">
+                <ModalActions>
                   <Button disabled={busy} onClick={() => setAction(null)}>
                     取消
                   </Button>
@@ -962,7 +962,7 @@ export function MachineDetailPage({ id }: { id: string }) {
                         ? "开始卸载"
                         : "移除记录"}
                   </Button>
-                </div>
+                </ModalActions>
               </>
             )}
           </div>

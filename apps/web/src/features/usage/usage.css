@@ -181,7 +181,7 @@
   border-top: 1px solid var(--color-kumo-line);
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 1200px) {
   .usage-main-supporting {
     grid-template-columns: minmax(0, 1fr);
   }

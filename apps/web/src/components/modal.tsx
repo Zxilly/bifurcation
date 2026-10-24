@@ -35,7 +35,7 @@ export function Modal({
     >
       <Dialog
         size={size}
-        className="top-1/2 max-h-[calc(100dvh-32px)] -translate-y-1/2 overflow-y-auto p-6 sm:top-1/2 sm:p-8"
+        className="top-1/2 left-[50vw] max-h-[calc(100dvh-32px)] -translate-y-1/2 overflow-y-auto p-6 sm:top-1/2 sm:p-8"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <Dialog.Title className="text-2xl font-semibold">
@@ -55,6 +55,13 @@ export function Modal({
         {children}
       </Dialog>
     </Dialog.Root>
+  );
+}
+export function ModalActions({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-8 flex flex-wrap items-center justify-end gap-2">
+      {children}
+    </div>
   );
 }
 export function FormError({ message }: { message: string }) {

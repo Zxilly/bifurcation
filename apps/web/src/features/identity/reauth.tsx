@@ -5,7 +5,7 @@ import { startAuthentication } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import type { JsonObject } from "@bufbuild/protobuf";
 import { PasskeyPurpose } from "@bifurcation/rpc/panel/auth";
-import { Modal, FormError } from "@/components/modal";
+import { Modal, ModalActions, FormError } from "@/components/modal";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 import { usePasskeySupport } from "./use-passkey-support";
@@ -78,14 +78,14 @@ export function Reauthenticate({
             required
           />
           <FormError message={error} />
-          <div className="mt-8 flex flex-wrap justify-end gap-2">
+          <ModalActions>
             <Button type="button" onClick={onClose}>
               取消
             </Button>
             <Button type="submit" variant="primary" loading={busy}>
               验证密码
             </Button>
-          </div>
+          </ModalActions>
         </form>
       </div>
     </Modal>

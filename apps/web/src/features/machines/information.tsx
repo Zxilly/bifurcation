@@ -3,7 +3,7 @@
 import { Banner, Button, Input } from "@cloudflare/kumo";
 import { useState } from "react";
 import { TaskState, type MachineDetail } from "@bifurcation/rpc/panel/machines";
-import { Modal, FormError } from "@/components/modal";
+import { Modal, ModalActions, FormError } from "@/components/modal";
 import { ApiError, errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 
@@ -137,7 +137,7 @@ export function MachineInformationAction({
               </>
             )}
             <FormError message={error} />
-            <div className="mt-8 flex flex-wrap justify-end gap-2">
+            <ModalActions>
               <Button
                 type="button"
                 disabled={busy}
@@ -153,7 +153,7 @@ export function MachineInformationAction({
               >
                 {mode === "edit" ? "保存信息" : label}
               </Button>
-            </div>
+            </ModalActions>
           </form>
         </Modal>
       )}

@@ -10,7 +10,7 @@ import type {
   MachineDetail,
   UpgradeCandidate,
 } from "@bifurcation/rpc/panel/machines";
-import { Modal, FormError } from "@/components/modal";
+import { Modal, ModalActions, FormError } from "@/components/modal";
 import { Reauthenticate } from "@/features/identity/reauth";
 import { ApiError, errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
@@ -244,7 +244,13 @@ export function MachineUpgrades({
                 )}
               </dl>
               <FormError message={error} />
-              <div className="actions">
+              <ModalActions>
+                <Button
+                  disabled={busy || checking}
+                  onClick={() => setConfirmation(null)}
+                >
+                  取消
+                </Button>
                 {confirmation.stale ? (
                   <Button variant="primary" loading={checking} onClick={open}>
                     刷新候选版本
@@ -254,13 +260,7 @@ export function MachineUpgrades({
                     开始升级
                   </Button>
                 )}
-                <Button
-                  disabled={busy || checking}
-                  onClick={() => setConfirmation(null)}
-                >
-                  取消
-                </Button>
-              </div>
+              </ModalActions>
             </div>
           </Modal>
         )}

@@ -259,9 +259,9 @@ export function AdminUsageOverview() {
               : "—"}
           </strong>
           {!!usage?.points.length && (
-            <span className="subtle">
-              上传 {formatGiB(usage.uploadBytes)} · 下载{" "}
-              {formatGiB(usage.downloadBytes)}
+            <span className="subtle flex flex-wrap gap-x-2">
+              <span className="whitespace-nowrap">上传 {formatGiB(usage.uploadBytes)}</span>
+              <span className="whitespace-nowrap">下载 {formatGiB(usage.downloadBytes)}</span>
             </span>
           )}
         </section>

@@ -3,7 +3,7 @@
 import { Button } from "@cloudflare/kumo";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Modal } from "./modal";
+import { Modal, ModalActions } from "./modal";
 
 /** Protect local editor state when following links or leaving the document. */
 export function UnsavedChanges({ dirty }: { dirty: boolean }) {
@@ -58,7 +58,7 @@ export function UnsavedChanges({ dirty }: { dirty: boolean }) {
   return (
     <Modal title="放弃未保存的修改？" role="alertdialog" open={destination !== null} onClose={() => setDestination(null)}>
       <p className="subtle">当前编辑尚未保存。离开后这些修改会丢失，已发布配置不受影响。</p>
-      <div className="mt-8 flex flex-wrap justify-end gap-2">
+      <ModalActions>
         <Button onClick={() => setDestination(null)}>继续编辑</Button>
         <Button variant="destructive" onClick={() => {
           if (!destination) return;
@@ -70,7 +70,7 @@ export function UnsavedChanges({ dirty }: { dirty: boolean }) {
           } else router.push(destination.href);
           setDestination(null);
         }}>放弃修改并离开</Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

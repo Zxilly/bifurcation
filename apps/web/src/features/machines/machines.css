@@ -229,7 +229,7 @@
 
 .machine-task-inspector {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(31rem, 0.9fr) minmax(0, 1.1fr);
   min-width: 0;
   overflow: hidden;
 }
@@ -243,9 +243,9 @@
   table-layout: fixed;
 }
 
-.machine-task-table th:nth-child(1) { width: 26%; }
-.machine-task-table th:nth-child(2) { width: 19%; }
-.machine-task-table th:nth-child(3) { width: 33%; }
+.machine-task-table th:nth-child(1) { width: 28%; }
+.machine-task-table th:nth-child(2) { width: 18%; }
+.machine-task-table th:nth-child(3) { width: 32%; }
 .machine-task-table th:nth-child(4) { width: 22%; }
 
 .machine-task-table td {

@@ -15,7 +15,7 @@ import { startRegistration } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import type { JsonObject } from "@bufbuild/protobuf";
 import type { ApiKey, Passkey } from "@bifurcation/rpc/panel/types";
-import { Modal, FormError } from "@/components/modal";
+import { Modal, ModalActions, FormError } from "@/components/modal";
 import { SecretResult } from "@/components/secret-result";
 import { Reauthenticate } from "./reauth";
 import { ApiError, date, errorMessage } from "@/features/shared/api";
@@ -376,7 +376,7 @@ export function Account({ apiKeys, passkeys }: { apiKeys: ApiKey[]; passkeys: Pa
               </p>
             )}
             <FormError message={error} />
-            <div className="mt-8 flex flex-wrap justify-end gap-2">
+            <ModalActions>
               <Button
                 type="button"
                 disabled={busy}
@@ -396,7 +396,7 @@ export function Account({ apiKeys, passkeys }: { apiKeys: ApiKey[]; passkeys: Pa
               >
                 {titles[action.kind]}
               </Button>
-            </div>
+            </ModalActions>
           </form>
         </Modal>
       )}

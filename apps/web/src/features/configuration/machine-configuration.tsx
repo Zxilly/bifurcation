@@ -546,7 +546,7 @@ function ConfigurationEditor({
                 )}
               </section>
               <Collapsible.Root className="configuration-advanced" open={advancedOpen} onOpenChange={setAdvancedOpen}>
-                <Collapsible.DefaultTrigger className="py-2 text-left">高级基础配置（可选）<span className="subtle ml-2 font-normal">{customBase ? "含自定义配置" : "使用默认日志与直连出站"}</span></Collapsible.DefaultTrigger>
+                <Collapsible.DefaultTrigger className="py-2 text-left">高级基础配置（可选）<span className="subtle mt-1 block font-normal sm:ml-2 sm:mt-0 sm:inline">{customBase ? "含自定义配置" : "使用默认日志与直连出站"}</span></Collapsible.DefaultTrigger>
                 <Collapsible.DefaultPanel>
                 <div className="stack">
                   <p className="subtle">

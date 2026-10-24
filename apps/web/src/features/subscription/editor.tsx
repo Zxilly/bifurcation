@@ -5,7 +5,7 @@ import Link from "next/link";
 import { create } from "@bufbuild/protobuf";
 import { Badge, Banner, Button, Collapsible, Input, LayerCard, Table, Tabs } from "@cloudflare/kumo";
 import { SubscriptionGroupBindingSchema, type SubscriptionGroupBinding, type SubscriptionProfile, type PreviewSubscriptionProfileResponse, type Subscription } from "@bifurcation/rpc/panel/me";
-import { FormError, Modal } from "@/components/modal";
+import { FormError, Modal, ModalActions } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
 import { JsonEditor } from "@/components/json-editor";
 import { UnsavedChanges } from "@/components/unsaved-changes";
@@ -169,8 +169,8 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
         </div>}
       </div>
       <div className="flex w-full gap-2 sm:w-auto sm:shrink-0">
-        <Button className="flex-1 sm:flex-none" disabled={busy || !dirty} loading={pending === "save"} onClick={() => void save(false)}>保存草稿</Button>
-        <Button className="flex-1 sm:flex-none" variant={preview && !previewExpired ? "secondary" : "primary"} disabled={busy} loading={pending === "preview"} onClick={() => void save(true)}>生成预览</Button>
+        <Button className="flex-1 justify-center sm:flex-none" disabled={busy || !dirty} loading={pending === "save"} onClick={() => void save(false)}>保存草稿</Button>
+        <Button className="flex-1 justify-center sm:flex-none" variant={preview && !previewExpired ? "secondary" : "primary"} disabled={busy} loading={pending === "preview"} onClick={() => void save(true)}>生成预览</Button>
       </div>
     </div>
     {notice && <Banner role="status" variant="secondary" className="mb-5">{notice}</Banner>}
@@ -310,7 +310,7 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
       <div className="stack">
         <p>这会替换当前页的订阅名称、基础配置和节点组，未保存的编辑将丢失。请先取消并复制需要保留的内容；服务器上的已发布配置不受影响。</p>
         <FormError message={error} />
-        <div className="mt-8 flex flex-wrap justify-end gap-2"><Button disabled={busy} onClick={() => setReloadOpen(false)}>继续保留当前编辑</Button><Button variant="destructive" disabled={busy} loading={pending === "reload"} onClick={() => void reloadDraft()}>放弃当前编辑并载入</Button></div>
+        <ModalActions><Button disabled={busy} onClick={() => setReloadOpen(false)}>继续保留当前编辑</Button><Button variant="destructive" disabled={busy} loading={pending === "reload"} onClick={() => void reloadDraft()}>放弃当前编辑并载入</Button></ModalActions>
       </div>
     </Modal>
   </>;

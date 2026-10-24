@@ -3,7 +3,7 @@
 import { Button, Input } from "@cloudflare/kumo";
 import { CheckIcon, CopyIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-import { Modal } from "./modal";
+import { Modal, ModalActions } from "./modal";
 export function CopyValue({
   value,
   copyLabel = "复制",
@@ -54,11 +54,11 @@ export function SecretResult({
       <div className="stack">
         <p className="subtle">请现在复制并妥善保存，关闭后不会再次显示。</p>
         <CopyValue value={value} />
-        <div className="mt-8 flex flex-wrap justify-end gap-2">
+        <ModalActions>
           <Button variant="primary" onClick={onClose}>
             完成
           </Button>
-        </div>
+        </ModalActions>
       </div>
     </Modal>
   );

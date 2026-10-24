@@ -19,7 +19,7 @@ import type {
   ListSubscriptionProfilesResponse,
   SubscriptionProfile,
 } from "@bifurcation/rpc/panel/me";
-import { Modal, FormError } from "@/components/modal";
+import { Modal, ModalActions, FormError } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
 import { InlineEmpty } from "@/components/inline-empty";
 import { errorMessage } from "@/features/shared/api";
@@ -231,7 +231,10 @@ export function Subscription({
                         {" · "}
                         {profile.publishedVersion ? `已发布 v${profile.publishedVersion}` : "未发布"}
                       </p>
-                      <p className="mt-2 sm:hidden">{state} · {profile.nodeCount} 台可用节点</p>
+                      <div className="mt-2 grid gap-1 sm:hidden">
+                        <span>{state}</span>
+                        <span>{profile.nodeCount} 台可用节点</span>
+                      </div>
                     </Table.Cell>
                     <Table.Cell className="hidden sm:table-cell">
                       <Badge variant={state === "生成失败" ? "destructive" : "secondary"}>{state}</Badge>
@@ -240,21 +243,22 @@ export function Subscription({
                     <Table.Cell>
                       <div className="flex flex-wrap items-center gap-2">
                         {state === "可下载" ? (
-                          <Button disabled={busy} onClick={() => void inspect(profile, "link")}>复制链接</Button>
+                          <Button size="sm" disabled={busy} onClick={() => void inspect(profile, "link")}>复制链接</Button>
                         ) : state === "已暂停" ? (
-                          <Button disabled={busy} onClick={() => void inspect(profile, "resume")}>恢复订阅</Button>
+                          <Button size="sm" disabled={busy} onClick={() => void inspect(profile, "resume")}>恢复订阅</Button>
                         ) : (
-                          <LinkButton variant="secondary" href={href}>
+                          <LinkButton size="sm" variant="secondary" href={href}>
                             {state === "草稿" ? "编辑并发布" : state === "等待节点" ? "查看节点" : "修复配置"}
                           </LinkButton>
                         )}
                         {state === "可下载" && (
-                          <LinkButton variant="secondary" href={href} className="hidden lg:inline-flex">编辑配置</LinkButton>
+                          <LinkButton size="sm" variant="secondary" href={href} className="hidden lg:inline-flex">编辑配置</LinkButton>
                         )}
                         <DropdownMenu>
                           <DropdownMenu.Trigger render={
                             <Button
                               variant="ghost"
+                              size="sm"
                               shape="square"
                               disabled={busy}
                               aria-label={`${profile.name} 的更多操作`}
@@ -338,10 +342,10 @@ export function Subscription({
           {!copyFrom && <Select label="初始模板" value={preset} onValueChange={(value) => setPreset(String(value))} items={{ desktop: "PC", mobile: "手机" }} />}
           <p className="subtle">创建后选择各用途的节点，预览并发布，再将链接添加到客户端。可直接使用模板，无需修改 JSON。</p>
           <FormError message={error} />
-          <div className="mt-8 flex justify-end gap-2">
+          <ModalActions>
             <Button type="button" onClick={() => setCreating(false)} disabled={busy}>取消</Button>
             <Button type="submit" variant="primary" loading={busy}>创建并编辑</Button>
-          </div>
+          </ModalActions>
         </form>
       </Modal>
       <Modal
@@ -360,10 +364,10 @@ export function Subscription({
             {downloadUnavailable(action.profile) && <Banner variant="secondary">{downloadUnavailable(action.profile)}</Banner>}
             <Input label="完整订阅链接" value={action.profile.url} readOnly onFocus={(event) => event.currentTarget.select()} />
             <FormError message={error} />
-            <div className="mt-8 flex justify-end gap-2">
+            <ModalActions>
               <Button disabled={busy} onClick={() => setAction(null)}>关闭</Button>
               <Button variant="primary" loading={busy} onClick={copyDisplayedLink}>复制链接</Button>
-            </div>
+            </ModalActions>
           </div>
         ) : action ? (
           <div className="stack">
@@ -380,12 +384,12 @@ export function Subscription({
               其他订阅保持不变，已导入的代理凭据不受影响。
             </p>
             <FormError message={error} />
-            <div className="mt-8 flex justify-end gap-2">
+            <ModalActions>
               <Button disabled={busy} onClick={() => setAction(null)}>取消</Button>
               <Button variant={destructiveAction ? "destructive" : "primary"} loading={busy} onClick={mutate}>
                 {actionTitles[action.kind]}
               </Button>
-            </div>
+            </ModalActions>
           </div>
         ) : null}
       </Modal>
@@ -393,10 +397,10 @@ export function Subscription({
         <div className="stack">
           <p>所有订阅将使用新代理凭据。机器应用新配置后，旧凭据失效；请更新所有客户端。各条订阅链接保持有效。</p>
           <FormError message={error} />
-          <div className="mt-8 flex justify-end gap-2">
+          <ModalActions>
             <Button disabled={busy} onClick={() => setCredentials(false)}>取消</Button>
             <Button variant="destructive" loading={busy} onClick={mutate}>重置代理凭据</Button>
-          </div>
+          </ModalActions>
         </div>
       </Modal>
     </>
