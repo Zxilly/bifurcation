@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LayerCard, Banner, Table, Button } from "@cloudflare/kumo";
+import { Progress } from "@cloudflare/kumo/primitives/progress";
 import { InlineEmpty } from "@/components/inline-empty";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { TaskKind } from "@bifurcation/rpc";
@@ -94,12 +95,17 @@ export function ActiveTasks({
               )}
             </div>
             {task.progressPercent != null && (
-              <progress
-                className="task-progress"
+              <Progress.Root
+                className="w-full"
                 value={task.progressPercent}
                 max={100}
                 aria-label={`${taskName[task.kind]}进度`}
-              />
+                locale="zh-CN"
+              >
+                <Progress.Track className="h-2 w-full overflow-hidden rounded-full bg-kumo-fill">
+                  <Progress.Indicator className="h-full rounded-full bg-kumo-brand" />
+                </Progress.Track>
+              </Progress.Root>
             )}
             {task.message && <p>{task.message}</p>}
             {task.kind === TaskKind.UPGRADE_DAEMON &&
@@ -179,7 +185,7 @@ export function TaskHistory({ tasks }: { tasks: Task[] }) {
                   <time dateTime={new Date(Number(task.updatedAt)).toISOString()}>{timestamp.format(Number(task.updatedAt))}</time>
                 </Table.Cell>
                 <Table.Cell>
-                  <Button variant="ghost" size="sm" aria-pressed={task.id === selected.id} aria-controls="machine-task-detail" onClick={() => setSelectedId(task.id)}>
+                  <Button variant="ghost" size="sm" className="text-sm" aria-pressed={task.id === selected.id} aria-controls="machine-task-detail" onClick={() => setSelectedId(task.id)}>
                     查看详情
                   </Button>
                 </Table.Cell>

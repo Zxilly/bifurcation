@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Banner, Button, LayerCard, LinkButton } from "@cloudflare/kumo";
+import { Banner, Button, Collapsible, LayerCard, LinkButton } from "@cloudflare/kumo";
+import { Progress } from "@cloudflare/kumo/primitives/progress";
 import { Reconciliation, type MachineConfiguration, type PublishConfigurationResponse } from "@bifurcation/rpc/panel/configuration";
 import { MachineConnection, RollbackState, TaskState } from "@bifurcation/rpc/panel/machines";
 import { ResourceFeedback } from "@/components/resource-feedback";
@@ -71,7 +72,11 @@ export function PublicationProgress({
       {task?.progressPercent != null && task.state === TaskState.RUNNING && (
         <div className="stack gap-2">
           <p className="subtle text-sm">节点报告进度：{task.progressPercent}%</p>
-          <progress className="task-progress" aria-label="配置应用进度" value={task.progressPercent} max={100} />
+          <Progress.Root className="w-full" aria-label="配置应用进度" value={task.progressPercent} max={100} locale="zh-CN">
+            <Progress.Track className="h-2 w-full overflow-hidden rounded-full bg-kumo-fill">
+              <Progress.Indicator className="h-full rounded-full bg-kumo-brand" />
+            </Progress.Track>
+          </Progress.Root>
         </div>
       )}
       {failed && task.rollback === RollbackState.SUCCEEDED && <p>节点报告已恢复上一可用配置。</p>}
@@ -90,14 +95,16 @@ export function PublicationProgress({
         <LinkButton variant="secondary" href={`/admin/machines/${machineId}?tab=activity`}>查看操作与日志</LinkButton>
         <LinkButton variant="ghost" href={`/admin/machines/${machineId}`}>返回机器详情</LinkButton>
       </div>
-      <details className="subtle text-xs">
-        <summary className="cursor-pointer">发布记录</summary>
-        <dl className="mt-3 space-y-2 break-all">
+      <Collapsible.Root>
+        <Collapsible.DefaultTrigger>发布记录</Collapsible.DefaultTrigger>
+        <Collapsible.DefaultPanel>
+        <dl className="space-y-2 break-all text-sm text-kumo-subtle">
           <div><dt>本次配置</dt><dd>{publication.revisionId}</dd></div>
           <div><dt>本次任务</dt><dd>{publication.task?.id ?? "未返回"}</dd></div>
           <div><dt>节点已应用配置</dt><dd>{configuration?.appliedRevisionId || "尚未确认"}</dd></div>
         </dl>
-      </details>
+        </Collapsible.DefaultPanel>
+      </Collapsible.Root>
     </LayerCard>
   );
 }

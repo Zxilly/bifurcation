@@ -150,7 +150,7 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
     await page.reload();
     await expect(
       page.getByRole("progressbar", { name: "升级 daemon进度", exact: true }),
-    ).toHaveAttribute("value", "25");
+    ).toHaveAttribute("aria-valuenow", "25");
     await peer.call("ReportTask", {
       taskId: rollbackTask.taskId,
       payloadSha256: rollbackTask.payloadSha256,

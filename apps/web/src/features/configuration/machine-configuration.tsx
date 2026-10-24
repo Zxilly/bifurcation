@@ -1,6 +1,6 @@
 "use client";
 
-import { LayerCard, Banner, Select, LinkButton } from "@cloudflare/kumo";
+import { LayerCard, Banner, Collapsible, Select, LinkButton } from "@cloudflare/kumo";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Badge } from "@cloudflare/kumo/components/badge";
@@ -22,6 +22,7 @@ import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { FormError } from "@/components/modal";
 import { ResourceFeedback } from "@/components/resource-feedback";
 import { JsonDocument } from "@/components/json-document";
+import { CodeDocument } from "@/components/code-document";
 import { JsonEditor } from "@/components/json-editor";
 import { UnsavedChanges } from "@/components/unsaved-changes";
 import { Reauthenticate } from "@/features/identity/reauth";
@@ -521,7 +522,7 @@ function ConfigurationEditor({
                       onChange={(event) => setCertificatePem(event.target.value)}
                       rows={4}
                       spellCheck={false}
-                      className="font-mono text-xs"
+                      className="font-mono text-sm"
                       required
                     />
                     <Input
@@ -538,15 +539,16 @@ function ConfigurationEditor({
                       onChange={(event) => setPrivateKeyPem(event.target.value)}
                       rows={4}
                       spellCheck={false}
-                      className="font-mono text-xs"
+                      className="font-mono text-sm"
                       required
                     />
                   </>
                 )}
               </section>
-              <details className="configuration-advanced" open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
-                <summary className="cursor-pointer py-2 font-medium">高级基础配置（可选）<span className="subtle ml-2 font-normal">{customBase ? "含自定义配置" : "使用默认日志与直连出站"}</span></summary>
-                <div className="stack mt-3">
+              <Collapsible.Root className="configuration-advanced" open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                <Collapsible.DefaultTrigger className="py-2 text-left">高级基础配置（可选）<span className="subtle ml-2 font-normal">{customBase ? "含自定义配置" : "使用默认日志与直连出站"}</span></Collapsible.DefaultTrigger>
+                <Collapsible.DefaultPanel>
+                <div className="stack">
                   <p className="subtle">
                     这是运行在节点上的 sing-box
                     服务端补充配置，用于设置日志、DNS、路由和出站。没有额外需求时保留{" "}
@@ -565,19 +567,17 @@ function ConfigurationEditor({
                       <code>experimental.v2ray_api</code>。
                     </li>
                   </ul>
-                  <details className="subtle">
-                    <summary className="cursor-pointer">
+                  <Collapsible.Root>
+                    <Collapsible.DefaultTrigger>
                       示例：调整日志级别
-                    </summary>
-                    <pre className="mt-3 overflow-x-auto text-xs">
-                      {
-                        '{\n  "log": {\n    "level": "warn",\n    "timestamp": true\n  }\n}'
-                      }
-                    </pre>
-                    <p className="mt-3">
+                    </Collapsible.DefaultTrigger>
+                    <Collapsible.DefaultPanel>
+                    <CodeDocument label="调整日志级别示例 JSON" code={'{\n  "log": {\n    "level": "warn",\n    "timestamp": true\n  }\n}'} />
+                    <p className="subtle">
                       此示例仅替换日志设置，保留默认直连出站。其他允许的顶层字段原样保留，最终是否可运行由节点检查。
                     </p>
-                  </details>
+                    </Collapsible.DefaultPanel>
+                  </Collapsible.Root>
                   {advancedOpen && <JsonEditor
                     label="基础配置 JSON"
                     value={baseJson}
@@ -590,7 +590,8 @@ function ConfigurationEditor({
                     description="请输入 JSON 对象。生成预览不会应用配置；修改后需要重新预览。"
                   />}
                 </div>
-              </details>
+                </Collapsible.DefaultPanel>
+              </Collapsible.Root>
               <div className="configuration-form-actions">
                 {!preview && <LinkButton variant="secondary" disabled={busy} href={`/admin/machines/${machine.id}`}>取消</LinkButton>}
                 <Button type="submit" variant={preview ? "secondary" : "primary"} loading={busy}>

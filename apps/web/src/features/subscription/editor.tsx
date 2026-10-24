@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { create } from "@bufbuild/protobuf";
-import { Badge, Banner, Button, Input, LayerCard, Table, Tabs } from "@cloudflare/kumo";
+import { Badge, Banner, Button, Collapsible, Input, LayerCard, Table, Tabs } from "@cloudflare/kumo";
 import { SubscriptionGroupBindingSchema, type SubscriptionGroupBinding, type SubscriptionProfile, type PreviewSubscriptionProfileResponse, type Subscription } from "@bifurcation/rpc/panel/me";
 import { FormError, Modal } from "@/components/modal";
 import { JsonDocument } from "@/components/json-document";
@@ -223,23 +223,23 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
             onChange={(value) => { setTemplateJson(value); change(); }}
             onSave={(value) => { if (!busy && (dirty || value !== templateJson)) void save(false, value); }}
             toolbar={<>
-              <Button type="button" size="sm" disabled={busy} loading={pending === "import"} onClick={() => fileInput.current?.click()}>导入 JSON 文件</Button>
+              <Button type="button" size="sm" className="text-sm" disabled={busy} loading={pending === "import"} onClick={() => fileInput.current?.click()}>导入 JSON 文件</Button>
               <input ref={fileInput} type="file" accept=".json,application/json" className="sr-only" tabIndex={-1} aria-hidden onChange={(event) => { void importFile(event.target.files?.[0]); event.target.value = ""; }} />
             </>}
           />
-          <details className="subtle"><summary className="cursor-pointer">平台生成内容与预览检查范围</summary><div className="mt-3 space-y-3">
+          <Collapsible.Root><Collapsible.DefaultTrigger className="text-left">平台生成内容与预览检查范围</Collapsible.DefaultTrigger><Collapsible.DefaultPanel><div className="space-y-3 text-kumo-subtle">
             <p>代理出口的地址、TLS 和账号凭据由平台根据节点配置生成；以 bfc_ 开头的 tag 留给平台使用。</p>
             <p>配置中的本地路径和远程规则集由客户端处理；预览只检查 JSON、节点组及出口引用，不验证客户端系统权限、远程资源可达性或所有核心选项。</p>
-          </div></details>
+          </div></Collapsible.DefaultPanel></Collapsible.Root>
         </fieldset>
       </div>
       <div id="subscription-panel-groups" role="tabpanel" aria-labelledby="subscription-tab-groups" tabIndex={0} hidden={tab !== "groups"} className="min-w-0">
         <fieldset disabled={busy} className="stack min-w-0">
           <p className="subtle">按地区、标签和协议为每个节点组选择节点。多个值用逗号分隔，留空表示不限制。</p>
-          <details className="subtle"><summary className="cursor-pointer">节点组如何匹配与引用</summary><div className="mt-3 space-y-3">
+          <Collapsible.Root><Collapsible.DefaultTrigger className="text-left">节点组如何匹配与引用</Collapsible.DefaultTrigger><Collapsible.DefaultPanel><div className="space-y-3 text-kumo-subtle">
             <p>组 tag 对应基础配置中的 selector / urltest。地区匹配任一填写值，标签须全部匹配；筛选只从当前账号可用节点中选取，节点改名不会改变绑定。</p>
             <p>默认 AI 组使用 ai 标签，游戏组使用 game 标签。选择组和它引用的自动组应使用一致的属性筛选；无匹配节点时需调整属性或条件。</p>
-          </div></details>
+          </div></Collapsible.DefaultPanel></Collapsible.Root>
           {!bindings.length && <p>尚未添加节点组绑定。添加绑定后，可按属性自动选择当前账号可用的节点。</p>}
           {bindings.length > 0 && <LayerCard className="min-w-0 overflow-hidden p-0">
             <Table layout="fixed" className="subscription-binding-table">
@@ -257,8 +257,8 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
                   <Table.Cell className="subscription-binding-summary break-words">{binding.protocols || "不限"}</Table.Cell>
                   <Table.Cell className="subscription-binding-summary break-words">{binding.staticMembers || "无"}</Table.Cell>
                   <Table.Cell><div className="actions flex-nowrap">
-                    <Button size="sm" aria-label={`编辑 ${binding.groupTag || "未命名组"} 节点组`} aria-expanded={expandedKey === binding.key} aria-controls={`subscription-binding-${binding.key}`} disabled={busy} onClick={() => setExpandedBinding(expandedKey === binding.key ? null : binding.key)}>{expandedKey === binding.key ? "收起" : "编辑"}</Button>
-                    <Button size="sm" variant="secondary-destructive" aria-label="移除此绑定" disabled={busy} onClick={() => { setBindings((current) => current.filter((entry) => entry.key !== binding.key)); change(); }}>移除</Button>
+                    <Button size="sm" className="text-sm" aria-label={`编辑 ${binding.groupTag || "未命名组"} 节点组`} aria-expanded={expandedKey === binding.key} aria-controls={`subscription-binding-${binding.key}`} disabled={busy} onClick={() => setExpandedBinding(expandedKey === binding.key ? null : binding.key)}>{expandedKey === binding.key ? "收起" : "编辑"}</Button>
+                    <Button size="sm" className="text-sm" variant="secondary-destructive" aria-label="移除此绑定" disabled={busy} onClick={() => { setBindings((current) => current.filter((entry) => entry.key !== binding.key)); change(); }}>移除</Button>
                   </div></Table.Cell>
                 </Table.Row>
                 {expandedKey === binding.key && <Table.Row>
@@ -299,7 +299,7 @@ function Editor({ initial, initialContext }: { initial: SubscriptionProfile; ini
       <p className="subtle">这里统计账号可用节点，各用途实际使用的节点以节点组选择为准。</p>
       {previewExpired ? <Banner role="status" variant="alert">预览已过期。请重新生成，确认当前节点和授权后再发布。</Banner>
         : <p className="subtle">有效至 {new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Shanghai" }).format(Number(preview.expiresAt))}（上海时间）。发布只更新这条订阅的规则，不更换链接。</p>}
-      <details><summary className="cursor-pointer">显示完整配置（含代理凭据）</summary><div className="mt-4 stack"><JsonDocument value={preview.configJson} /><p className="subtle break-all text-xs">SHA-256 · {preview.digest}</p></div></details>
+      <Collapsible.Root><Collapsible.DefaultTrigger className="text-left">显示完整配置（含代理凭据）</Collapsible.DefaultTrigger><Collapsible.DefaultPanel><div className="stack"><JsonDocument value={preview.configJson} /><p className="subtle break-all text-xs">SHA-256 · {preview.digest}</p></div></Collapsible.DefaultPanel></Collapsible.Root>
       <div className="flex flex-wrap justify-end gap-2">
         <Button disabled={busy} onClick={() => setPreview(null)}>继续编辑</Button>
         {previewExpired ? <Button variant="primary" disabled={busy} loading={pending === "preview"} onClick={() => void save(true)}>重新生成预览</Button>

@@ -11,7 +11,7 @@ export type JsonEditorProps = {
   disabled?: boolean;
   description?: string;
   error?: string;
-  /** Visible height in 20px lines. */
+  /** Visible height in 24px lines. */
   rows?: number;
   variant?: "field" | "workspace";
   /** Additional document actions, such as importing a file. */
@@ -48,7 +48,7 @@ function JsonEditorPlaceholder({ label, description, rows = 20, variant = "field
         aria-label={`${label}：正在加载编辑器`}
         aria-busy="true"
         className={`min-w-0 rounded-lg bg-kumo-control p-4 ring ring-kumo-line ${variant === "workspace" ? "json-editor-placeholder" : ""}`}
-        style={variant === "field" ? { height: `${rows * 20 + 16}px` } : undefined}
+        style={variant === "field" ? { height: `${rows * 24 + 24}px` } : undefined}
       >
         <div aria-hidden="true" className="max-w-xl space-y-3">
           {[52, 76, 64, 44, 56].map((width) => (

@@ -79,10 +79,6 @@
   padding-bottom: 24px;
 }
 
-.configuration-advanced summary {
-  overflow-wrap: anywhere;
-}
-
 .configuration-form-actions {
   display: flex;
   flex-wrap: wrap;
@@ -117,7 +113,7 @@
   .configuration-steps {
     justify-content: space-between;
     gap: 8px;
-    font-size: 12px;
+    font-size: var(--text-sm);
   }
   .configuration-steps li {
     gap: 4px;

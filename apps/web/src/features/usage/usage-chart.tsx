@@ -51,6 +51,7 @@ export default function UsageChart({
       color: [ChartPalette.categorical(0), palette[1]],
       textStyle: {
         fontFamily: "Inter, Noto Sans SC, sans-serif",
+        fontSize: 14,
         color: ChartPalette.text("primary"),
       },
       tooltip: {
@@ -71,7 +72,7 @@ export default function UsageChart({
         icon: "rect",
         itemWidth: 8,
         itemHeight: 8,
-        textStyle: { color: ChartPalette.text("primary"), fontSize: 12 },
+        textStyle: { color: ChartPalette.text("primary"), fontSize: 14 },
       },
       grid: { left: 6, right: 12, top: 48, bottom: 4, containLabel: true },
       xAxis: {
@@ -81,6 +82,7 @@ export default function UsageChart({
         axisTick: { show: false },
         axisLabel: {
           color: ChartPalette.text("primary"),
+          fontSize: 14,
           hideOverlap: true,
           margin: 16,
         },
@@ -88,9 +90,9 @@ export default function UsageChart({
       yAxis: {
         type: "value",
         name: "GiB",
-        nameTextStyle: { color: ChartPalette.text("primary"), align: "left" },
+        nameTextStyle: { color: ChartPalette.text("primary"), align: "left", fontSize: 14 },
         splitNumber: 3,
-        axisLabel: { color: ChartPalette.text("primary") },
+        axisLabel: { color: ChartPalette.text("primary"), fontSize: 14 },
         splitLine: { lineStyle: { color: ChartPalette.semantic("Skeleton") } },
       },
       series: [

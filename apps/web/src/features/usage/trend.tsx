@@ -36,7 +36,7 @@ export function Trend({
     <>
       <UsageChart points={points} kind={kind} />
       <Collapsible.Root className="mt-5">
-        <Collapsible.DefaultTrigger className="cursor-pointer subtle text-xs py-2">
+        <Collapsible.DefaultTrigger className="subtle py-2">
           查看数值
         </Collapsible.DefaultTrigger>
         <Collapsible.DefaultPanel>

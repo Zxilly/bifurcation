@@ -83,7 +83,7 @@ export function DiagnosticResult({ value }: { value: unknown }) {
         </>
       )}
       <Collapsible.Root open={rawOpen} onOpenChange={setRawOpen}>
-        <Collapsible.DefaultTrigger className="cursor-pointer subtle text-xs py-2">
+        <Collapsible.DefaultTrigger className="subtle py-2">
           原始诊断 JSON
         </Collapsible.DefaultTrigger>
         <Collapsible.DefaultPanel>

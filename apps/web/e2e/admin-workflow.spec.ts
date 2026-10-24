@@ -76,7 +76,7 @@ test("administrator completes setup, enrollment, failed publication recovery and
     await peer.call("AcceptTask", { sessionEpoch: peer.session.sessionEpoch, taskId: task.taskId, payloadSha256: task.payloadSha256 });
     await peer.call("ReportTask", { taskId: task.taskId, payloadSha256: task.payloadSha256, sequence: "1", state: "TASK_STATE_RUNNING", progressPercent: 35, message: "正在检查测试配置" });
     await expect(page.getByRole("heading", { name: "节点正在检查并应用配置", exact: true })).toBeVisible();
-    await expect(page.getByRole("progressbar", { name: "配置应用进度", exact: true })).toHaveAttribute("value", "35");
+    await expect(page.getByRole("progressbar", { name: "配置应用进度", exact: true })).toHaveAttribute("aria-valuenow", "35");
     await peer.call("ReportTask", { taskId: task.taskId, payloadSha256: task.payloadSha256, sequence: "2", state: "TASK_STATE_FAILED", errorCode: "CERTIFICATE_NOT_FOUND", message: "证书文件不存在，请检查 TLS 证书路径" });
     await expect(page.getByRole("heading", { name: "配置应用失败", exact: true })).toBeVisible();
     await expect(page.getByText("证书文件不存在，请检查 TLS 证书路径", { exact: true })).toBeVisible();
