@@ -1,0 +1,158 @@
+.subscription-list-layout,
+.subscription-editor-layout,
+.subscription-node-layout {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.subscription-list-support,
+.subscription-editor-support,
+.subscription-editor-panels,
+.subscription-node-detail {
+  min-width: 0;
+}
+
+.subscription-list-support,
+.subscription-editor-support {
+  align-content: start;
+}
+
+.subscription-list-support {
+  padding-top: 24px;
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.subscription-credentials,
+.subscription-editor-guidance,
+.subscription-node-current {
+  padding-top: 24px;
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.subscription-back {
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.subscription-name {
+  width: 100%;
+  max-width: 480px;
+}
+
+.subscription-editor-support {
+  padding-top: 24px;
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.subscription-node-index {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.subscription-node-index h2 {
+  margin-bottom: 8px;
+}
+
+.subscription-node-use {
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  min-height: 64px;
+  padding: 12px;
+  text-align: left;
+  white-space: normal;
+}
+
+.subscription-node-use-label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.subscription-node-options {
+  max-height: 400px;
+  overflow-y: auto;
+  border-block: 1px solid var(--color-kumo-line);
+}
+
+.subscription-node-option {
+  padding-block: 16px;
+  overflow-wrap: anywhere;
+}
+
+.subscription-node-option + .subscription-node-option {
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.subscription-binding-actions {
+  width: 144px;
+}
+
+.subscription-binding-fields {
+  min-width: 0;
+  padding-block: 8px;
+}
+
+.subscription-binding-grid {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.subscription-binding-grid > * {
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .subscription-binding-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .subscription-node-layout {
+    grid-template-columns: 224px minmax(0, 1fr);
+  }
+
+  .subscription-node-detail {
+    padding-left: 24px;
+    border-left: 1px solid var(--color-kumo-line);
+  }
+}
+
+@media (min-width: 1280px) {
+  .subscription-list-layout,
+  .subscription-editor-layout[data-tab="template"] {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+
+  .subscription-list-support,
+  .subscription-editor-support {
+    padding-top: 0;
+    padding-left: 24px;
+    border-top: 0;
+    border-left: 1px solid var(--color-kumo-line);
+  }
+}
+
+@media (max-width: 639px) {
+  .subscription-list-layout,
+  .subscription-editor-layout,
+  .subscription-node-layout {
+    gap: 16px;
+  }
+
+  .subscription-binding-summary {
+    display: none;
+  }
+
+  .subscription-binding-fields {
+    padding-block: 8px;
+  }
+}

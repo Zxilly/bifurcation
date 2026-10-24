@@ -1,0 +1,356 @@
+/* Machine surfaces share the shell width and native Kumo component skins. */
+.machine-workspace,
+.machine-list,
+.machine-tab-content {
+  min-width: 0;
+}
+
+.machine-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  color: var(--text-color-kumo-subtle);
+}
+
+.machine-back-link:hover {
+  text-decoration: underline;
+}
+
+.machine-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.machine-title-line,
+.machine-identity-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.machine-title-line h1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.machine-identity-line {
+  margin-top: 8px;
+}
+
+.machine-workspace > [role="status"],
+.machine-workspace > [role="alert"],
+.machine-active-tasks {
+  margin-bottom: 24px;
+}
+
+.machine-tabs {
+  margin-bottom: 24px;
+}
+
+.machine-tab-content {
+  display: grid;
+  gap: 24px;
+}
+
+.machine-tab-content:focus-visible {
+  outline: 2px solid var(--color-kumo-brand);
+  outline-offset: 4px;
+}
+
+.machine-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.machine-section,
+.machine-resources,
+.machine-configuration,
+.machine-active-tasks {
+  min-width: 0;
+  padding: 24px;
+}
+
+.machine-section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.machine-section-heading h3 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.machine-resource-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1.4fr 0.8fr 0.8fr;
+  gap: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.machine-resource-grid > * {
+  min-width: 0;
+}
+
+.machine-network-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  border-top: 1px solid var(--color-kumo-line);
+  padding-top: 16px;
+  margin-top: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.machine-facts > div,
+.machine-task-facts > div {
+  display: grid;
+  grid-template-columns: minmax(104px, 0.7fr) minmax(0, 1fr);
+  gap: 16px;
+  padding-block: 12px;
+  border-bottom: 1px solid var(--color-kumo-line);
+}
+
+.machine-facts dt,
+.machine-task-facts dt {
+  color: var(--text-color-kumo-subtle);
+}
+
+.machine-facts dd,
+.machine-task-facts dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.machine-section-link {
+  display: inline-flex;
+  margin-top: 16px;
+  color: var(--text-color-kumo-link);
+}
+
+.machine-section-link:hover {
+  text-decoration: underline;
+}
+
+.machine-list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.machine-list-toolbar > :first-child {
+  width: min(100%, 400px);
+}
+
+.machine-list-table {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.machine-settings {
+  min-width: 0;
+}
+
+.machine-settings-section {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.36fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+  min-width: 0;
+  padding: 24px;
+}
+
+.machine-settings-section + .machine-settings-section {
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.machine-settings-summary,
+.machine-settings-content {
+  min-width: 0;
+}
+
+.machine-settings-summary p {
+  margin-top: 8px;
+  color: var(--text-color-kumo-subtle);
+}
+
+.machine-settings-content {
+  display: grid;
+  gap: 16px;
+}
+
+.machine-settings-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.machine-operation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 0;
+  padding-block: 16px;
+}
+
+.machine-operation-row:first-child {
+  padding-top: 0;
+}
+
+.machine-operation-row:last-child {
+  padding-bottom: 0;
+}
+
+.machine-operation-row + .machine-operation-row {
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.machine-operation-row > :first-child {
+  min-width: 0;
+  max-width: 65ch;
+}
+
+.machine-operation-row > :last-child {
+  flex-shrink: 0;
+}
+
+.machine-task-inspector {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.machine-task-list {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.machine-task-table {
+  table-layout: fixed;
+}
+
+.machine-task-table th:nth-child(1) { width: 26%; }
+.machine-task-table th:nth-child(2) { width: 19%; }
+.machine-task-table th:nth-child(3) { width: 33%; }
+.machine-task-table th:nth-child(4) { width: 22%; }
+
+.machine-task-table td {
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+
+.machine-task-table tr[data-selected] {
+  background-color: color-mix(in oklch, var(--color-kumo-brand) 7%, var(--color-kumo-base));
+}
+
+.machine-task-updated {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.machine-task-mobile-meta {
+  display: none;
+}
+
+.machine-task-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 24px;
+  border-left: 1px solid var(--color-kumo-line);
+}
+
+.machine-task-detail .machine-section-heading {
+  margin-bottom: 0;
+}
+
+.machine-task-facts > div {
+  grid-template-columns: 80px minmax(0, 1fr);
+  padding-block: 8px;
+  border-bottom: 0;
+}
+
+.task-progress {
+  width: 100%;
+  height: 8px;
+  accent-color: var(--color-kumo-brand);
+}
+
+@media (max-width: 1200px) {
+  .machine-resource-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .machine-task-inspector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .machine-task-detail {
+    border-left: 0;
+    border-top: 1px solid var(--color-kumo-line);
+  }
+}
+
+@media (max-width: 960px) {
+  .machine-overview-grid,
+  .machine-settings-section {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .machine-heading {
+    flex-wrap: wrap;
+  }
+  .machine-settings-section {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  .machine-section,
+  .machine-resources,
+  .machine-configuration,
+  .machine-active-tasks,
+  .machine-settings-section,
+  .machine-task-detail {
+    padding: 16px;
+  }
+  .machine-resource-grid {
+    gap: 24px 16px;
+  }
+  .machine-operation-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .machine-section-heading {
+    align-items: flex-start;
+  }
+  .machine-list-toolbar > :first-child {
+    width: 100%;
+  }
+  .machine-task-table th:nth-child(1) { width: 42%; }
+  .machine-task-table th:nth-child(2) { width: 26%; }
+  .machine-task-table th:nth-child(4) { width: 32%; }
+  .machine-task-table th:nth-child(3),
+  .machine-task-table td:nth-child(3) { display: none; }
+  .machine-task-mobile-meta {
+    display: grid;
+    gap: 4px;
+    margin-top: 8px;
+    color: var(--text-color-kumo-subtle);
+    font-size: 12px;
+    line-height: 18px;
+  }
+}

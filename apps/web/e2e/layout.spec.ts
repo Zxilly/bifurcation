@@ -35,7 +35,7 @@ test("all panel routes share content edges at desktop, wide and mobile widths", 
     `/subscription/${subscription.body.profile.id}`,
     "/account",
   ];
-  for (const width of [1920, 1440, 390]) {
+  for (const width of [1920, 1440, 1100, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     let reference: { x: number; width: number } | undefined;
     for (const route of routes) {
@@ -77,7 +77,7 @@ test("all panel routes share content edges at desktop, wide and mobile widths", 
         Math.abs(box.headingX - box.x),
         `${route} heading alignment at ${width}`,
       ).toBeLessThanOrEqual(1);
-      expect(box.width).toBeLessThanOrEqual(1480);
+      expect(box.width).toBeLessThanOrEqual(1200);
       expect(box.overflow, `${route} horizontal overflow at ${width}`).toBe(
         false,
       );

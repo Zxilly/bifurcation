@@ -35,7 +35,7 @@ export function Modal({
     >
       <Dialog
         size={size}
-        className="max-h-[calc(100dvh-96px)] overflow-y-auto p-8"
+        className="top-1/2 max-h-[calc(100dvh-32px)] -translate-y-1/2 overflow-y-auto p-6 sm:top-1/2 sm:p-8"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <Dialog.Title className="text-2xl font-semibold">

@@ -1,0 +1,130 @@
+.auth-layout {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 32px;
+  background: var(--color-kumo-elevated);
+}
+
+.auth-layout-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 32px;
+  width: min(100%, 880px);
+  padding: 32px;
+}
+
+.auth-layout-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  min-width: 0;
+}
+
+.auth-layout-brand {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.auth-layout-introduction {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-layout-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding-left: 32px;
+  border-left: 1px solid var(--color-kumo-line);
+}
+
+.auth-layout-content .auth-form {
+  gap: 24px;
+}
+
+.auth-layout-content .auth-submit {
+  justify-content: flex-end;
+}
+
+.auth-layout-alternative {
+  max-width: 100%;
+}
+
+.auth-layout-alternative button,
+.auth-submit button {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.account-setting {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  gap: 32px;
+  padding-block: 24px;
+}
+
+.account-setting + .account-setting {
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.account-setting-introduction {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.account-setting-content {
+  min-width: 0;
+}
+
+.account-setting-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.account-setting-toolbar > p {
+  flex: 1;
+  min-width: 180px;
+}
+
+.account-password-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+@media (max-width: 1199px) {
+  .account-setting {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 639px) {
+  .auth-layout {
+    padding: 24px 16px;
+  }
+
+  .auth-layout-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .auth-layout-content {
+    padding-top: 24px;
+    padding-left: 0;
+    border-top: 1px solid var(--color-kumo-line);
+    border-left: 0;
+  }
+}

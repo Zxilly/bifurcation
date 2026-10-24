@@ -26,7 +26,7 @@ export function AppShell({
       defaultOpen
       collapsible="offcanvas"
       mobileBreakpoint={760}
-      defaultWidth={224}
+      defaultWidth={260}
       className="flex-col"
     >
       <ShellContent identity={identity} adminNavigation={adminNavigation}>

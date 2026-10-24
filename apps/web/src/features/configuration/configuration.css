@@ -1,0 +1,132 @@
+.configuration-workspace,
+.configuration-fields {
+  width: 100%;
+  min-width: 0;
+}
+
+.configuration-content {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+  max-width: 800px;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.configuration-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding-block: 8px;
+  color: var(--text-color-kumo-subtle);
+}
+
+.configuration-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.configuration-steps li + li::before {
+  content: "";
+  width: 40px;
+  margin-right: 16px;
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.configuration-steps [aria-current="step"] {
+  color: var(--text-color-kumo-default);
+  font-weight: 600;
+}
+
+.configuration-step-number {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-kumo-recessed);
+  font-variant-numeric: tabular-nums;
+}
+
+.configuration-steps [aria-current="step"] .configuration-step-number {
+  background: var(--color-kumo-brand);
+  color: var(--color-white);
+}
+
+.configuration-steps [data-complete] .configuration-step-number {
+  color: var(--text-color-kumo-link);
+}
+
+.configuration-card {
+  min-width: 0;
+  padding: 24px;
+}
+
+.configuration-form-section {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-kumo-line);
+}
+
+.configuration-advanced {
+  min-width: 0;
+  padding-bottom: 24px;
+}
+
+.configuration-advanced summary {
+  overflow-wrap: anywhere;
+}
+
+.configuration-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.configuration-preview {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-kumo-line);
+}
+
+.configuration-publication {
+  min-width: 0;
+  padding: 24px;
+}
+
+@media (max-width: 600px) {
+  .configuration-content {
+    gap: 16px;
+  }
+  .configuration-card,
+  .configuration-publication {
+    padding: 16px;
+  }
+  .configuration-steps {
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .configuration-steps li {
+    gap: 4px;
+  }
+  .configuration-steps li + li::before {
+    content: none;
+  }
+  .configuration-step-number {
+    width: 24px;
+    height: 24px;
+  }
+}
