@@ -1,6 +1,7 @@
 "use client";
 
-import { LayerCard, Banner, Button, Input } from "@cloudflare/kumo";
+import { Banner, Button, Input } from "@cloudflare/kumo";
+import { KeyIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { startRegistration } from "@simplewebauthn/browser";
@@ -10,6 +11,7 @@ import { FormError } from "@/components/modal";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 import { usePasskeySupport } from "./use-passkey-support";
+import { AuthLayout } from "./auth-layout";
 
 export function EnrollForm({
   token,
@@ -62,50 +64,71 @@ export function EnrollForm({
     }
   }
   return (
-    <div className="auth-page">
-      <LayerCard render={<section />} className="auth-card">
-        <div className="brand">bifurcation</div>
-        <h1>{recovery ? "恢复账号" : "激活账号"}</h1>
-        {!token ? (
-          <p role="alert">链接缺少凭据，请向管理员获取新的链接。</p>
-        ) : (
-          <form className="stack" onSubmit={submit}>
-            {recovery && (
-              <Banner variant="secondary">
-                恢复后，旧 Passkey、密码和登录会话将失效；API Key 保留。
-              </Banner>
-            )}
-            <p className="subtle">
-              {usePasskey
-                ? "创建 Passkey 并设置后备密码，两种方式均可独立登录。"
-                : passkeySupported
-                  ? "仅设置后备密码即可登录。之后可在账号设置中添加 Passkey。"
-                  : "当前浏览器不支持 Passkey，可仅设置后备密码。之后可在支持的浏览器中添加 Passkey。"}
-            </p>
-            {usePasskey && (
-              <Input
-                name="name"
-                label="Passkey 名称"
-                placeholder="例如：Windows Hello"
-                required
-                maxLength={64}
-              />
-            )}
+    <AuthLayout
+      title={recovery ? "恢复账号" : "激活账号"}
+      notice={
+        recovery && token && (
+          <Banner variant="secondary">
+            恢复后，旧 Passkey、密码和登录会话将失效；API Key 保留。
+          </Banner>
+        )
+      }
+      description={
+        token
+          ? usePasskey
+            ? "创建 Passkey 并设置后备密码，两种方式均可独立登录。"
+            : passkeySupported
+              ? "仅设置后备密码即可登录。之后可在账号设置中添加 Passkey。"
+              : "当前浏览器不支持 Passkey，可仅设置后备密码。之后可在支持的浏览器中添加 Passkey。"
+          : undefined
+      }
+      secondaryAction={
+        token && passkeySupported && (
+          <Button
+            type="button"
+            icon={KeyIcon}
+            disabled={busy}
+            onClick={() => {
+              setPasswordOnly(!passwordOnly);
+              setError("");
+            }}
+          >
+            {passwordOnly ? "添加 Passkey（可选）" : "仅设置后备密码"}
+          </Button>
+        )
+      }
+    >
+      {!token ? (
+        <Banner variant="error" role="alert">
+          链接缺少凭据，请向管理员获取新的链接。
+        </Banner>
+      ) : (
+        <form className="stack auth-form" onSubmit={submit}>
+          {usePasskey && (
             <Input
-              name="password"
-              label="后备密码"
-              type="password"
-              autoComplete="new-password"
+              name="name"
+              label="Passkey 名称"
+              placeholder="例如：Windows Hello"
               required
+              maxLength={64}
             />
-            <Input
-              name="confirm"
-              label="确认后备密码"
-              type="password"
-              autoComplete="new-password"
-              required
-            />
-            <FormError message={error} />
+          )}
+          <Input
+            name="password"
+            label="后备密码"
+            type="password"
+            autoComplete="new-password"
+            required
+          />
+          <Input
+            name="confirm"
+            label="确认后备密码"
+            type="password"
+            autoComplete="new-password"
+            required
+          />
+          <FormError message={error} />
+          <div className="actions auth-submit">
             <Button variant="primary" type="submit" loading={busy}>
               {usePasskey
                 ? recovery
@@ -115,22 +138,9 @@ export function EnrollForm({
                   ? "设置密码并恢复"
                   : "设置密码并激活"}
             </Button>
-            {passkeySupported && (
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={busy}
-                onClick={() => {
-                  setPasswordOnly(!passwordOnly);
-                  setError("");
-                }}
-              >
-                {passwordOnly ? "添加 Passkey（可选）" : "仅设置后备密码"}
-              </Button>
-            )}
-          </form>
-        )}
-      </LayerCard>
-    </div>
+          </div>
+        </form>
+      )}
+    </AuthLayout>
   );
 }

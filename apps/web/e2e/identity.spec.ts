@@ -106,6 +106,8 @@ test("Passkey activation, login, recovery and password change use real authentic
   expect(createdKey.status).toBe(200);
   const { token: recoveryKey } = createdKey.body;
   await logout(page, app);
+  await expect(page.getByLabel("用户名", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("后备密码", { exact: true })).toBeVisible();
   await page
     .getByRole("button", { name: "使用 Passkey 登录", exact: true })
     .click();

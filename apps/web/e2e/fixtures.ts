@@ -197,7 +197,6 @@ export async function passwordLogin(
   password = app.password,
 ) {
   await page.goto(`${app.origin}/login`);
-  await page.getByRole("button", { name: "使用后备密码", exact: true }).click();
   await page.getByLabel("用户名", { exact: true }).fill(app.username);
   await page.getByLabel("后备密码", { exact: true }).fill(password);
   await page.getByRole("button", { name: "登录", exact: true }).click();

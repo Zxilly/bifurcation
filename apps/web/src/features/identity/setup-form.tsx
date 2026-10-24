@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, LayerCard } from "@cloudflare/kumo";
+import { Button, Input } from "@cloudflare/kumo";
 import { FormError } from "@/components/modal";
 import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
+import { AuthLayout } from "./auth-layout";
 
 export function SetupForm() {
   const router = useRouter();
@@ -36,45 +37,42 @@ export function SetupForm() {
   }
 
   return (
-    <div className="auth-page">
-      <LayerCard render={<section />} className="auth-card">
-        <div className="brand">bifurcation</div>
-        <h1>创建管理员</h1>
-        <p className="subtle">
-          首次使用，请设置管理员账号。创建后即可管理用户和节点，之后可在账号设置中添加
-          Passkey。
-        </p>
-        <form className="stack" onSubmit={submit}>
-          <Input
-            name="username"
-            label="用户名"
-            autoComplete="username"
-            defaultValue="admin"
-            minLength={3}
-            maxLength={32}
-            required
-            description="3–32 位小写字母、数字、点、下划线或短横线。"
-          />
-          <Input
-            name="password"
-            label="后备密码"
-            type="password"
-            autoComplete="new-password"
-            required
-          />
-          <Input
-            name="confirm"
-            label="确认后备密码"
-            type="password"
-            autoComplete="new-password"
-            required
-          />
-          <FormError message={error} />
+    <AuthLayout
+      title="创建管理员"
+      description="首次使用，请设置管理员账号。创建后即可管理用户和节点，之后可在账号设置中添加 Passkey。"
+    >
+      <form className="stack auth-form" onSubmit={submit}>
+        <Input
+          name="username"
+          label="用户名"
+          autoComplete="username"
+          defaultValue="admin"
+          minLength={3}
+          maxLength={32}
+          required
+          description="3–32 位小写字母、数字、点、下划线或短横线。"
+        />
+        <Input
+          name="password"
+          label="后备密码"
+          type="password"
+          autoComplete="new-password"
+          required
+        />
+        <Input
+          name="confirm"
+          label="确认后备密码"
+          type="password"
+          autoComplete="new-password"
+          required
+        />
+        <FormError message={error} />
+        <div className="actions auth-submit">
           <Button type="submit" variant="primary" loading={busy}>
             创建管理员并进入
           </Button>
-        </form>
-      </LayerCard>
-    </div>
+        </div>
+      </form>
+    </AuthLayout>
   );
 }

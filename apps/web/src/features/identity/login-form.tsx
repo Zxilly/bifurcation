@@ -1,6 +1,7 @@
 "use client";
 
-import { LayerCard, Button, Input } from "@cloudflare/kumo";
+import { Button, Input } from "@cloudflare/kumo";
+import { KeyIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
@@ -12,12 +13,12 @@ import { errorMessage } from "@/features/shared/api";
 import { panel } from "@/features/shared/rpc";
 import { FormError } from "@/components/modal";
 import { usePasskeySupport } from "./use-passkey-support";
+import { AuthLayout } from "./auth-layout";
 
 export function LoginForm() {
   const router = useRouter();
-  const [passwordMode, setPasswordMode] = useState(false);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"passkey" | "password" | null>(null);
   const passkeySupported = usePasskeySupport();
   function complete(user: User) {
     router.replace(user.role === Role.ADMIN ? "/admin" : "/overview");
@@ -25,7 +26,7 @@ export function LoginForm() {
   }
   async function passkey() {
     setError("");
-    setBusy(true);
+    setBusy("passkey");
     try {
       const flow = await panel.auth.passkeyOptions({
         purpose: PasskeyPurpose.LOGIN,
@@ -43,13 +44,13 @@ export function LoginForm() {
     } catch (e) {
       setError(errorMessage(e));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
   async function password(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    setBusy(true);
+    setBusy("password");
     const data = new FormData(event.currentTarget);
     try {
       const result = await panel.auth.passwordLogin({
@@ -60,77 +61,58 @@ export function LoginForm() {
     } catch (e) {
       setError(errorMessage(e));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
   return (
-    <div className="auth-page">
-      <LayerCard render={<section />} className="auth-card">
-        <div className="brand">bifurcation</div>
-        <h1>欢迎回来</h1>
-        {!passkeySupported && (
-          <p className="mb-4">当前环境无法使用 Passkey，请使用后备密码登录。</p>
-        )}
-        {passwordMode || !passkeySupported ? (
-          <form onSubmit={password} className="stack">
-            <Input
-              label="用户名"
-              name="username"
-              autoComplete="username"
-              required
-              maxLength={64}
-            />
-            <Input
-              label="后备密码"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-            <FormError message={error} />
-            <div className="actions">
-              <Button type="submit" variant="primary" loading={busy}>
-                登录
-              </Button>
-              {passkeySupported && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={busy}
-                  onClick={() => {
-                    setPasswordMode(false);
-                    setError("");
-                  }}
-                >
-                  使用 Passkey
-                </Button>
-              )}
-            </div>
-          </form>
-        ) : (
-          <div className="stack">
-            <div>
-              <Button variant="primary" loading={busy} onClick={passkey}>
-                使用 Passkey 登录
-              </Button>
-            </div>
-            <FormError message={error} />
-            <div>
-              <Button
-                variant="ghost"
-                disabled={busy}
-                onClick={() => {
-                  setPasswordMode(true);
-                  setError("");
-                }}
-              >
-                使用后备密码
-              </Button>
-            </div>
-          </div>
-        )}
-        <footer>无法登录？联系管理员恢复账号。</footer>
-      </LayerCard>
-    </div>
+    <AuthLayout
+      title="欢迎回来"
+      description={
+        passkeySupported
+          ? "使用后备密码或 Passkey 登录你的账号。"
+          : "当前环境无法使用 Passkey，请使用后备密码登录。"
+      }
+      secondaryAction={
+        passkeySupported && (
+          <Button
+            icon={KeyIcon}
+            loading={busy === "passkey"}
+            disabled={busy !== null}
+            onClick={passkey}
+          >
+            使用 Passkey 登录
+          </Button>
+        )
+      }
+      footer="无法登录？联系管理员恢复账号。"
+    >
+      <form onSubmit={password} className="stack auth-form">
+        <Input
+          label="用户名"
+          name="username"
+          autoComplete="username"
+          required
+          maxLength={64}
+        />
+        <Input
+          label="后备密码"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+        />
+        <FormError message={error} />
+        <div className="actions auth-submit">
+          <Button
+            type="submit"
+            variant="primary"
+            loading={busy === "password"}
+            disabled={busy !== null}
+          >
+            登录
+          </Button>
+        </div>
+      </form>
+    </AuthLayout>
   );
 }

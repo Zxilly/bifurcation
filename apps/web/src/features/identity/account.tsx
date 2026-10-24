@@ -126,183 +126,185 @@ export function Account({ apiKeys, passkeys }: { apiKeys: ApiKey[]; passkeys: Pa
           {notice}
         </Banner>
       )}
-      <section className="panel-section stack">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2>Passkey</h2>
-          <Button
-            variant="primary"
-            disabled={!passkeySupported}
-            onClick={() => open({ kind: "passkey" })}
-          >
-            添加 Passkey
-          </Button>
+      <section className="account-setting" aria-labelledby="passkey-title">
+        <div className="account-setting-introduction">
+          <h2 id="passkey-title">Passkey</h2>
+          <p className="subtle">用设备解锁或安全密钥登录；后备密码也可独立登录。</p>
+          {!passkeySupported && (
+            <p className="subtle">
+              当前浏览器不支持 Passkey，请使用后备密码登录。可换用支持的浏览器添加
+              Passkey。
+            </p>
+          )}
         </div>
-        <p>用设备解锁或安全密钥登录；后备密码也可独立登录。</p>
-        {!passkeySupported && (
-          <p className="subtle">
-            当前浏览器不支持 Passkey，请使用后备密码登录。可换用支持的浏览器添加
-            Passkey。
-          </p>
-        )}
-        <LayerCard className="min-w-0 overflow-x-auto p-0">
-          <Table className="w-full table-fixed tabular-nums">
-            <Table.Header
-              className={!passkeys.length ? "hidden" : undefined}
+        <div className="account-setting-content">
+          <div className="account-setting-toolbar">
+            <Button
+              variant="primary"
+              disabled={!passkeySupported}
+              onClick={() => open({ kind: "passkey" })}
             >
-              <Table.Row>
-                <Table.Head className="w-2/3 sm:w-2/5">名称</Table.Head>
-                <Table.Head className="hidden sm:table-cell">
-                  创建时间
-                </Table.Head>
-                <Table.Head className="hidden sm:table-cell">备份</Table.Head>
-                <Table.Head className="text-right">
-                  <span className="sr-only">操作</span>
-                </Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {passkeys.map((key) => (
-                <Table.Row key={key.id}>
-                  <Table.Cell className="break-words">
-                    {key.name}
-                    <div className="mt-1 space-y-1 text-kumo-subtle sm:hidden">
-                      <p>创建于 {date(key.createdAt)}</p>
-                      <p>{key.backedUp ? "已备份" : "本机"}</p>
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell className="hidden sm:table-cell">
-                    {date(key.createdAt)}
-                  </Table.Cell>
-                  <Table.Cell className="hidden sm:table-cell">
-                    {key.backedUp ? "已备份" : "本机"}
-                  </Table.Cell>
-                  <Table.Cell className="text-right">
-                    <Button
-                      variant="ghost"
-                      onClick={() =>
-                        open({
-                          kind: "remove-passkey",
-                          id: key.id,
-                          name: key.name,
-                        })
-                      }
-                    >
-                      移除
-                    </Button>
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-              {!passkeys.length && (
-                <Table.Row>
-                  <Table.Cell colSpan={4}>
-                    <ResourceState
-                      loading={false}
-                      title="尚未添加 Passkey"
-                      description="当前可使用后备密码登录。需要用设备解锁登录时，可添加 Passkey。"
-                    />
-                  </Table.Cell>
-                </Table.Row>
-              )}
-            </Table.Body>
-          </Table>
-        </LayerCard>
-      </section>
-      <LayerCard render={<section />} className="panel stack">
-        <h2>后备密码</h2>
-        <p>无法使用 Passkey 时，使用后备密码登录。</p>
-        <div>
-          <Badge variant="secondary">已设置</Badge>
-        </div>
-        <div>
-          <Button onClick={() => open({ kind: "password" })}>
-            修改后备密码
-          </Button>
-        </div>
-      </LayerCard>
-      <section className="panel-section stack">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2>API Key</h2>
-          <div className="actions">
-            <span className="subtle">长期有效 · 可随时撤销</span>
-            <Button onClick={() => open({ kind: "key" })}>创建 API Key</Button>
+              添加 Passkey
+            </Button>
           </div>
-        </div>
-        <p>
-          用于脚本和自动化，权限随当前账号变化。完整密钥仅创建时显示；撤销后调用立即失效。
-        </p>
-        <LayerCard className="min-w-0 overflow-x-auto p-0">
-          <Table className="w-full table-fixed tabular-nums">
-            <Table.Header
-              className={!apiKeys.length ? "hidden" : undefined}
-            >
-              <Table.Row>
-                <Table.Head className="w-2/3 sm:w-1/4">名称</Table.Head>
-                <Table.Head className="hidden sm:table-cell">
-                  密钥前缀
-                </Table.Head>
-                <Table.Head className="hidden sm:table-cell">
-                  最近使用
-                </Table.Head>
-                <Table.Head className="hidden sm:table-cell">状态</Table.Head>
-                <Table.Head className="text-right">
-                  <span className="sr-only">操作</span>
-                </Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {apiKeys.map((key) => (
-                <Table.Row key={key.id}>
-                  <Table.Cell className="break-words">
-                    {key.name}
-                    <div className="mt-1 space-y-1 text-kumo-subtle sm:hidden">
-                      <p>
-                        <code>{key.prefix}…</code>
-                      </p>
-                      <p>最近使用 {date(key.lastUsedAt)}</p>
-                      <p>{key.revokedAt ? "已撤销" : "有效"}</p>
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell className="hidden break-all sm:table-cell">
-                    <code>{key.prefix}…</code>
-                  </Table.Cell>
-                  <Table.Cell className="hidden sm:table-cell">
-                    {date(key.lastUsedAt)}
-                  </Table.Cell>
-                  <Table.Cell className="hidden sm:table-cell">
-                    {key.revokedAt ? "已撤销" : "有效"}
-                  </Table.Cell>
-                  <Table.Cell className="text-right">
-                    {!key.revokedAt && (
+          <LayerCard className="min-w-0 overflow-x-auto p-0">
+            <Table className="w-full table-fixed tabular-nums">
+              <Table.Header
+                className={!passkeys.length ? "hidden" : undefined}
+              >
+                <Table.Row>
+                  <Table.Head className="w-2/3 sm:w-2/5">名称</Table.Head>
+                  <Table.Head className="hidden sm:table-cell">
+                    创建时间
+                  </Table.Head>
+                  <Table.Head className="hidden sm:table-cell">状态</Table.Head>
+                  <Table.Head className="text-right">
+                    <span className="sr-only">操作</span>
+                  </Table.Head>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {passkeys.map((key) => (
+                  <Table.Row key={key.id}>
+                    <Table.Cell className="break-words">
+                      {key.name}
+                      <div className="mt-1 space-y-1 text-kumo-subtle sm:hidden">
+                        <p>创建于 {date(key.createdAt)}</p>
+                        <p>{key.backedUp ? "已备份" : "本机"}</p>
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell className="hidden sm:table-cell">
+                      {date(key.createdAt)}
+                    </Table.Cell>
+                    <Table.Cell className="hidden sm:table-cell">
+                      {key.backedUp ? "已备份" : "本机"}
+                    </Table.Cell>
+                    <Table.Cell className="text-right">
                       <Button
-                        variant="ghost"
                         onClick={() =>
                           open({
-                            kind: "revoke-key",
+                            kind: "remove-passkey",
                             id: key.id,
                             name: key.name,
                           })
                         }
                       >
-                        撤销
+                        移除
                       </Button>
-                    )}
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-              {!apiKeys.length && (
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+                {!passkeys.length && (
+                  <Table.Row>
+                    <Table.Cell colSpan={4}>
+                      <ResourceState
+                        loading={false}
+                        title="尚未添加 Passkey"
+                        description="当前可使用后备密码登录。需要用设备解锁登录时，可添加 Passkey。"
+                      />
+                    </Table.Cell>
+                  </Table.Row>
+                )}
+              </Table.Body>
+            </Table>
+          </LayerCard>
+        </div>
+      </section>
+      <section className="account-setting" aria-labelledby="password-title">
+        <div className="account-setting-introduction">
+          <h2 id="password-title">后备密码</h2>
+          <p className="subtle">修改密码后需要重新登录。</p>
+        </div>
+        <div className="account-setting-content account-password-content">
+          <Badge variant="secondary">已设置</Badge>
+          <Button onClick={() => open({ kind: "password" })}>
+            修改后备密码
+          </Button>
+        </div>
+      </section>
+      <section className="account-setting" aria-labelledby="api-key-title">
+        <div className="account-setting-introduction">
+          <h2 id="api-key-title">API Key</h2>
+          <p className="subtle">用于脚本和自动化，权限随当前账号变化。</p>
+        </div>
+        <div className="account-setting-content">
+          <div className="account-setting-toolbar">
+            <p className="subtle">长期有效 · 完整密钥仅创建时显示 · 撤销后立即失效</p>
+            <Button onClick={() => open({ kind: "key" })}>创建 API Key</Button>
+          </div>
+          <LayerCard className="min-w-0 overflow-x-auto p-0">
+            <Table className="w-full table-fixed tabular-nums">
+              <Table.Header
+                className={!apiKeys.length ? "hidden" : undefined}
+              >
                 <Table.Row>
-                  <Table.Cell colSpan={5}>
-                    <ResourceState
-                      loading={false}
-                      title="尚未创建 API Key"
-                      description="仅在需要脚本或自动化调用时创建；日常使用面板无需 API Key。"
-                    />
-                  </Table.Cell>
+                  <Table.Head className="w-2/3 sm:w-1/4">名称</Table.Head>
+                  <Table.Head className="hidden sm:table-cell">
+                    密钥前缀
+                  </Table.Head>
+                  <Table.Head className="hidden sm:table-cell">
+                    最近使用
+                  </Table.Head>
+                  <Table.Head className="hidden sm:table-cell">状态</Table.Head>
+                  <Table.Head className="text-right">
+                    <span className="sr-only">操作</span>
+                  </Table.Head>
                 </Table.Row>
-              )}
-            </Table.Body>
-          </Table>
-        </LayerCard>
+              </Table.Header>
+              <Table.Body>
+                {apiKeys.map((key) => (
+                  <Table.Row key={key.id}>
+                    <Table.Cell className="break-words">
+                      {key.name}
+                      <div className="mt-1 space-y-1 text-kumo-subtle sm:hidden">
+                        <p>
+                          <code>{key.prefix}…</code>
+                        </p>
+                        <p>最近使用 {date(key.lastUsedAt)}</p>
+                        <p>{key.revokedAt ? "已撤销" : "有效"}</p>
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell className="hidden break-all sm:table-cell">
+                      <code>{key.prefix}…</code>
+                    </Table.Cell>
+                    <Table.Cell className="hidden sm:table-cell">
+                      {date(key.lastUsedAt)}
+                    </Table.Cell>
+                    <Table.Cell className="hidden sm:table-cell">
+                      {key.revokedAt ? "已撤销" : "有效"}
+                    </Table.Cell>
+                    <Table.Cell className="text-right">
+                      {!key.revokedAt && (
+                        <Button
+                          onClick={() =>
+                            open({
+                              kind: "revoke-key",
+                              id: key.id,
+                              name: key.name,
+                            })
+                          }
+                        >
+                          撤销
+                        </Button>
+                      )}
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+                {!apiKeys.length && (
+                  <Table.Row>
+                    <Table.Cell colSpan={5}>
+                      <ResourceState
+                        loading={false}
+                        title="尚未创建 API Key"
+                        description="仅在需要脚本或自动化调用时创建；日常使用面板无需 API Key。"
+                      />
+                    </Table.Cell>
+                  </Table.Row>
+                )}
+              </Table.Body>
+            </Table>
+          </LayerCard>
+        </div>
       </section>
       {action && (
         <Modal
