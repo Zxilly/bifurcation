@@ -23,9 +23,9 @@
 }
 
 .auth-layout-brand {
-  font-size: 16px;
+  font-size: var(--text-base);
   font-weight: 600;
-  line-height: 24px;
+  line-height: 1.5;
 }
 
 .auth-layout-introduction {
@@ -97,7 +97,8 @@
 
 .account-password-content {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  align-self: start;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;

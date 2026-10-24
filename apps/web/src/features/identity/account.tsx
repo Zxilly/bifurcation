@@ -165,7 +165,7 @@ export function Account({ apiKeys, passkeys }: { apiKeys: ApiKey[]; passkeys: Pa
               </Table.Header>
               <Table.Body>
                 {passkeys.map((key) => (
-                  <Table.Row key={key.id}>
+                  <Table.Row key={key.id} className="h-14">
                     <Table.Cell className="break-words">
                       {key.name}
                       <div className="mt-1 space-y-1 text-kumo-subtle sm:hidden">
@@ -181,6 +181,8 @@ export function Account({ apiKeys, passkeys }: { apiKeys: ApiKey[]; passkeys: Pa
                     </Table.Cell>
                     <Table.Cell className="text-right">
                       <Button
+                        size="sm"
+                        className="ms-auto"
                         onClick={() =>
                           open({
                             kind: "remove-passkey",
@@ -253,7 +255,7 @@ export function Account({ apiKeys, passkeys }: { apiKeys: ApiKey[]; passkeys: Pa
               </Table.Header>
               <Table.Body>
                 {apiKeys.map((key) => (
-                  <Table.Row key={key.id}>
+                  <Table.Row key={key.id} className="h-14">
                     <Table.Cell className="break-words">
                       {key.name}
                       <div className="mt-1 space-y-1 text-kumo-subtle sm:hidden">
@@ -264,8 +266,8 @@ export function Account({ apiKeys, passkeys }: { apiKeys: ApiKey[]; passkeys: Pa
                         <p>{key.revokedAt ? "已撤销" : "有效"}</p>
                       </div>
                     </Table.Cell>
-                    <Table.Cell className="hidden break-all sm:table-cell">
-                      <code>{key.prefix}…</code>
+                    <Table.Cell className="hidden sm:table-cell">
+                      <code className="block truncate" title={`${key.prefix}…`}>{key.prefix}…</code>
                     </Table.Cell>
                     <Table.Cell className="hidden sm:table-cell">
                       {date(key.lastUsedAt)}
@@ -276,6 +278,8 @@ export function Account({ apiKeys, passkeys }: { apiKeys: ApiKey[]; passkeys: Pa
                     <Table.Cell className="text-right">
                       {!key.revokedAt && (
                         <Button
+                          size="sm"
+                          className="ms-auto"
                           onClick={() =>
                             open({
                               kind: "revoke-key",
