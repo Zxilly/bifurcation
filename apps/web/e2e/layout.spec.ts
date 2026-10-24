@@ -81,6 +81,27 @@ test("all panel routes share content edges at desktop, wide and mobile widths", 
       expect(box.overflow, `${route} horizontal overflow at ${width}`).toBe(
         false,
       );
+      if (width === 390 && route === `/subscription/${subscription.body.profile.id}`) {
+        for (const name of ["保存草稿", "生成预览"]) {
+          const offset = await page.getByRole("button", { name, exact: true }).evaluate((button) => {
+            const bounds = button.getBoundingClientRect();
+            const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
+            const rectangles: DOMRect[] = [];
+            while (walker.nextNode()) {
+              const text = walker.currentNode;
+              if (!text.textContent?.trim()) continue;
+              const range = document.createRange();
+              range.selectNodeContents(text);
+              rectangles.push(...[...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0));
+            }
+            if (!rectangles.length) throw new Error("Button has no rendered label");
+            const textLeft = Math.min(...rectangles.map((rect) => rect.left));
+            const textRight = Math.max(...rectangles.map((rect) => rect.right));
+            return Math.abs((textLeft + textRight) / 2 - (bounds.left + bounds.width / 2));
+          });
+          expect(offset, `${name} label is centered inside its mobile button`).toBeLessThanOrEqual(1);
+        }
+      }
     }
   }
 });

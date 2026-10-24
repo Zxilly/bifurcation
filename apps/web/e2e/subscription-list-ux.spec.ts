@@ -1,8 +1,20 @@
 import { test, expect, activate } from "./fixtures";
 import { rpc } from "./rpc";
 import { readySubscriptionNode } from "./subscription-fixture";
+import type { Locator } from "@playwright/test";
 
 type Profile = { id: string; name: string; url: string; version: number };
+
+async function expectActionsOnSameRow(row: Locator, primary: Locator) {
+  const action = await primary.boundingBox();
+  const more = await row.getByRole("button", { name: / 的更多操作$/ }).boundingBox();
+  expect(action).not.toBeNull();
+  expect(more).not.toBeNull();
+  expect(
+    Math.abs(action!.y + action!.height / 2 - (more!.y + more!.height / 2)),
+    "Subscription primary action and more menu share a row center",
+  ).toBeLessThanOrEqual(1);
+}
 
 test("subscription actions follow draft, paused and downloadable states on mobile", async ({
   page,
@@ -33,6 +45,7 @@ test("subscription actions follow draft, paused and downloadable states on mobil
   const nameBounds = await draftRow.getByRole("cell").first().boundingBox();
   const actionBounds = await draftRow.getByRole("cell").last().boundingBox();
   expect(nameBounds!.width).toBeGreaterThan(actionBounds!.width);
+  await expectActionsOnSameRow(draftRow, draftRow.getByRole("link", { name: "编辑并发布", exact: true }));
   const nodes = page.getByRole("region", { name: "可用节点", exact: true });
   await expect(nodes).toContainText("现在仍可创建订阅、保存草稿");
   await expect(nodes.getByRole("table")).toHaveCount(0);
@@ -77,6 +90,7 @@ test("subscription actions follow draft, paused and downloadable states on mobil
   try {
     await page.getByRole("button", { name: "刷新状态", exact: true }).click();
     await expect(readyRow).toContainText("可下载");
+    await expectActionsOnSameRow(readyRow, readyRow.getByRole("button", { name: "复制链接", exact: true }));
     await readyRow.getByRole("button", { name: "复制链接", exact: true }).click();
     await expect(page.getByRole("status")).toContainText("已复制「默认订阅」");
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -92,6 +106,7 @@ test("subscription actions follow draft, paused and downloadable states on mobil
     await page.getByRole("menuitem", { name: "暂停订阅", exact: true }).click();
     await pauseDialog.getByRole("button", { name: "暂停订阅", exact: true }).click();
     await expect(readyRow.getByRole("button", { name: "恢复订阅", exact: true })).toBeVisible();
+    await expectActionsOnSameRow(readyRow, readyRow.getByRole("button", { name: "恢复订阅", exact: true }));
     expect((await page.request.get(detail.body.profile.url)).status()).toBe(403);
 
     await readyRow.getByRole("button", { name: "默认订阅 的更多操作", exact: true }).click();

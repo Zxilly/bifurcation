@@ -229,7 +229,7 @@ test("phone and PC subscriptions share attributed nodes and keep rules, drafts a
       .getByRole("alertdialog")
       .getByRole("button", { name: "暂停订阅", exact: true })
       .click();
-    await expect(phone.getByText("已暂停", { exact: true })).toBeVisible();
+    await expect(phone.getByText("已暂停", { exact: true }).filter({ visible: true })).toBeVisible();
     expect((await page.request.get(profiles[1].url)).status()).toBe(403);
     expect((await page.request.get(profiles[0].url)).status()).toBe(200);
     await page.setViewportSize({ width: 390, height: 844 });

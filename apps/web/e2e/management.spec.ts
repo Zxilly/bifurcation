@@ -9,6 +9,19 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   await activate(page, app);
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const password = page.getByRole("region", { name: "后备密码", exact: true });
+    const badge = await password.getByText("已设置", { exact: true }).boundingBox();
+    const changeButton = await password.getByRole("button", { name: "修改后备密码", exact: true }).boundingBox();
+    expect(badge).not.toBeNull();
+    expect(changeButton).not.toBeNull();
+    expect(
+      Math.abs(badge!.y + badge!.height / 2 - (changeButton!.y + changeButton!.height / 2)),
+      `Backup password status and action share a vertical center at ${width}px`,
+    ).toBeLessThanOrEqual(1);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "创建 API Key", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("Test API key");
   await page
@@ -30,6 +43,49 @@ test("one-time API keys, user and machine creation, and mobile navigation", asyn
   ).toHaveCount(0);
   // Boolean assertion avoids including the full credential in assertion output.
   expect((await page.locator("body").innerText()).includes(token)).toBe(false);
+  const oldKey = await rpc<{ apiKey: { id: string } }>(
+    page.request,
+    app.origin,
+    "bifurcation.panel.v1.MeService/CreateApiKey",
+    { name: "Old API key" },
+  );
+  expect(oldKey.status).toBe(200);
+  const revokedKey = await rpc(
+    page.request,
+    app.origin,
+    "bifurcation.panel.v1.MeService/RevokeApiKey",
+    { id: oldKey.body.apiKey.id },
+  );
+  expect(revokedKey.status).toBe(200);
+  await page.reload();
+  const activeKeyRow = page.getByRole("row").filter({
+    has: page.getByRole("cell", { name: "Test API key", exact: true }),
+  });
+  const revokedKeyRow = page.getByRole("row").filter({
+    has: page.getByRole("cell", { name: "Old API key", exact: true }),
+  });
+  await expect(activeKeyRow.getByRole("cell", { name: "有效", exact: true })).toBeVisible();
+  await expect(revokedKeyRow.getByRole("cell", { name: "已撤销", exact: true })).toBeVisible();
+  // Compare equivalent short desktop rows before either key has a last-used date.
+  // Mobile names and their extra metadata may naturally make rows taller.
+  await expect(activeKeyRow.getByRole("cell", { name: "尚未使用", exact: true })).toBeVisible();
+  await expect(revokedKeyRow.getByRole("cell", { name: "尚未使用", exact: true })).toBeVisible();
+  const activeKeyBounds = await activeKeyRow.boundingBox();
+  const revokedKeyBounds = await revokedKeyRow.boundingBox();
+  expect(activeKeyBounds).not.toBeNull();
+  expect(revokedKeyBounds).not.toBeNull();
+  expect(
+    Math.abs(activeKeyBounds!.height - revokedKeyBounds!.height),
+    "Equivalent active and revoked API Key rows share the same height",
+  ).toBeLessThanOrEqual(1);
+  const revokeRightOffset = await activeKeyRow.getByRole("button", { name: "撤销", exact: true }).evaluate((button) => {
+    const cell = button.closest("td")!;
+    const bounds = cell.getBoundingClientRect();
+    const style = getComputedStyle(cell);
+    const contentRight = bounds.right - parseFloat(style.borderRightWidth) - parseFloat(style.paddingRight);
+    return Math.abs(button.getBoundingClientRect().right - contentRight);
+  });
+  expect(revokeRightOffset, "API Key action aligns with its cell content's right edge").toBeLessThanOrEqual(1);
   const apiMe = await rpc<{ user: { username: string } }>(
     page.request,
     app.origin,

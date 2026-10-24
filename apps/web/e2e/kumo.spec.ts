@@ -1,5 +1,23 @@
 import { test, expect, activate, copyValueText } from "./fixtures";
 
+for (const width of [1440, 390]) {
+  test(`Kumo dialog is centered in the full viewport at ${width}px`, async ({ page, app }) => {
+    await activate(page, app);
+    await page.setViewportSize({ width, height: 844 });
+    await page.getByRole("button", { name: "创建 API Key", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect.poll(async () => dialog.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      const leftMargin = bounds.left;
+      const rightMargin = innerWidth - bounds.right;
+      return Math.abs(leftMargin - rightMargin);
+    }), { message: `Dialog left and right viewport margins are equal at ${width}px` }).toBeLessThanOrEqual(1);
+    await dialog.getByRole("button", { name: "取消", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+  });
+}
+
 test("Kumo selection, clipboard fallback and mobile navigation preserve user actions", async ({
   page,
   app,

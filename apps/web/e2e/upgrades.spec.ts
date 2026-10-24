@@ -121,6 +121,18 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
       page.getByText("代理连接会中断", { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole("dialog").locator("p p")).toHaveCount(0);
+    await expect.poll(async () => page.getByRole("dialog").evaluate((dialog) => {
+      const buttons = [...dialog.querySelectorAll("button")];
+      const primary = buttons.find((button) => button.textContent?.trim() === "开始升级")!.getBoundingClientRect();
+      const cancel = buttons.find((button) => button.textContent?.trim() === "取消")!.getBoundingClientRect();
+      const bounds = dialog.getBoundingClientRect();
+      const padding = Number.parseFloat(getComputedStyle(dialog).paddingRight);
+      return {
+        cancelBeforePrimary: cancel.right <= primary.left,
+        sameCenter: Math.abs(cancel.y + cancel.height / 2 - primary.y - primary.height / 2) <= 1,
+        primaryAtRightEdge: Math.abs(bounds.right - padding - primary.right) <= 1,
+      };
+    })).toEqual({ cancelBeforePrimary: true, sameCenter: true, primaryAtRightEdge: true });
     await expect(
       page.getByText(
         "daemon 重启会同时重启内嵌 sing-box，代理连接与管理连接都会暂时中断。",
