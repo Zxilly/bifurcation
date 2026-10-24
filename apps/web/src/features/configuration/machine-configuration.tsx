@@ -18,6 +18,7 @@ import {
   type PublishConfigurationResponse,
 } from "@bifurcation/rpc/panel/configuration";
 import Link from "next/link";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { FormError } from "@/components/modal";
 import { ResourceFeedback } from "@/components/resource-feedback";
 import { JsonDocument } from "@/components/json-document";
@@ -57,7 +58,9 @@ export function MachineConfiguration({ machine }: { machine: MachineDetail }) {
             variant={
               configuration.reconciliation === Reconciliation.FAILED
                 ? "destructive"
-                : "secondary"
+                : configuration.reconciliation === Reconciliation.APPLIED
+                  ? "success"
+                  : "secondary"
             }
           >
             {states[configuration.reconciliation]}
@@ -108,7 +111,7 @@ export function MachineConfiguration({ machine }: { machine: MachineDetail }) {
           )}
           <Link
             href={`/admin/machines/${machine.id}/configuration`}
-            className="text-kumo-link underline mt-4 inline-block"
+            className="machine-section-link"
           >
             查看与编辑配置
           </Link>
@@ -121,6 +124,19 @@ export function MachineConfiguration({ machine }: { machine: MachineDetail }) {
         )
       )}
     </LayerCard>
+  );
+}
+
+function ConfigurationSteps({ current }: { current: number }) {
+  return (
+    <ol className="configuration-steps" aria-label="配置发布流程">
+      {["编辑配置", "生成预览", "确认发布"].map((label, index) => (
+        <li key={label} aria-current={current === index ? "step" : undefined} data-complete={index < current || undefined}>
+          <span className="configuration-step-number" aria-hidden>{index + 1}</span>
+          <span>{label}</span>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -138,40 +154,46 @@ export function MachineConfigurationPage({
   const [published, setPublished] = useState<PublishConfigurationResponse | null>(null);
   const [draft, setDraft] = useState<MachineConfiguration | null>(null);
   return (
-    <div className="w-full min-w-0">
-      <Link href={`/admin/machines/${id}`} className="subtle underline">
+    <div className="configuration-workspace">
+      <Link href={`/admin/machines/${id}`} className="machine-back-link">
+        <ArrowLeftIcon size={16} aria-hidden />
         返回机器详情
       </Link>
-      <div className="page-heading mt-5">
+      <div className="page-heading">
         <div>
           <h1>发布节点配置</h1>
-          <p className="subtle mt-2">
+          <p className="page-description">
             {machine.name} ·
             编辑配置后生成预览，确认最终内容再发布。
           </p>
         </div>
       </div>
-      {published ? (
-        <PublicationProgress machineId={id} publication={published} onEdit={(latest) => {
-          if (latest) setDraft(latest);
-          setPublished(null);
-        }} />
-      ) : (
-        machine.uninstalled ? (
-          <p className="subtle">机器已卸载，请先重新接入。</p>
+      <div className="configuration-content">
+        {published ? (
+          <>
+            <ConfigurationSteps current={2} />
+            <PublicationProgress machineId={id} publication={published} onEdit={(latest) => {
+              if (latest) setDraft(latest);
+              setPublished(null);
+            }} />
+          </>
         ) : (
-          <ConfigurationEditor
-            key={id}
-            machine={machine}
-            initial={draft ?? configuration}
-            onPublished={async (publication, settings) => {
-              setDraft({ ...configuration, settings, version: publication.version });
-              setPublished(publication);
-              refresh();
-            }}
-          />
-        )
-      )}
+          machine.uninstalled ? (
+            <p className="subtle">机器已卸载，请先重新接入。</p>
+          ) : (
+            <ConfigurationEditor
+              key={id}
+              machine={machine}
+              initial={draft ?? configuration}
+              onPublished={async (publication, settings) => {
+                setDraft({ ...configuration, settings, version: publication.version });
+                setPublished(publication);
+                refresh();
+              }}
+            />
+          )
+        )}
+      </div>
     </div>
   );
 }
@@ -378,9 +400,10 @@ function ConfigurationEditor({
   return (
     <>
       <UnsavedChanges dirty={dirty} />
+      <ConfigurationSteps current={preview ? 1 : 0} />
       <ResourceFeedback {...machineResource} onRetry={machineResource.refresh} />
       {!machine.installationId ? (
-        <Banner variant="secondary" role="status" className="mb-5">
+        <Banner variant="secondary" role="status">
           <div>
             <p className="font-medium">先接入机器，再发布配置</p>
             <p className="mt-2">可以先填写并预览配置。发布需要在 Linux 机器上执行安装命令，等待节点接入。</p>
@@ -388,7 +411,7 @@ function ConfigurationEditor({
           </div>
         </Banner>
       ) : !supported ? (
-        <Banner variant="alert" role="status" className="mb-5">
+        <Banner variant="alert" role="status">
           <div>
             <p className="font-medium">此节点需要先升级 daemon</p>
             <p className="mt-2">当前 daemon 不支持配置发布。可以先准备配置，升级后再发布。</p>
@@ -396,175 +419,181 @@ function ConfigurationEditor({
           </div>
         </Banner>
       ) : null}
-      <LayerCard render={<section />} className="panel">
+      <LayerCard render={<section />} className="configuration-card">
         <div className="stack">
           <p className="subtle">
             {machine.name} · 当前版本 {version}{dirty ? " · 有未发布修改" : ""}
           </p>
           <form onSubmit={createPreview} onChange={() => setPreview(null)}>
-            <fieldset disabled={busy} className="stack">
-              <h2>监听与证书</h2>
-              <Input
-                label="监听地址"
-                value={listen}
-                onChange={(event) => setListen(event.target.value)}
-                placeholder="::"
-                required
-                description=":: 监听所有 IPv6 接口；也可填写具体 IPv4 或 IPv6 地址。"
-              />
-              <div className="grid gap-4 sm:grid-cols-2">
+            <fieldset disabled={busy} className="configuration-fields">
+              <section className="configuration-form-section" aria-labelledby="configuration-listen-heading">
+                <h2 id="configuration-listen-heading">监听</h2>
                 <Input
-                  label="Trojan 监听端口"
-                  type="number"
-                  min={1}
-                  max={65535}
-                  value={trojanPort}
-                  onChange={(event) => setTrojanPort(event.target.value)}
+                  label="监听地址"
+                  value={listen}
+                  onChange={(event) => setListen(event.target.value)}
+                  placeholder="::"
+                  required
+                  description=":: 监听所有 IPv6 接口；也可填写具体 IPv4 或 IPv6 地址。"
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input
+                    label="Trojan 监听端口"
+                    type="number"
+                    min={1}
+                    max={65535}
+                    value={trojanPort}
+                    onChange={(event) => setTrojanPort(event.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Hysteria2 监听端口（UDP）"
+                    type="number"
+                    min={1}
+                    max={65535}
+                    value={hysteria2Port}
+                    onChange={(event) => setHysteria2Port(event.target.value)}
+                    required
+                  />
+                </div>
+              </section>
+              <section className="configuration-form-section" aria-labelledby="configuration-tls-heading">
+                <h2 id="configuration-tls-heading">TLS 证书</h2>
+                <Input
+                  label="TLS 服务器名称"
+                  value={serverName}
+                  onChange={(event) => setServerName(event.target.value)}
+                  placeholder="证书对应的域名"
                   required
                 />
-                <Input
-                  label="Hysteria2 监听端口（UDP）"
-                  type="number"
-                  min={1}
-                  max={65535}
-                  value={hysteria2Port}
-                  onChange={(event) => setHysteria2Port(event.target.value)}
-                  required
+                <Select
+                  label="证书来源"
+                  items={{
+                    path: "机器上的文件路径",
+                    pem: "上传证书与私钥",
+                    acme: "ACME 自动签发",
+                  }}
+                  value={mode}
+                  onValueChange={(value) => {
+                    setMode(value as "path" | "pem" | "acme");
+                    setPreview(null);
+                  }}
                 />
-              </div>
-              <Input
-                label="TLS 服务器名称"
-                value={serverName}
-                onChange={(event) => setServerName(event.target.value)}
-                placeholder="证书对应的域名"
-                required
-              />
-              <Select
-                label="证书来源"
-                items={{
-                  path: "机器上的文件路径",
-                  pem: "上传证书与私钥",
-                  acme: "ACME 自动签发",
-                }}
-                value={mode}
-                onValueChange={(value) => {
-                  setMode(value as "path" | "pem" | "acme");
-                  setPreview(null);
-                }}
-              />
-              {mode === "acme" && (
-                <Input
-                  label="ACME 联系邮箱"
-                  type="email"
-                  value={acmeEmail}
-                  onChange={(event) => setAcmeEmail(event.target.value)}
-                  required
-                  description="节点向 Let's Encrypt 申请并自动续期证书，需放行 80 端口的 HTTP 质询。"
-                />
-              )}
-              {mode === "path" && (
-                <>
+                {mode === "acme" && (
                   <Input
-                    label="TLS 证书路径"
-                    value={certificatePath}
-                    onChange={(event) => setCertificatePath(event.target.value)}
+                    label="ACME 联系邮箱"
+                    type="email"
+                    value={acmeEmail}
+                    onChange={(event) => setAcmeEmail(event.target.value)}
                     required
+                    description="节点向 Let's Encrypt 申请并自动续期证书，需放行 80 端口的 HTTP 质询。"
                   />
-                  <Input
-                    label="TLS 私钥路径"
-                    value={privateKeyPath}
-                    onChange={(event) => setPrivateKeyPath(event.target.value)}
-                    required
-                  />
-                </>
-              )}
-              {mode === "pem" && (
-                <>
-                  <Input
-                    label="证书文件（PEM）"
-                    type="file"
-                    accept=".pem,.crt,.cer"
-                    onChange={(event) =>
-                      void loadPem(event.target.files?.[0], setCertificatePem)
-                    }
-                  />
-                  <InputArea
-                    label="证书 PEM"
-                    value={certificatePem}
-                    onChange={(event) => setCertificatePem(event.target.value)}
-                    rows={4}
-                    spellCheck={false}
-                    className="font-mono text-xs"
-                    required
-                  />
-                  <Input
-                    label="私钥文件（PEM）"
-                    type="file"
-                    accept=".pem,.key"
-                    onChange={(event) =>
-                      void loadPem(event.target.files?.[0], setPrivateKeyPem)
-                    }
-                  />
-                  <InputArea
-                    label="私钥 PEM"
-                    value={privateKeyPem}
-                    onChange={(event) => setPrivateKeyPem(event.target.value)}
-                    rows={4}
-                    spellCheck={false}
-                    className="font-mono text-xs"
-                    required
-                  />
-                </>
-              )}
-              <details className="mt-5 min-w-0" open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
-                <summary className="cursor-pointer py-2 font-medium">高级基础配置（可选）<span className="subtle ml-2 text-sm font-normal">{customBase ? "含自定义配置" : "使用默认日志与直连出站"}</span></summary>
+                )}
+                {mode === "path" && (
+                  <>
+                    <Input
+                      label="TLS 证书路径"
+                      value={certificatePath}
+                      onChange={(event) => setCertificatePath(event.target.value)}
+                      required
+                    />
+                    <Input
+                      label="TLS 私钥路径"
+                      value={privateKeyPath}
+                      onChange={(event) => setPrivateKeyPath(event.target.value)}
+                      required
+                    />
+                  </>
+                )}
+                {mode === "pem" && (
+                  <>
+                    <Input
+                      label="证书文件（PEM）"
+                      type="file"
+                      accept=".pem,.crt,.cer"
+                      onChange={(event) =>
+                        void loadPem(event.target.files?.[0], setCertificatePem)
+                      }
+                    />
+                    <InputArea
+                      label="证书 PEM"
+                      value={certificatePem}
+                      onChange={(event) => setCertificatePem(event.target.value)}
+                      rows={4}
+                      spellCheck={false}
+                      className="font-mono text-xs"
+                      required
+                    />
+                    <Input
+                      label="私钥文件（PEM）"
+                      type="file"
+                      accept=".pem,.key"
+                      onChange={(event) =>
+                        void loadPem(event.target.files?.[0], setPrivateKeyPem)
+                      }
+                    />
+                    <InputArea
+                      label="私钥 PEM"
+                      value={privateKeyPem}
+                      onChange={(event) => setPrivateKeyPem(event.target.value)}
+                      rows={4}
+                      spellCheck={false}
+                      className="font-mono text-xs"
+                      required
+                    />
+                  </>
+                )}
+              </section>
+              <details className="configuration-advanced" open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
+                <summary className="cursor-pointer py-2 font-medium">高级基础配置（可选）<span className="subtle ml-2 font-normal">{customBase ? "含自定义配置" : "使用默认日志与直连出站"}</span></summary>
                 <div className="stack mt-3">
-                <p className="subtle">
-                  这是运行在节点上的 sing-box
-                  服务端补充配置，用于设置日志、DNS、路由和出站。没有额外需求时保留{" "}
-                  <code>{"{}"}</code> 即可。
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-kumo-subtle">
-                  <li>
-                    默认提供 <code>log</code>（info 级别、带时间戳）和{" "}
-                    <code>outbounds</code>（direct
-                    直连出站）。填写同名顶层字段会整项替换默认值，不会逐项合并。
-                  </li>
-                  <li>
-                    监听地址、端口、TLS 和用户凭据由平台生成。基础 JSON 不能包含{" "}
-                    <code>inbounds</code> 或 <code>services</code>，也不支持{" "}
-                    <code>experimental.clash_api</code>、
-                    <code>experimental.v2ray_api</code>。
-                  </li>
-                </ul>
-                <details className="subtle">
-                  <summary className="cursor-pointer">
-                    示例：调整日志级别
-                  </summary>
-                  <pre className="mt-3 overflow-x-auto text-xs">
-                    {
-                      '{\n  "log": {\n    "level": "warn",\n    "timestamp": true\n  }\n}'
-                    }
-                  </pre>
-                  <p className="mt-3">
-                    此示例仅替换日志设置，保留默认直连出站。其他允许的顶层字段原样保留，最终是否可运行由节点检查。
+                  <p className="subtle">
+                    这是运行在节点上的 sing-box
+                    服务端补充配置，用于设置日志、DNS、路由和出站。没有额外需求时保留{" "}
+                    <code>{"{}"}</code> 即可。
                   </p>
-                </details>
-              {advancedOpen && <JsonEditor
-                label="基础配置 JSON"
-                value={baseJson}
-                onChange={(value) => {
-                  setBaseJson(value);
-                  setPreview(null);
-                }}
-                rows={12}
-                disabled={busy}
-                description="请输入 JSON 对象。生成预览不会应用配置；修改后需要重新预览。"
-              />}
+                  <ul className="list-disc pl-5 space-y-2 text-kumo-subtle">
+                    <li>
+                      默认提供 <code>log</code>（info 级别、带时间戳）和{" "}
+                      <code>outbounds</code>（direct
+                      直连出站）。填写同名顶层字段会整项替换默认值，不会逐项合并。
+                    </li>
+                    <li>
+                      监听地址、端口、TLS 和用户凭据由平台生成。基础 JSON 不能包含{" "}
+                      <code>inbounds</code> 或 <code>services</code>，也不支持{" "}
+                      <code>experimental.clash_api</code>、
+                      <code>experimental.v2ray_api</code>。
+                    </li>
+                  </ul>
+                  <details className="subtle">
+                    <summary className="cursor-pointer">
+                      示例：调整日志级别
+                    </summary>
+                    <pre className="mt-3 overflow-x-auto text-xs">
+                      {
+                        '{\n  "log": {\n    "level": "warn",\n    "timestamp": true\n  }\n}'
+                      }
+                    </pre>
+                    <p className="mt-3">
+                      此示例仅替换日志设置，保留默认直连出站。其他允许的顶层字段原样保留，最终是否可运行由节点检查。
+                    </p>
+                  </details>
+                  {advancedOpen && <JsonEditor
+                    label="基础配置 JSON"
+                    value={baseJson}
+                    onChange={(value) => {
+                      setBaseJson(value);
+                      setPreview(null);
+                    }}
+                    rows={12}
+                    disabled={busy}
+                    description="请输入 JSON 对象。生成预览不会应用配置；修改后需要重新预览。"
+                  />}
                 </div>
               </details>
-              <div className="flex flex-wrap justify-end gap-2">
-                <Button type="submit" variant="primary" loading={busy}>
+              <div className="configuration-form-actions">
+                {!preview && <LinkButton variant="secondary" disabled={busy} href={`/admin/machines/${machine.id}`}>取消</LinkButton>}
+                <Button type="submit" variant={preview ? "secondary" : "primary"} loading={busy}>
                   生成预览
                 </Button>
               </div>
@@ -572,7 +601,7 @@ function ConfigurationEditor({
           </form>
           <FormError message={error} />
           {preview && (
-            <>
+            <div className="configuration-preview">
               <div className="panel-header mb-0">
                 <h2 ref={previewHeading} tabIndex={-1}>
                   最终 sing-box JSON
@@ -611,7 +640,7 @@ function ConfigurationEditor({
                   当前 daemon 不支持此配置任务，请先升级 daemon。
                 </p>
               )}
-              <div className="mt-8 flex flex-wrap justify-end gap-2">
+              <div className="configuration-form-actions">
                 <Link
                   href={`/admin/machines/${machine.id}`}
                   className="subtle underline"
@@ -633,7 +662,7 @@ function ConfigurationEditor({
                   </Button>
                 )}
               </div>
-            </>
+            </div>
           )}
         </div>
       </LayerCard>

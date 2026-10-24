@@ -1,4 +1,7 @@
-import { LayerCard, Banner, Table, Collapsible } from "@cloudflare/kumo";
+"use client";
+
+import { useState } from "react";
+import { LayerCard, Banner, Table, Button } from "@cloudflare/kumo";
 import { InlineEmpty } from "@/components/inline-empty";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { TaskKind } from "@bifurcation/rpc";
@@ -73,9 +76,9 @@ export function ActiveTasks({
   const active = tasks.filter(isActiveTask);
   if (!active.length) return null;
   return (
-    <LayerCard render={<section />} className="panel">
+    <LayerCard render={<section />} className="machine-active-tasks">
       <h2>进行中的任务</h2>
-      <div className="stack mt-5">
+      <div className="stack mt-4">
         {active.map((task) => (
           <div key={task.id} className="stack gap-3">
             <div className="actions">
@@ -129,82 +132,81 @@ export function ActiveTasks({
 }
 
 export function TaskHistory({ tasks }: { tasks: Task[] }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const history = tasks.filter((task) => !isActiveTask(task));
+  const selected = history.find((task) => task.id === selectedId) ?? history[0];
+  if (!selected) {
+    return (
+      <LayerCard className="machine-section">
+        <InlineEmpty title="暂无已完成操作" description="任务执行完成后会记录在这里。" />
+      </LayerCard>
+    );
+  }
   return (
-    <LayerCard className="min-w-0 overflow-x-auto p-0">
-      <Table className="min-w-max tabular-nums">
-        <Table.Header>
-          <Table.Row>
-            <Table.Head>任务</Table.Head>
-            <Table.Head>状态</Table.Head>
-            <Table.Head>更新时间</Table.Head>
-            <Table.Head>结果</Table.Head>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {!history.length && (
+    <LayerCard className="machine-task-inspector p-0">
+      <div className="machine-task-list">
+        <Table className="machine-task-table tabular-nums" aria-label="操作历史">
+          <Table.Header>
             <Table.Row>
-              <Table.Cell colSpan={4}>
-                <InlineEmpty title="暂无已完成操作" description="任务执行完成后会记录在这里。" />
-              </Table.Cell>
+              <Table.Head>任务</Table.Head>
+              <Table.Head>状态</Table.Head>
+              <Table.Head>更新时间</Table.Head>
+              <Table.Head><span className="sr-only">结果</span></Table.Head>
             </Table.Row>
-          )}
-          {history.map((task) => (
-            <Table.Row key={task.id}>
-              <Table.Cell>{taskName[task.kind]}</Table.Cell>
-              <Table.Cell>
-                <Badge
-                  variant={
-                    task.state === TaskState.FAILED
-                      ? "destructive"
-                      : "secondary"
-                  }
-                >
-                  {taskState[task.state]}
-                </Badge>
-              </Table.Cell>
-              <Table.Cell>
-                {timestamp.format(Number(task.updatedAt))}
-              </Table.Cell>
-              <Table.Cell>
-                <Collapsible.Root>
-                  <Collapsible.DefaultTrigger className="cursor-pointer py-1">
+          </Table.Header>
+          <Table.Body>
+            {history.map((task) => (
+              <Table.Row key={task.id} data-selected={task.id === selected.id || undefined}>
+                <Table.Cell>
+                  {taskName[task.kind]}
+                  <span className="machine-task-mobile-meta">
+                    <time dateTime={new Date(Number(task.updatedAt)).toISOString()}>{timestamp.format(Number(task.updatedAt))}</time>
+                    <span>{task.id.slice(0, 8)}</span>
+                  </span>
+                </Table.Cell>
+                <Table.Cell>
+                  <Badge
+                    variant={
+                      task.state === TaskState.FAILED
+                        ? "destructive"
+                        : "secondary"
+                    }
+                  >
+                    {taskState[task.state]}
+                  </Badge>
+                </Table.Cell>
+                <Table.Cell className="machine-task-updated">
+                  <time dateTime={new Date(Number(task.updatedAt)).toISOString()}>{timestamp.format(Number(task.updatedAt))}</time>
+                </Table.Cell>
+                <Table.Cell>
+                  <Button variant="ghost" size="sm" aria-pressed={task.id === selected.id} aria-controls="machine-task-detail" onClick={() => setSelectedId(task.id)}>
                     查看详情
-                  </Collapsible.DefaultTrigger>
-                  <Collapsible.DefaultPanel>
-                    <div className="stack gap-3 min-w-64 max-w-xl whitespace-normal break-words py-3">
-                      {task.message && <p>{task.message}</p>}
-                      {task.errorCode && (
-                        <p className="form-error">错误代码：{task.errorCode}</p>
-                      )}
-                      {task.phase && (
-                        <p>最终阶段：{phaseName[task.phase] ?? task.phase}</p>
-                      )}
-                      {task.rollback === RollbackState.SUCCEEDED && (
-                        <p>机器已报告回滚成功。</p>
-                      )}
-                      {task.rollback === RollbackState.FAILED && (
-                        <p className="form-error">
-                          机器已报告回滚失败，需要检查节点。
-                        </p>
-                      )}
-                      <p className="subtle text-xs">
-                        创建于 {timestamp.format(Number(task.createdAt))}
-                      </p>
-                      <p className="subtle text-xs break-all">
-                        任务 ID：{task.id}
-                      </p>
-                      {task.diagnostic != null && (
-                        <DiagnosticResult value={task.diagnostic} />
-                      )}
-                    </div>
-                  </Collapsible.DefaultPanel>
-                </Collapsible.Root>
-              </Table.Cell>
-            </Table.Row>
-          ))}
-        </Table.Body>
-      </Table>
+                  </Button>
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table>
+      </div>
+      <section id="machine-task-detail" className="machine-task-detail" aria-label="任务详情">
+        <div className="machine-section-heading">
+          <h3>{taskName[selected.kind] ?? "节点任务"}</h3>
+          <Badge variant={selected.state === TaskState.FAILED ? "destructive" : "secondary"}>
+            {taskState[selected.state]}
+          </Badge>
+        </div>
+        <dl className="machine-task-facts">
+          <div><dt>任务 ID</dt><dd>{selected.id}</dd></div>
+          <div><dt>创建时间</dt><dd>{timestamp.format(Number(selected.createdAt))}</dd></div>
+          <div><dt>更新时间</dt><dd>{timestamp.format(Number(selected.updatedAt))}</dd></div>
+          {selected.phase && <div><dt>最终阶段</dt><dd>{phaseName[selected.phase] ?? selected.phase}</dd></div>}
+        </dl>
+        {selected.message && <p className="break-words">{selected.message}</p>}
+        {selected.errorCode && <p className="form-error">错误代码：{selected.errorCode}</p>}
+        {selected.rollback === RollbackState.SUCCEEDED && <p>机器已报告回滚成功。</p>}
+        {selected.rollback === RollbackState.FAILED && <p className="form-error">机器已报告回滚失败，需要检查节点。</p>}
+        {selected.diagnostic != null && <DiagnosticResult key={selected.id} value={selected.diagnostic} />}
+      </section>
     </LayerCard>
   );
 }

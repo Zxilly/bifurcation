@@ -51,7 +51,7 @@ export function PublicationProgress({
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
   return (
-    <LayerCard render={<section aria-labelledby="publication-heading" />} className="panel stack">
+    <LayerCard render={<section aria-labelledby="publication-heading" />} className="configuration-publication stack">
       <div role="status" aria-live="polite">
         <h2 id="publication-heading" ref={heading} tabIndex={-1}>{title}</h2>
         <p className="subtle mt-2">

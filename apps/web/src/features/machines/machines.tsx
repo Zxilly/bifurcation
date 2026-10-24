@@ -121,7 +121,7 @@ export function Machines() {
       <div className="page-heading">
         <div>
           <h1>机器</h1>
-          <p className="subtle mt-2">
+          <p className="page-description">
             {allMachines.length} 台机器 ·{" "}
             {
               allMachines.filter(
@@ -142,7 +142,7 @@ export function Machines() {
           添加机器
         </Button>
       </div>
-      <section className="panel-section stack">
+      <section className="machine-list stack">
         <ResourceFeedback error={resource.error} updatedAt={resource.updatedAt} refreshing={resource.refreshing} onRetry={resource.refresh} />
         <div className="machine-list-toolbar">
           <Input
@@ -187,7 +187,7 @@ export function Machines() {
             {filtered.length} / {allMachines.length} 台
           </span>
         </div>
-        <LayerCard className="min-w-0 overflow-x-auto p-0">
+        <LayerCard className="machine-list-table">
           <Table className="tabular-nums md:min-w-[850px]">
             <Table.Header>
               <Table.Row>
@@ -520,15 +520,15 @@ export function MachineDetailPage({ id }: { id: string }) {
       <div className="machine-workspace">
         <Link
           href="/admin/machines"
-          className="subtle inline-flex items-center gap-1.5 hover:underline mb-4"
+          className="machine-back-link"
           aria-label="返回机器列表"
         >
-          <ArrowLeftIcon size={14} aria-hidden />
+          <ArrowLeftIcon size={16} aria-hidden />
           机器
         </Link>
         <div className="machine-heading">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="machine-title-line">
               <h1 className="break-words min-w-0">{machine.name}</h1>
               <ConnectionBadge
                 connection={machine.connection}
@@ -723,7 +723,7 @@ export function MachineDetailPage({ id }: { id: string }) {
               <div className="machine-section-heading">
                 <div>
                   <h2>操作记录与诊断</h2>
-                  <p className="subtle text-xs mt-1">
+                  <p className="page-description">
                     查看执行结果与节点最近日志。
                   </p>
                 </div>
@@ -742,35 +742,37 @@ export function MachineDetailPage({ id }: { id: string }) {
             </section>
           )}
           {tab === "maintenance" && (
-            <>
-              <div className="machine-maintenance-grid">
-                {machine.installationId && !uninstallComplete ? (
-                  <MachineUpgrades
-                    machine={machine}
-                    onQueued={resource.refresh}
-                  />
-                ) : (
-                  <LayerCard render={<section />} className="machine-section">
+            <LayerCard className="machine-settings">
+              {machine.installationId && !uninstallComplete ? (
+                <MachineUpgrades
+                  machine={machine}
+                  onQueued={resource.refresh}
+                />
+              ) : (
+                <section className="machine-settings-section">
+                  <div className="machine-settings-summary">
                     <h2>{uninstallComplete ? "节点已卸载" : "等待节点接入"}</h2>
-                    <p className="subtle mt-3">
-                      {uninstallComplete
-                        ? "节点已报告卸载完成，可继续移除面板记录。"
-                        : "执行安装命令后，面板将显示节点版本和维护方式。"}
-                    </p>
-                  </LayerCard>
-                )}
-                <LayerCard render={<section />} className="machine-section">
-                  <div className="machine-section-heading">
-                    <h2>机器 Token</h2>
+                  </div>
+                  <p className="subtle">
+                    {uninstallComplete
+                      ? "节点已报告卸载完成，可继续移除面板记录。"
+                      : "执行安装命令后，面板将显示节点版本和维护方式。"}
+                  </p>
+                </section>
+              )}
+              <section className="machine-settings-section">
+                <div className="machine-settings-summary">
+                  <h2>机器 Token</h2>
+                  <p>用于本机连接面板。重置后，需在节点上同步新 Token。</p>
+                  <div className="mt-3">
                     <Badge variant="secondary">
                       {uninstallComplete ? "仅用于结果确认" : "长期有效"}
                     </Badge>
                   </div>
-                  <p className="subtle mb-4">
-                    用于本机连接面板。重置后，需在节点上同步新 Token。
-                  </p>
+                </div>
+                <div className="machine-settings-content">
                   <CopyValue key={machine.token} value={machine.token} />
-                  <div className="actions mt-4">
+                  <div className="actions">
                     <Button
                       disabled={uninstallActive || uninstallComplete}
                       onClick={() => {
@@ -781,109 +783,115 @@ export function MachineDetailPage({ id }: { id: string }) {
                       重置 Token
                     </Button>
                   </div>
-                </LayerCard>
-              </div>
-              <LayerCard render={<section />} className="machine-section">
-                <div className="machine-section-heading">
-                  <h2>安装与绑定</h2>
                 </div>
-                <div className="machine-operation-row">
-                  <div>
-                    <h3 className="font-medium">安装与重装命令</h3>
-                    <p className="subtle mt-1">
-                      在 Linux 主机安装为 systemd
-                      服务。容器节点通过镜像管理程序。
-                    </p>
+              </section>
+              <section className="machine-settings-section">
+                <div className="machine-settings-summary">
+                  <h2>安装与绑定</h2>
+                  <p>安装新节点，或替换这台机器绑定的安装实例。</p>
+                </div>
+                <div className="min-w-0">
+                  <div className="machine-operation-row">
+                    <div>
+                      <h3 className="font-medium">安装与重装命令</h3>
+                      <p className="subtle mt-1">
+                        在 Linux 主机安装为 systemd
+                        服务。容器节点通过镜像管理程序。
+                      </p>
+                    </div>
+                    {uninstallComplete ? (
+                      <span className="subtle text-xs">重新接入后生成新命令</span>
+                    ) : (
+                      <Button
+                        onClick={() => {
+                          setAction("install");
+                          setError("");
+                        }}
+                      >
+                        安装与重装命令
+                      </Button>
+                    )}
                   </div>
-                  {uninstallComplete ? (
-                    <span className="subtle text-xs">重新接入后生成新命令</span>
-                  ) : (
+                  <div className="machine-operation-row">
+                    <div>
+                      <h3 className="font-medium">替换安装实例</h3>
+                      <p className="subtle mt-1">
+                        更换机器或重新绑定；旧实例会失去访问权限，并生成新 Token。
+                      </p>
+                    </div>
+                    <MachineInformationAction
+                      machine={machine}
+                      mode="rebind"
+                      onChanged={informationChanged}
+                    />
+                  </div>
+                </div>
+              </section>
+              <section className="machine-settings-section">
+                <div className="machine-settings-summary">
+                  <h2>卸载与移除</h2>
+                  <p>停止代理并清理安装文件，或仅移除面板记录。</p>
+                </div>
+                <div className="min-w-0">
+                  {uninstallActive && (
+                    <Banner role="status" variant="secondary">
+                      正在卸载，请保留机器记录以接收执行结果。
+                    </Banner>
+                  )}
+                  <div className="machine-operation-row">
+                    <div>
+                      <h3 className="font-medium">卸载节点程序</h3>
+                      <p className="subtle mt-1">
+                        停止代理并清理安装文件，保留面板记录以接收执行结果。
+                      </p>
+                      {!uninstallSupport.available && !uninstallComplete && (
+                        <p className="subtle text-xs mt-2">
+                          {uninstallSupport.description}
+                        </p>
+                      )}
+                      {mutatingTaskActive && (
+                        <p className="text-kumo-warning mt-1">
+                          请等待当前节点任务结束。
+                        </p>
+                      )}
+                    </div>
                     <Button
+                      variant="secondary-destructive"
+                      disabled={
+                        !uninstallSupport.available ||
+                        mutatingTaskActive ||
+                        uninstallComplete
+                      }
                       onClick={() => {
-                        setAction("install");
+                        setUninstallRequestKey(crypto.randomUUID());
+                        setAction("uninstall");
                         setError("");
                       }}
                     >
-                      安装与重装命令
+                      卸载节点程序
                     </Button>
-                  )}
-                </div>
-                <div className="machine-operation-row">
-                  <div>
-                    <h3 className="font-medium">替换安装实例</h3>
-                    <p className="subtle mt-1">
-                      更换机器或重新绑定；旧实例会失去访问权限，并生成新 Token。
-                    </p>
                   </div>
-                  <MachineInformationAction
-                    machine={machine}
-                    mode="rebind"
-                    onChanged={informationChanged}
-                  />
-                </div>
-              </LayerCard>
-              <LayerCard render={<section />} className="machine-section">
-                <div className="machine-section-heading">
-                  <h2>卸载与移除</h2>
-                </div>
-                {uninstallActive && (
-                  <Banner role="status" variant="secondary">
-                    正在卸载，请保留机器记录以接收执行结果。
-                  </Banner>
-                )}
-                <div className="machine-operation-row">
-                  <div>
-                    <h3 className="font-medium">卸载节点程序</h3>
-                    <p className="subtle mt-1">
-                      停止代理并清理安装文件，保留面板记录以接收执行结果。
-                    </p>
-                    {!uninstallSupport.available && !uninstallComplete && (
-                      <p className="subtle text-xs mt-2">
-                        {uninstallSupport.description}
+                  <div className="machine-operation-row">
+                    <div>
+                      <h3 className="font-medium">移除面板记录</h3>
+                      <p className="subtle mt-1">
+                        移除面板中的机器记录；节点上的程序不会被卸载。
                       </p>
-                    )}
-                    {mutatingTaskActive && (
-                      <p className="text-kumo-warning mt-1">
-                        请等待当前节点任务结束。
-                      </p>
-                    )}
+                    </div>
+                    <Button
+                      variant="secondary-destructive"
+                      disabled={uninstallActive}
+                      onClick={() => {
+                        setAction("remove");
+                        setError("");
+                      }}
+                    >
+                      移除记录
+                    </Button>
                   </div>
-                  <Button
-                    variant="secondary-destructive"
-                    disabled={
-                      !uninstallSupport.available ||
-                      mutatingTaskActive ||
-                      uninstallComplete
-                    }
-                    onClick={() => {
-                      setUninstallRequestKey(crypto.randomUUID());
-                      setAction("uninstall");
-                      setError("");
-                    }}
-                  >
-                    卸载节点程序
-                  </Button>
                 </div>
-                <div className="machine-operation-row">
-                  <div>
-                    <h3 className="font-medium">移除面板记录</h3>
-                    <p className="subtle mt-1">
-                      移除面板中的机器记录；节点上的程序不会被卸载。
-                    </p>
-                  </div>
-                  <Button
-                    variant="secondary-destructive"
-                    disabled={uninstallActive}
-                    onClick={() => {
-                      setAction("remove");
-                      setError("");
-                    }}
-                  >
-                    移除记录
-                  </Button>
-                </div>
-              </LayerCard>
-            </>
+              </section>
+            </LayerCard>
           )}
         </div>
       </div>
@@ -942,8 +950,8 @@ export function MachineDetailPage({ id }: { id: string }) {
                     disabled={
                       action === "uninstall"
                         ? mutatingTaskActive ||
-                          uninstallComplete ||
-                          !uninstallSupport.available
+                        uninstallComplete ||
+                        !uninstallSupport.available
                         : uninstallActive
                     }
                     onClick={() => execute(action)}

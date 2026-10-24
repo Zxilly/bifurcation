@@ -173,8 +173,9 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
       })
       .filter({ has: page.getByRole("cell", { name: "失败", exact: true }) });
     await failedHistory.getByText("查看详情", { exact: true }).click();
+    await expect(failedHistory.getByRole("button", { name: "查看详情", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(
-      failedHistory.getByText("机器已报告回滚成功。", { exact: true }),
+      page.getByRole("region", { name: "任务详情", exact: true }).getByText("机器已报告回滚成功。", { exact: true }),
     ).toBeVisible();
 
     await page.getByRole("tab", { name: "接入与维护", exact: true }).click();
@@ -296,8 +297,9 @@ test("daemon upgrade owns the embedded core lifecycle, rollback, reconnect and u
       })
       .filter({ has: page.getByRole("cell", { name: "已完成", exact: true }) });
     await daemonHistory.getByText("查看详情", { exact: true }).click();
+    await expect(daemonHistory.getByRole("button", { name: "查看详情", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(
-      daemonHistory.getByText("Protocol fixture confirmed daemon 0.2.0", {
+      page.getByRole("region", { name: "任务详情", exact: true }).getByText("Protocol fixture confirmed daemon 0.2.0", {
         exact: true,
       }),
     ).toBeVisible();
