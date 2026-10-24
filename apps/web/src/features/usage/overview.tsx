@@ -1,6 +1,6 @@
 "use client";
 
-import { Banner, LayerCard, Collapsible, LinkButton } from "@cloudflare/kumo";
+import { Banner, LinkButton } from "@cloudflare/kumo";
 import { ResourceState } from "@/components/resource-state";
 import { ResourceFeedback } from "@/components/resource-feedback";
 import { Grain, type Usage } from "@bifurcation/rpc/panel/usage";
@@ -29,11 +29,12 @@ const minuteLabel = new Intl.DateTimeFormat("zh-CN", {
   timeZone: "Asia/Shanghai",
 });
 
-function UsageMetadata({ usage }: { usage: Usage }) {
+function UsageMetadata({ usage, className }: { usage: Usage; className?: string }) {
   const previous = usage.previousPeriod;
   if (!previous) return null;
   return (
     <UsageSummary
+      className={className}
       peak={usage.peakMinuteAverageBytesPerSecond ?? null}
       previous={{
         start: previous.previousStart,
@@ -50,10 +51,10 @@ function UsageMetadata({ usage }: { usage: Usage }) {
   );
 }
 
-function UsageTrend({ usage }: { usage: Usage }) {
+function UsageTrend({ usage, showMetadata = true }: { usage: Usage; showMetadata?: boolean }) {
   return (
-    <>
-      {!!usage.points.length && <UsageMetadata usage={usage} />}
+    <div className="usage-trend">
+      {showMetadata && !!usage.points.length && <UsageMetadata usage={usage} />}
       {/* Quality flags qualify reported numbers; the empty state already
           says that nothing was reported. */}
       {!!usage.points.length && (usage.estimated || usage.incomplete) && (
@@ -77,7 +78,7 @@ function UsageTrend({ usage }: { usage: Usage }) {
           downloadBytes: point.downloadBytes,
         }))}
       />
-    </>
+    </div>
   );
 }
 
@@ -111,15 +112,17 @@ export function PersonalOverview() {
         quota.period === period.month &&
         !!usage?.points.length));
   return (
-    <div className="overview-workspace">
+    <div className="overview-workspace usage-overview">
       <div className="page-heading">
-        <h1>我的概览</h1>
+        <div>
+          <h1>我的概览</h1>
+          <p className="page-description">
+            统计按上海时区计算，上下行合计；额度按自然月重置。
+          </p>
+        </div>
         <PeriodPicker value={period} />
       </div>
-      <div className="mb-6 space-y-3">
-        <p className="subtle">
-          统计按上海时区计算，上下行合计；额度按自然月重置。
-        </p>
+      <div className="usage-introduction">
         <LinkButton variant="secondary" href="/subscription">管理我的订阅</LinkButton>
         <ResourceFeedback {...resource} onRetry={resource.refresh} />
         <ResourceFeedback {...todayUsage} onRetry={todayUsage.refresh} />
@@ -131,10 +134,10 @@ export function PersonalOverview() {
             : `本月额度已使用 ${quota.warning}% 以上。`}
         </Banner>
       )}
-      <div className="metric-row">
-        <LayerCard render={<section />} className="panel">
+      <div className="usage-metrics">
+        <section className="usage-metric">
           <h2>本月已用</h2>
-          <strong className="metric-value">
+          <strong className="usage-metric-value">
             {quota && hasCurrentUsage ? formatGiB(quota.usedBytes) : "—"}
           </strong>
           {quota && (
@@ -148,10 +151,10 @@ export function PersonalOverview() {
                     : `额度 ${formatGiB(quota.limitBytes)} · 暂无统计记录`}
             </span>
           )}
-        </LayerCard>
-        <LayerCard render={<section />} className="panel">
+        </section>
+        <section className="usage-metric">
           <h2>本月剩余</h2>
-          <strong className="metric-value">
+          <strong className="usage-metric-value">
             {!quota
               ? "—"
               : remaining === null
@@ -163,10 +166,10 @@ export function PersonalOverview() {
                     : formatGiB(remaining > 0n ? remaining : 0n)}
           </strong>
           {quota && <span className="subtle">{quota.period} · 上海时区</span>}
-        </LayerCard>
-        <LayerCard render={<section />} className="panel">
+        </section>
+        <section className="usage-metric">
           <h2>今日用量</h2>
-          <strong className="metric-value">
+          <strong className="usage-metric-value">
             {totalToday === null ? "—" : formatGiB(totalToday)}
           </strong>
           {todayUsage.data && totalToday !== null && (
@@ -175,9 +178,9 @@ export function PersonalOverview() {
               {formatGiB(todayUsage.data.downloadBytes)}
             </span>
           )}
-        </LayerCard>
+        </section>
       </div>
-      <section className="panel-section stack">
+      <section className="usage-section">
         <div className="panel-header">
           <h2>{period.period === "today" ? "今天用了多少" : "每天用了多少"}</h2>
           {!!usage?.points.length && (
@@ -196,7 +199,7 @@ export function PersonalOverview() {
         )}
       </section>
       {!!usage?.groups.length && (
-        <section className="panel-section stack">
+        <section className="usage-section">
           <h2>用在哪些节点</h2>
           <GroupUsageTable groups={usage.groups} dimension="machine" />
         </section>
@@ -224,33 +227,33 @@ export function AdminUsageOverview() {
     refreshInterval: 30_000,
   });
   const usage = resource.data;
+  const showWorkflow = !!machines.data && !!users.data && !machines.error && !users.error;
   return (
-    <div className="overview-workspace admin-overview">
+    <div className="overview-workspace admin-overview usage-overview">
       <div className="page-heading">
-        <h1>管理概览</h1>
+        <div>
+          <h1>管理概览</h1>
+          <p className="page-description">所选期间 · 上海时区 · 上传 + 下载</p>
+        </div>
         <PeriodPicker value={period} />
       </div>
-      <div className="mb-6 space-y-3">
-        <p className="subtle">所选期间 · 上海时区 · 上传 + 下载</p>
+      <div className="usage-feedback">
         <ResourceFeedback {...resource} onRetry={resource.refresh} />
         <ResourceFeedback {...machines} onRetry={machines.refresh} />
         <ResourceFeedback {...users} onRetry={users.refresh} />
       </div>
-      {machines.data && users.data && !machines.error && !users.error && (
-        <AdminWorkflow machines={machines.data.machines} users={users.data.users} />
-      )}
-      <div className="metric-row">
-        <LayerCard render={<section />} className="panel">
+      <div className="usage-metrics usage-metrics-four">
+        <section className="usage-metric">
           <h2>在线机器</h2>
-          <strong className="metric-value">
+          <strong className="usage-metric-value">
             {machines.data
               ? `${machines.data.machines.filter((machine) => machine.connection === MachineConnection.ONLINE && !machine.uninstalled).length} / ${machines.data.machines.length}`
               : "—"}
           </strong>
-        </LayerCard>
-        <LayerCard render={<section />} className="panel">
+        </section>
+        <section className="usage-metric">
           <h2>所选期间流量</h2>
-          <strong className="metric-value">
+          <strong className="usage-metric-value">
             {usage?.points.length
               ? formatGiB(usage.uploadBytes + usage.downloadBytes)
               : "—"}
@@ -261,44 +264,54 @@ export function AdminUsageOverview() {
               {formatGiB(usage.downloadBytes)}
             </span>
           )}
-        </LayerCard>
-        <LayerCard render={<section />} className="panel">
+        </section>
+        <section className="usage-metric">
           <h2>分钟平均峰值</h2>
-          <strong className="metric-value">
+          <strong className="usage-metric-value">
             {usage?.peakMinuteAverageBytesPerSecond == null
               ? "—"
               : formatRate(usage.peakMinuteAverageBytesPerSecond)}
           </strong>
           <span className="subtle">所选期间 · 仅完整分钟</span>
-        </LayerCard>
-        <LayerCard render={<section />} className="panel">
+        </section>
+        <section className="usage-metric">
           <h2>启用用户</h2>
-          <strong className="metric-value">
+          <strong className="usage-metric-value">
             {users.data
               ? `${users.data.users.filter((user) => user.status === UserStatus.ACTIVE).length} / ${users.data.users.length}`
               : "—"}
           </strong>
-        </LayerCard>
+        </section>
       </div>
-      <section className="panel-section stack">
-        <h2>上下行趋势</h2>
-        {usage ? (
-          <UsageTrend usage={usage} />
-        ) : (
-          <ResourceState
-            loading={resource.loading}
-            title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
-          />
+      <div className={showWorkflow ? "usage-main-supporting" : "usage-main-only"}>
+        <section className="usage-trend-panel">
+          <h2>上下行趋势</h2>
+          {usage ? (
+            <>
+              <UsageTrend usage={usage} showMetadata={false} />
+              {!!usage.points.length && <UsageMetadata usage={usage} />}
+            </>
+          ) : (
+            <ResourceState
+              loading={resource.loading}
+              title={resource.loading ? "正在加载用量…" : "用量暂时无法加载"}
+            />
+          )}
+        </section>
+        {showWorkflow && machines.data && users.data && (
+          <aside className="usage-support">
+            <AdminWorkflow machines={machines.data.machines} users={users.data.users} />
+          </aside>
         )}
-      </section>
+      </div>
       {!!usage?.groups.length && (
-        <section className="panel-section stack">
+        <section className="usage-section">
           <h2>节点用量</h2>
           <GroupUsageTable groups={usage.groups} dimension="machine" />
         </section>
       )}
       {!!usage?.groups.length && (
-        <section className="panel-section stack">
+        <section className="usage-section">
           <h2>用户用量</h2>
           <GroupUsageTable groups={usage.groups} dimension="user" />
         </section>
@@ -316,7 +329,7 @@ export function UserNodeUsage() {
     { refreshInterval: 30_000 },
   );
   return (
-    <section className="panel-section stack">
+    <section className="usage-section">
       <div className="panel-header flex-wrap">
         <h2>用户 × 节点用量</h2>
         <PeriodPicker value={period} />
@@ -358,7 +371,7 @@ export function MachineUsage({ machineId }: { machineId: string }) {
     { refreshInterval: 30_000 },
   );
   return (
-    <section className="panel-section stack">
+    <section className="usage-section machine-usage">
       <div className="panel-header flex-wrap">
         <h2>代理用量</h2>
         <PeriodPicker value={period} />
@@ -366,25 +379,35 @@ export function MachineUsage({ machineId }: { machineId: string }) {
       <ResourceFeedback {...resource} onRetry={resource.refresh} />
       {resource.data ? (
         <>
-          <div className="actions mb-4 subtle">
-            {resource.data.points.length ? (
-              <>
-                <span>上传 {formatGiB(resource.data.uploadBytes)}</span>
-                <span>下载 {formatGiB(resource.data.downloadBytes)}</span>
-              </>
-            ) : (
-              <span>暂无统计记录</span>
-            )}
+          <div className="usage-main-supporting">
+            <div className="usage-trend-panel">
+              <h2>上下行趋势</h2>
+              <UsageTrend usage={resource.data} showMetadata={false} />
+            </div>
+            <aside className="usage-support usage-statistics" aria-labelledby="machine-usage-statistics">
+              <h2 id="machine-usage-statistics">流量统计</h2>
+              <p className="subtle">统计该节点通过代理转发的流量，不包含主机网络流量。</p>
+              <dl className="usage-totals">
+                <div>
+                  <dt className="subtle">上传</dt>
+                  <dd>{resource.data.points.length ? formatGiB(resource.data.uploadBytes) : "—"}</dd>
+                </div>
+                <div>
+                  <dt className="subtle">下载</dt>
+                  <dd>{resource.data.points.length ? formatGiB(resource.data.downloadBytes) : "—"}</dd>
+                </div>
+              </dl>
+              {resource.data.points.length ? (
+                <UsageMetadata usage={resource.data} className="usage-summary-vertical" />
+              ) : (
+                <p className="subtle">暂无统计记录</p>
+              )}
+            </aside>
           </div>
-          <UsageTrend usage={resource.data} />
-          <Collapsible.Root className="mt-4">
-            <Collapsible.DefaultTrigger className="cursor-pointer py-2">
-              用户分布
-            </Collapsible.DefaultTrigger>
-            <Collapsible.DefaultPanel>
-              <GroupUsageTable groups={resource.data.groups} dimension="user" />
-            </Collapsible.DefaultPanel>
-          </Collapsible.Root>
+          <section className="usage-section">
+            <h2>用户分布</h2>
+            <GroupUsageTable groups={resource.data.groups} dimension="user" />
+          </section>
         </>
       ) : (
         <ResourceState

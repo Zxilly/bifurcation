@@ -152,15 +152,17 @@ export function Users({ users }: { users: User[] }) {
   return (
     <div className="users-workspace">
       <div className="page-heading">
-        <h1>用户</h1>
+        <div>
+          <h1>用户</h1>
+          <p className="page-description">
+            {users.length} 位用户 · 通过一次性激活链接加入
+          </p>
+        </div>
         <Button variant="primary" onClick={() => open({ kind: "create" })}>
           创建用户
         </Button>
       </div>
       <section className="panel-section stack">
-        <p className="subtle">
-          {users.length} 位用户 · 通过一次性激活链接加入
-        </p>
         <LayerCard className="min-w-0 overflow-x-auto p-0">
           <Table className="w-full table-fixed tabular-nums">
             <Table.Header>

@@ -17,6 +17,7 @@ export function UsageSummary({
   changePercent,
   currentIncomplete,
   currentInProgress,
+  className = "",
 }: {
   peak: number | null;
   previous: {
@@ -28,6 +29,7 @@ export function UsageSummary({
   changePercent: number | null;
   currentIncomplete: boolean;
   currentInProgress: boolean;
+  className?: string;
 }) {
   const change =
     changePercent !== null
@@ -42,7 +44,7 @@ export function UsageSummary({
               ? "上期用量为 0"
               : "暂不可比较";
   return (
-    <dl className="grid gap-4 sm:grid-cols-3 my-5 text-sm">
+    <dl className={`usage-summary ${className}`}>
       <div>
         <dt className="subtle mb-1">分钟平均峰值</dt>
         <dd className="font-semibold tabular-nums">

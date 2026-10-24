@@ -333,7 +333,7 @@ test("configuration preview and publish, independent subscription resets, and re
       page.getByText("当前周期未结束", { exact: true }),
     ).toBeVisible();
     const metricTops = await page
-      .locator(".metric-row > .panel")
+      .locator(".usage-metrics > .usage-metric")
       .evaluateAll((panels) =>
         panels.map((panel) => Math.round(panel.getBoundingClientRect().top)),
       );
